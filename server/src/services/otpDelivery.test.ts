@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { TwilioSmsDelivery } from './otpDelivery.js';
+import { TwilioSmsDelivery, TwilioVerifyDelivery } from './otpDelivery.js';
 
 describe('TwilioSmsDelivery', () => {
   afterEach(() => {
@@ -70,5 +70,55 @@ describe('TwilioSmsDelivery', () => {
       code: 'SMS_DELIVERY_FAILED',
       message: 'SMS delivery is temporarily unavailable. Please try again shortly.'
     });
+  });
+});
+
+describe('TwilioVerifyDelivery', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  it('starts an SMS verification without accepting a client-generated body or sender', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response('{"status":"pending"}', { status: 201 }));
+    vi.stubGlobal('fetch', fetchMock);
+    const delivery = new TwilioVerifyDelivery({ accountSid: 'AC123', authToken: 'test-token', serviceSid: 'VA123' });
+
+    await delivery.send('+919876543210');
+
+    const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+    const form = init.body as URLSearchParams;
+    expect(url).toBe('https://verify.twilio.com/v2/Services/VA123/Verifications');
+    expect(init.method).toBe('POST');
+    expect(new Headers(init.headers).get('authorization')).toBe(`Basic ${Buffer.from('AC123:test-token').toString('base64')}`);
+    expect(form.get('To')).toBe('+919876543210');
+    expect(form.get('Channel')).toBe('sms');
+    expect(form.has('Body')).toBe(false);
+    expect(form.has('From')).toBe(false);
+  });
+
+  it('accepts only an approved Verify check and treats pending as an incorrect code', async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response('{"status":"approved"}', { status: 200 }))
+      .mockResolvedValueOnce(new Response('{"status":"pending"}', { status: 200 }));
+    vi.stubGlobal('fetch', fetchMock);
+    const delivery = new TwilioVerifyDelivery({ accountSid: 'AC123', authToken: 'test-token', serviceSid: 'VA123' });
+
+    await expect(delivery.verify('+919876543210', '483920')).resolves.toBe(true);
+    await expect(delivery.verify('+919876543210', '111111')).resolves.toBe(false);
+
+    const [, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+    const form = init.body as URLSearchParams;
+    expect(fetchMock.mock.calls[0]?.[0]).toBe('https://verify.twilio.com/v2/Services/VA123/VerificationCheck');
+    expect(form.get('To')).toBe('+919876543210');
+    expect(form.get('Code')).toBe('483920');
+  });
+
+  it('treats an expired Verify record as a failed code check', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response('{"code":20404,"message":"not found"}', { status: 404 }));
+    vi.stubGlobal('fetch', fetchMock);
+    const delivery = new TwilioVerifyDelivery({ accountSid: 'AC123', authToken: 'test-token', serviceSid: 'VA123' });
+
+    await expect(delivery.verify('+919876543210', '483920')).resolves.toBe(false);
   });
 });

@@ -4,17 +4,18 @@ The Render Blueprint runs the Express API, built Vite client, and Socket.io on o
 
 ## Configure production phone verification
 
-Production uses `OTP_MODE=sms`. Mock OTP is intentionally rejected in production. The backend supports Twilio Programmable Messaging and sends its own six-digit code, preserving ProjectQR's server-side OTP expiry, attempt, and resend checks.
+For OTP, use Twilio Verify (`OTP_MODE=verify`). Mock OTP is intentionally rejected in production. Verify generates and checks the code with Twilio while ProjectQR enforces its own session, resend, and attempt limits. Direct Messaging (`OTP_MODE=sms`) remains available for an upgraded account with a configured sender.
 
 In the Render service's **Environment** settings, add:
 
 - `TWILIO_ACCOUNT_SID`
 - `TWILIO_AUTH_TOKEN`
-- Exactly one sender option: `TWILIO_FROM` or `TWILIO_MESSAGING_SERVICE_SID`
+- `TWILIO_VERIFY_SERVICE_SID` (create a Verify Service in Twilio Console; the SID starts with `VA`)
+- Set `OTP_MODE=verify`
 
-Save the changes to restart the service. Keep these credentials in Render, never in Git, frontend variables, or chat. If all Twilio variables are absent, `/api/customer/request-otp` returns `SMS_NOT_CONFIGURED`. Partial or conflicting settings prevent the API from starting with an actionable configuration error.
+Save the changes to restart the service. Keep these credentials in Render, never in Git, frontend variables, or chat. The existing `TWILIO_FROM` value is not used in Verify mode.
 
-Twilio's trial account only sends to destination numbers verified in the Twilio Console. To let other customers receive codes, upgrade the Twilio account. Review [Twilio's India SMS guidance](https://www.twilio.com/en-us/guidelines/in/sms) and [current India SMS pricing](https://www.twilio.com/en-us/sms/pricing/in) before enabling real customer traffic. Use the international route for the initial test; Twilio's guidance says it does not require DLT registration, while domestic sender registration does.
+With a Twilio trial, Verify can send only to numbers verified in the Twilio Console. This is suitable for testing your own verified number, not public restaurant customers. Twilio Messaging trial errors `572002` and `572006` mean the trial sender is not assigned to the recipient and the custom ProjectQR OTP body is not allowed. Verify avoids those Messaging trial constraints by using Twilio's Verify trial sender and template. To send OTPs to arbitrary customers, upgrade the Twilio account and complete any required destination-country setup. Review [Twilio's India SMS guidance](https://www.twilio.com/en-us/guidelines/in/sms) and [current India SMS pricing](https://www.twilio.com/en-us/sms/pricing/in) before enabling real customer traffic.
 
 ## Other deployment notes
 

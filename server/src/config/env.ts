@@ -29,11 +29,12 @@ const schema = z.object({
     .default('mongodb://127.0.0.1:27017/projectqr'),
   SESSION_SECRET: z.string().min(32).default('local-dev-session-secret-change-before-deploy'),
   OTP_SECRET: z.string().min(32).default('local-dev-otp-secret-change-before-deploy'),
-  OTP_MODE: z.enum(['mock', 'sms']).default('mock'),
+  OTP_MODE: z.enum(['mock', 'sms', 'verify']).default('mock'),
   TWILIO_ACCOUNT_SID: optionalEnvString,
   TWILIO_AUTH_TOKEN: optionalEnvString,
   TWILIO_FROM: optionalEnvString,
   TWILIO_MESSAGING_SERVICE_SID: optionalEnvString,
+  TWILIO_VERIFY_SERVICE_SID: optionalEnvString,
   UPLOAD_DIR: z.string().default('./uploads'),
   COOKIE_SECURE: z.enum(['true', 'false']).optional()
 });
@@ -48,12 +49,21 @@ const hasAnyTwilioSetting = [
   parsed.data.TWILIO_ACCOUNT_SID,
   parsed.data.TWILIO_AUTH_TOKEN,
   parsed.data.TWILIO_FROM,
-  parsed.data.TWILIO_MESSAGING_SERVICE_SID
+  parsed.data.TWILIO_MESSAGING_SERVICE_SID,
+  parsed.data.TWILIO_VERIFY_SERVICE_SID
 ].some(Boolean);
 const hasExactlyOneTwilioSender = Boolean(parsed.data.TWILIO_FROM) !== Boolean(parsed.data.TWILIO_MESSAGING_SERVICE_SID);
-if (hasAnyTwilioSetting && (!parsed.data.TWILIO_ACCOUNT_SID || !parsed.data.TWILIO_AUTH_TOKEN || !hasExactlyOneTwilioSender)) {
+const hasTwilioCredentials = Boolean(parsed.data.TWILIO_ACCOUNT_SID && parsed.data.TWILIO_AUTH_TOKEN);
+const invalidTwilioConfiguration = hasAnyTwilioSetting && (
+  !hasTwilioCredentials ||
+  (parsed.data.OTP_MODE === 'sms' && !hasExactlyOneTwilioSender) ||
+  (parsed.data.OTP_MODE === 'verify' && !parsed.data.TWILIO_VERIFY_SERVICE_SID)
+);
+if (invalidTwilioConfiguration || (parsed.data.OTP_MODE === 'verify' && !hasTwilioCredentials)) {
   console.error('Invalid server configuration:', {
-    TWILIO: ['Set Account SID and Auth Token, and set exactly one of TWILIO_FROM or TWILIO_MESSAGING_SERVICE_SID.']
+    TWILIO: [parsed.data.OTP_MODE === 'verify'
+      ? 'OTP_MODE=verify requires TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN and TWILIO_VERIFY_SERVICE_SID.'
+      : 'Set Account SID and Auth Token, and set exactly one of TWILIO_FROM or TWILIO_MESSAGING_SERVICE_SID when OTP_MODE=sms.']
   });
   process.exit(1);
 }
@@ -81,6 +91,7 @@ if (parsed.data.NODE_ENV === 'production') {
 export const env = {
   ...parsed.data,
   twilioSmsConfigured: Boolean(parsed.data.TWILIO_ACCOUNT_SID && parsed.data.TWILIO_AUTH_TOKEN && hasExactlyOneTwilioSender),
+  twilioVerifyConfigured: Boolean(parsed.data.TWILIO_ACCOUNT_SID && parsed.data.TWILIO_AUTH_TOKEN && parsed.data.TWILIO_VERIFY_SERVICE_SID),
   cookieSecure: parsed.data.COOKIE_SECURE === 'true' || parsed.data.NODE_ENV === 'production',
   uploadPath: parsed.data.UPLOAD_DIR
 };

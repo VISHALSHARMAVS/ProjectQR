@@ -11,7 +11,7 @@ import { DiningTable } from '../models/DiningTable.js';
 import { MenuItem } from '../models/MenuItem.js';
 import { OtpChallenge } from '../models/OtpChallenge.js';
 import { Restaurant } from '../models/Restaurant.js';
-import { DevelopmentOtpDelivery, TwilioSmsDelivery, UnconfiguredSmsDelivery } from '../services/otpDelivery.js';
+import { DevelopmentOtpDelivery, TwilioSmsDelivery, TwilioVerifyDelivery, UnconfiguredSmsDelivery, type OtpDelivery } from '../services/otpDelivery.js';
 import { AppError } from '../utils/errors.js';
 import { phoneSchema } from '../utils/validation.js';
 
@@ -34,9 +34,15 @@ const otpRateLimit = rateLimit({
 });
 const requestOtpSchema = z.object({ token: z.string().min(32).max(100), name: z.string().trim().min(2).max(100), phone: phoneSchema });
 const verifyOtpSchema = z.object({ token: z.string().min(32).max(100), name: z.string().trim().min(2).max(100), phone: phoneSchema, code: z.string().regex(/^\d{6}$/, 'Enter the six-digit verification code.') });
-const otpDelivery = env.OTP_MODE === 'mock'
+const otpDelivery: OtpDelivery = env.OTP_MODE === 'mock'
   ? new DevelopmentOtpDelivery()
-  : env.twilioSmsConfigured
+  : env.OTP_MODE === 'verify' && env.twilioVerifyConfigured
+    ? new TwilioVerifyDelivery({
+      accountSid: env.TWILIO_ACCOUNT_SID!,
+      authToken: env.TWILIO_AUTH_TOKEN!,
+      serviceSid: env.TWILIO_VERIFY_SERVICE_SID!
+    })
+    : env.OTP_MODE === 'sms' && env.twilioSmsConfigured
     ? new TwilioSmsDelivery({
       accountSid: env.TWILIO_ACCOUNT_SID!,
       authToken: env.TWILIO_AUTH_TOKEN!,
@@ -79,19 +85,20 @@ customerRouter.post('/request-otp', otpRateLimit, async (req, res) => {
   if (recentCount >= 4) throw new AppError(429, 'OTP_RESEND_LIMIT', 'You have requested too many codes. Try again in an hour.');
   if (latest && now.getTime() - latest.lastSentAt.getTime() < 30_000) throw new AppError(429, 'OTP_RESEND_WAIT', 'Wait 30 seconds before requesting another code.');
 
-  const code = String(randomInt(0, 1_000_000)).padStart(6, '0');
+  const providerManagedCode = env.OTP_MODE === 'verify';
+  const code = providerManagedCode ? undefined : String(randomInt(0, 1_000_000)).padStart(6, '0');
   const challenge = new OtpChallenge({
     customerName: parsed.data.name,
     phone: parsed.data.phone,
     restaurantId: restaurant._id,
     tableId: table._id,
-    codeHash: 'pending',
+    codeHash: providerManagedCode ? 'provider-managed' : 'pending',
     expiresAt: new Date(now.getTime() + 5 * 60 * 1000),
     attempts: 0,
     resendCount: recentCount,
     lastSentAt: now
   });
-  challenge.codeHash = otpHash(String(challenge._id), code);
+  if (code) challenge.codeHash = otpHash(String(challenge._id), code);
   await challenge.save();
   try {
     await otpDelivery.send(parsed.data.phone, code);
@@ -122,7 +129,10 @@ customerRouter.post('/verify-otp', otpRateLimit, async (req, res) => {
     { returnDocument: 'after' }
   ).select('+codeHash');
   if (!challenge) throw new AppError(400, 'OTP_ATTEMPTS_EXCEEDED', 'Too many attempts or this code has expired. Request a new code.');
-  if (!safeEqual(challenge.codeHash, otpHash(String(challenge._id), parsed.data.code))) {
+  const isValidCode = otpDelivery.verify
+    ? await otpDelivery.verify(parsed.data.phone, parsed.data.code)
+    : safeEqual(challenge.codeHash, otpHash(String(challenge._id), parsed.data.code));
+  if (!isValidCode) {
     const remaining = Math.max(0, 5 - challenge.attempts);
     throw new AppError(400, 'OTP_INVALID', remaining ? `That code is incorrect. ${remaining} attempt${remaining === 1 ? '' : 's'} remaining.` : 'Too many attempts. Request a new code.');
   }

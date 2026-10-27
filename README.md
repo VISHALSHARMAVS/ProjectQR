@@ -19,7 +19,7 @@ If MongoDB is not installed, `npm run dev:memory` starts the API with a temporar
 
 To scan a development QR code with a phone on the same Wi-Fi, set both `PUBLIC_APP_URL` and `CLIENT_ORIGIN` to the computer's LAN address (for example, `http://192.168.1.20:5173`) before creating the QR code. Vite listens on the network interface for this purpose. `localhost` on the phone refers to the phone itself.
 
-In development, OTP mode is `mock`; the generated code is returned by the API and printed to the server log. This mode is rejected outside development/test. A real SMS provider can implement the `OtpDelivery` service and set `OTP_MODE=sms` after credentials and a provider are configured.
+In development, OTP mode is `mock`; the generated code is returned by the API and printed to the server log. This mode is rejected outside development/test. For phone verification, `OTP_MODE=verify` uses Twilio Verify to generate and check codes. `OTP_MODE=sms` uses direct Twilio Messaging with ProjectQR-generated codes and a configured sender.
 
 ## Commands
 
@@ -36,7 +36,7 @@ The seed uses `SEED_OWNER_EMAIL` and `SEED_OWNER_PASSWORD` when provided; otherw
 
 See `.env.example`. `PUBLIC_APP_URL` is used to generate QR destinations and must be the public frontend origin in a deployed environment. `UPLOAD_DIR` stores validated image files locally for development. Production object storage should be configured behind the image storage service before deployment; local disk is not durable on many hosting platforms. Cookies are HTTP-only and secure in production. Keep session and OTP secrets private.
 
-For a hosted preview, see [docs/deployment.md](docs/deployment.md) and the Render Blueprint in `render.yaml`. The public customer OTP flow still needs a real SMS provider before it can be tested in production.
+For a hosted preview, see [docs/deployment.md](docs/deployment.md) and the Render Blueprint in `render.yaml`. Twilio trial accounts can test Verify only with verified recipients; public customer phone verification requires an upgraded, correctly configured Twilio account.
 
 No payment processing is included. Dine-in payment is handled by the restaurant outside ProjectQR.
 

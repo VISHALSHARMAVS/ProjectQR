@@ -1,7 +1,8 @@
 import { AppError } from '../utils/errors.js';
 
 export interface OtpDelivery {
-  send(phone: string, code: string): Promise<void>;
+  send(phone: string, code?: string): Promise<void>;
+  verify?(phone: string, code: string): Promise<boolean>;
 }
 
 export interface TwilioSmsConfiguration {
@@ -9,6 +10,12 @@ export interface TwilioSmsConfiguration {
   authToken: string;
   from?: string;
   messagingServiceSid?: string;
+}
+
+export interface TwilioVerifyConfiguration {
+  accountSid: string;
+  authToken: string;
+  serviceSid: string;
 }
 
 async function getTwilioErrorCode(response: Response): Promise<string | undefined> {
@@ -27,13 +34,13 @@ async function getTwilioErrorCode(response: Response): Promise<string | undefine
 }
 
 export class DevelopmentOtpDelivery implements OtpDelivery {
-  async send(phone: string, code: string): Promise<void> {
-    console.info(`[DEV MOCK OTP] ending ${phone.slice(-4)}: ${code}`);
+  async send(phone: string, code?: string): Promise<void> {
+    if (code) console.info(`[DEV MOCK OTP] ending ${phone.slice(-4)}: ${code}`);
   }
 }
 
 export class UnconfiguredSmsDelivery implements OtpDelivery {
-  async send(_phone: string, _code: string): Promise<void> {
+  async send(_phone: string, _code?: string): Promise<void> {
     throw new AppError(503, 'SMS_NOT_CONFIGURED', 'SMS delivery is not configured. Connect an SMS provider before enabling OTP_MODE=sms.');
   }
 }
@@ -41,7 +48,8 @@ export class UnconfiguredSmsDelivery implements OtpDelivery {
 export class TwilioSmsDelivery implements OtpDelivery {
   constructor(private readonly config: TwilioSmsConfiguration) {}
 
-  async send(phone: string, code: string): Promise<void> {
+  async send(phone: string, code?: string): Promise<void> {
+    if (!code) throw new AppError(503, 'SMS_NOT_CONFIGURED', 'A locally generated code is required for Twilio Messaging.');
     const body = new URLSearchParams({
       To: phone,
       Body: `ProjectQR verification code: ${code}. Valid for 5 minutes. Do not share it.`
@@ -71,6 +79,49 @@ export class TwilioSmsDelivery implements OtpDelivery {
       if (error instanceof AppError) throw error;
       console.error('[SMS] Twilio request failed or timed out.');
       throw new AppError(502, 'SMS_DELIVERY_FAILED', 'SMS delivery is temporarily unavailable. Please try again shortly.');
+    }
+  }
+}
+
+type TwilioVerifyResponse = { status?: string };
+
+export class TwilioVerifyDelivery implements OtpDelivery {
+  constructor(private readonly config: TwilioVerifyConfiguration) {}
+
+  async send(phone: string): Promise<void> {
+    await this.request('Verifications', new URLSearchParams({ To: phone, Channel: 'sms' }), 'send');
+  }
+
+  async verify(phone: string, code: string): Promise<boolean> {
+    const result = await this.request('VerificationCheck', new URLSearchParams({ To: phone, Code: code }), 'check');
+    return result.status === 'approved';
+  }
+
+  private async request(path: 'Verifications' | 'VerificationCheck', body: URLSearchParams, operation: 'send' | 'check'): Promise<TwilioVerifyResponse> {
+    const authorization = Buffer.from(`${this.config.accountSid}:${this.config.authToken}`).toString('base64');
+    try {
+      const response = await fetch(`https://verify.twilio.com/v2/Services/${this.config.serviceSid}/${path}`, {
+        method: 'POST',
+        headers: {
+          authorization: `Basic ${authorization}`,
+          'content-type': 'application/x-www-form-urlencoded'
+        },
+        body,
+        signal: AbortSignal.timeout(10_000)
+      });
+      if (!response.ok) {
+        const errorCode = await getTwilioErrorCode(response);
+        const codeDetail = errorCode ? ` (Twilio error ${errorCode})` : '';
+        console.error(`[OTP] Twilio Verify rejected a ${operation} request with HTTP ${response.status}${codeDetail}.`);
+        if (operation === 'check' && (errorCode === '20404' || errorCode === '60202')) return { status: 'expired' };
+        throw new AppError(502, 'OTP_PROVIDER_FAILED', 'Phone verification is temporarily unavailable. Please try again shortly.');
+      }
+
+      return await response.json() as TwilioVerifyResponse;
+    } catch (error) {
+      if (error instanceof AppError) throw error;
+      console.error(`[OTP] Twilio Verify ${operation} request failed or timed out.`);
+      throw new AppError(502, 'OTP_PROVIDER_FAILED', 'Phone verification is temporarily unavailable. Please try again shortly.');
     }
   }
 }
