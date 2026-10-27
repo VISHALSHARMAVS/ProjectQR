@@ -11,7 +11,7 @@ import { DiningTable } from '../models/DiningTable.js';
 import { MenuItem } from '../models/MenuItem.js';
 import { OtpChallenge } from '../models/OtpChallenge.js';
 import { Restaurant } from '../models/Restaurant.js';
-import { DevelopmentOtpDelivery, UnconfiguredSmsDelivery } from '../services/otpDelivery.js';
+import { DevelopmentOtpDelivery, TwilioSmsDelivery, UnconfiguredSmsDelivery } from '../services/otpDelivery.js';
 import { AppError } from '../utils/errors.js';
 import { phoneSchema } from '../utils/validation.js';
 
@@ -34,7 +34,16 @@ const otpRateLimit = rateLimit({
 });
 const requestOtpSchema = z.object({ token: z.string().min(32).max(100), name: z.string().trim().min(2).max(100), phone: phoneSchema });
 const verifyOtpSchema = z.object({ token: z.string().min(32).max(100), name: z.string().trim().min(2).max(100), phone: phoneSchema, code: z.string().regex(/^\d{6}$/, 'Enter the six-digit verification code.') });
-const otpDelivery = env.OTP_MODE === 'mock' ? new DevelopmentOtpDelivery() : new UnconfiguredSmsDelivery();
+const otpDelivery = env.OTP_MODE === 'mock'
+  ? new DevelopmentOtpDelivery()
+  : env.twilioSmsConfigured
+    ? new TwilioSmsDelivery({
+      accountSid: env.TWILIO_ACCOUNT_SID!,
+      authToken: env.TWILIO_AUTH_TOKEN!,
+      ...(env.TWILIO_FROM ? { from: env.TWILIO_FROM } : {}),
+      ...(env.TWILIO_MESSAGING_SERVICE_SID ? { messagingServiceSid: env.TWILIO_MESSAGING_SERVICE_SID } : {})
+    })
+    : new UnconfiguredSmsDelivery();
 
 function otpHash(challengeId: string, code: string): string {
   return createHmac('sha256', env.OTP_SECRET).update(`${challengeId}:${code}`).digest('hex');

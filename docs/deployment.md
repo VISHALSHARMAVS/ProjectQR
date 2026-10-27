@@ -1,24 +1,24 @@
-# Public preview deployment
+# Render preview deployment
 
-The repository includes a Render Blueprint for a single-service preview. The Express server serves the production Vite build and the REST/Socket.io API from the same HTTPS origin. This keeps browser cookies, QR links, API requests, and live order updates on one host.
+The Render Blueprint runs the Express API, built Vite client, and Socket.io on one HTTPS origin. The public preview is [projectqr-preview.onrender.com](https://projectqr-preview.onrender.com). Changes pushed to `main` deploy automatically.
 
-## Before deploying
+## Configure production phone verification
 
-- Push this project to a private GitHub repository and connect that repository to Render. The current local checkout has no Git remote, so Render cannot deploy it yet.
-- Keep the MongoDB Atlas database. Add the Render service's outbound IP addresses in Atlas Network Access; do not use `0.0.0.0/0` as a permanent rule.
-- Production OTP delivery is not integrated yet. The Blueprint sets `OTP_MODE=sms`, but the current SMS adapter returns `SMS_NOT_CONFIGURED`; customers cannot complete phone verification until a real provider is configured. Mock OTP is intentionally blocked in production.
-- Menu image uploads currently use local files. The free preview has ephemeral storage, so uploaded images can disappear after restarts or deploys. Use object storage or a paid persistent disk before relying on uploaded images.
+Production uses `OTP_MODE=sms`. Mock OTP is intentionally rejected in production. The backend supports Twilio Programmable Messaging and sends its own six-digit code, preserving ProjectQR's server-side OTP expiry, attempt, and resend checks.
 
-## Create the preview
+In the Render service's **Environment** settings, add:
 
-1. Push the repository to GitHub as a private repository.
-2. In Render, choose **New → Blueprint** and connect that repository.
-3. Review `render.yaml`. Render will ask for `MONGODB_URI`; enter the Atlas application connection string in the Render secret field, never in this file or Git.
-4. Apply the Blueprint and wait for the `/api/health` check to pass.
-5. Open the service's HTTPS URL, register an owner account, and create the menu and tables. QR codes use that public URL automatically.
+- `TWILIO_ACCOUNT_SID`
+- `TWILIO_AUTH_TOKEN`
+- Exactly one sender option: `TWILIO_FROM` or `TWILIO_MESSAGING_SERVICE_SID`
 
-The free web service is for previewing and iteration. Render spins it down after 15 minutes without traffic, so the next request can take about a minute to wake it. It does not provide persistent local file storage. Upgrade only if you need an always-on service or a persistent disk.
+Save the changes to restart the service. Keep these credentials in Render, never in Git, frontend variables, or chat. If all Twilio variables are absent, `/api/customer/request-otp` returns `SMS_NOT_CONFIGURED`. Partial or conflicting settings prevent the API from starting with an actionable configuration error.
 
-## Updating the live preview
+Twilio's trial account only sends to destination numbers verified in the Twilio Console. To let other customers receive codes, upgrade the Twilio account. Review [Twilio's India SMS guidance](https://www.twilio.com/en-us/guidelines/in/sms) and [current India SMS pricing](https://www.twilio.com/en-us/sms/pricing/in) before enabling real customer traffic. Use the international route for the initial test; Twilio's guidance says it does not require DLT registration, while domestic sender registration does.
 
-With auto-deploy enabled, changes pushed to the connected branch build and deploy automatically. Check the Render deploy log and `/api/health` after each change. Keep `.env` out of Git; enter deployment secrets in Render's environment settings.
+## Other deployment notes
+
+- Keep the MongoDB Atlas database. Restrict Atlas Network Access to the Render service's outbound addresses where practical; avoid leaving `0.0.0.0/0` as a permanent rule.
+- Menu images use local files. The free preview has ephemeral storage, so uploaded images can disappear after restarts or deploys. Use object storage or a persistent disk before relying on uploaded images.
+- The free web service spins down after inactivity, so the first request may take about a minute to wake it. This is suitable for previewing and iteration, not an always-on service.
+- Keep `.env` out of Git. Enter deployment secrets only in Render's environment settings.

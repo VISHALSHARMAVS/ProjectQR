@@ -4,6 +4,11 @@ import { z } from 'zod';
 
 dotenv.config({ path: fileURLToPath(new URL('../../../.env', import.meta.url)) });
 
+const optionalEnvString = z.preprocess(
+  (value) => typeof value === 'string' && value.trim() === '' ? undefined : value,
+  z.string().trim().optional()
+);
+
 const schema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().positive().default(4000),
@@ -25,6 +30,10 @@ const schema = z.object({
   SESSION_SECRET: z.string().min(32).default('local-dev-session-secret-change-before-deploy'),
   OTP_SECRET: z.string().min(32).default('local-dev-otp-secret-change-before-deploy'),
   OTP_MODE: z.enum(['mock', 'sms']).default('mock'),
+  TWILIO_ACCOUNT_SID: optionalEnvString,
+  TWILIO_AUTH_TOKEN: optionalEnvString,
+  TWILIO_FROM: optionalEnvString,
+  TWILIO_MESSAGING_SERVICE_SID: optionalEnvString,
   UPLOAD_DIR: z.string().default('./uploads'),
   COOKIE_SECURE: z.enum(['true', 'false']).optional()
 });
@@ -32,6 +41,20 @@ const schema = z.object({
 const parsed = schema.safeParse(process.env);
 if (!parsed.success) {
   console.error('Invalid server configuration:', parsed.error.flatten().fieldErrors);
+  process.exit(1);
+}
+
+const hasAnyTwilioSetting = [
+  parsed.data.TWILIO_ACCOUNT_SID,
+  parsed.data.TWILIO_AUTH_TOKEN,
+  parsed.data.TWILIO_FROM,
+  parsed.data.TWILIO_MESSAGING_SERVICE_SID
+].some(Boolean);
+const hasExactlyOneTwilioSender = Boolean(parsed.data.TWILIO_FROM) !== Boolean(parsed.data.TWILIO_MESSAGING_SERVICE_SID);
+if (hasAnyTwilioSetting && (!parsed.data.TWILIO_ACCOUNT_SID || !parsed.data.TWILIO_AUTH_TOKEN || !hasExactlyOneTwilioSender)) {
+  console.error('Invalid server configuration:', {
+    TWILIO: ['Set Account SID and Auth Token, and set exactly one of TWILIO_FROM or TWILIO_MESSAGING_SERVICE_SID.']
+  });
   process.exit(1);
 }
 
@@ -57,6 +80,7 @@ if (parsed.data.NODE_ENV === 'production') {
 
 export const env = {
   ...parsed.data,
+  twilioSmsConfigured: Boolean(parsed.data.TWILIO_ACCOUNT_SID && parsed.data.TWILIO_AUTH_TOKEN && hasExactlyOneTwilioSender),
   cookieSecure: parsed.data.COOKIE_SECURE === 'true' || parsed.data.NODE_ENV === 'production',
   uploadPath: parsed.data.UPLOAD_DIR
 };

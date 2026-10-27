@@ -2,15 +2,15 @@
 
 ## Verified in this workspace
 
-- TypeScript checks, ESLint, both production builds, and the unit suite pass.
-- The API integration suite runs against an ephemeral MongoDB and covers registration/login, password hashing, tenant isolation, staff/kitchen roles, QR resolution, development OTP, table/session binding, local image upload, server-priced and idempotent orders, order status transitions, customer status reads, and authenticated Socket.io rooms.
-- The Vite development server returned the client shell successfully over HTTP.
+- TypeScript checks, ESLint, and both production builds pass.
+- The Twilio SMS adapter's four unit tests pass without making real SMS requests.
+- The Render preview deployed successfully at https://projectqr-preview.onrender.com.
+- A QR scan reaches the customer phone-verification screen.
 
-## Still needed before a real deployment or phone trial
+## Remaining
 
-- This workspace has no local MongoDB service or `mongod` binary. Regular `npm run dev` therefore needs MongoDB installed or `MONGODB_URI` set to a reachable instance. `npm run dev:memory` supports disposable local walkthroughs; all data is lost when it stops. The test database is also temporary.
-- No SMS provider is connected. Development mock OTP works in the integration suite; `OTP_MODE=sms` currently returns a clear `503` until a provider is added. Production rejects mock mode.
-- Image uploads use configurable local disk storage. Add durable object storage before deploying to an environment with ephemeral filesystems.
-- The React flow has production-build and lint coverage, but it has not been clicked through in a browser or scanned from a physical phone in this session. A manual device pass needs a running API/MongoDB and `PUBLIC_APP_URL` plus `CLIENT_ORIGIN` set to the computer's LAN origin.
-- No service was deployed and no external SMS, database, or image-storage account was created.
-- A Render preview Blueprint is now prepared. Deployment still needs a private GitHub remote, a Render workspace, Atlas network access for the Render service, and an SMS provider for customer verification. The free preview sleeps after inactivity and does not preserve local uploads; see [deployment.md](deployment.md).
+- No Twilio account credentials or sender are configured. Add them in Render before OTP can send real messages; production rejects mock mode. See [deployment.md](deployment.md).
+- The full test command is currently blocked because `mongodb-memory-server`'s `mongod` process exits with an internal `fassert()` error on this Windows host. The OTP adapter unit tests pass independently.
+- This workspace has no local MongoDB service or `mongod` binary. Regular `npm run dev` needs MongoDB installed or `MONGODB_URI` set to a reachable instance. `npm run dev:memory` supports disposable local walkthroughs; its data disappears when it stops.
+- Image uploads use local disk storage. Render's free filesystem is ephemeral, so uploaded images can disappear after restarts or deploys.
+- The complete real-phone flow (OTP through kitchen status updates) has not been verified. Render's free preview sleeps after inactivity; the first request may take about a minute to wake.
