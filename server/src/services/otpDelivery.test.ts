@@ -2,7 +2,10 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { TwilioSmsDelivery } from './otpDelivery.js';
 
 describe('TwilioSmsDelivery', () => {
-  afterEach(() => vi.unstubAllGlobals());
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
 
   it('sends the OTP to the E.164 number using a configured sender', async () => {
     const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 201 }));
@@ -44,7 +47,8 @@ describe('TwilioSmsDelivery', () => {
   });
 
   it('returns a safe application error when Twilio rejects the request', async () => {
-    const fetchMock = vi.fn().mockResolvedValue(new Response('{"message":"sensitive provider details"}', { status: 401 }));
+    const fetchMock = vi.fn().mockResolvedValue(new Response('{"code":20003,"message":"sensitive provider details"}', { status: 401 }));
+    const logError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
     vi.stubGlobal('fetch', fetchMock);
     const delivery = new TwilioSmsDelivery({ accountSid: 'AC123', authToken: 'bad-token', from: '+15005550006' });
 
@@ -53,6 +57,7 @@ describe('TwilioSmsDelivery', () => {
       code: 'SMS_DELIVERY_FAILED',
       message: 'We could not send a verification code right now. Check the number and try again.'
     });
+    expect(logError).toHaveBeenCalledWith('[SMS] Twilio rejected a message with HTTP 401 (Twilio error 20003).');
   });
 
   it('maps network errors to a safe retry message', async () => {

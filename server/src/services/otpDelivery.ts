@@ -11,6 +11,21 @@ export interface TwilioSmsConfiguration {
   messagingServiceSid?: string;
 }
 
+async function getTwilioErrorCode(response: Response): Promise<string | undefined> {
+  try {
+    const payload: unknown = await response.json();
+    if (!payload || typeof payload !== 'object' || !('code' in payload)) return undefined;
+
+    const code = (payload as { code?: unknown }).code;
+    if (typeof code === 'number' && Number.isInteger(code) && code >= 0) return String(code);
+    if (typeof code === 'string' && /^\d{3,6}$/.test(code)) return code;
+  } catch {
+    return undefined;
+  }
+
+  return undefined;
+}
+
 export class DevelopmentOtpDelivery implements OtpDelivery {
   async send(phone: string, code: string): Promise<void> {
     console.info(`[DEV MOCK OTP] ending ${phone.slice(-4)}: ${code}`);
@@ -47,7 +62,9 @@ export class TwilioSmsDelivery implements OtpDelivery {
         signal: AbortSignal.timeout(10_000)
       });
       if (!response.ok) {
-        console.error(`[SMS] Twilio rejected a message with HTTP ${response.status}.`);
+        const errorCode = await getTwilioErrorCode(response);
+        const codeDetail = errorCode ? ` (Twilio error ${errorCode})` : '';
+        console.error(`[SMS] Twilio rejected a message with HTTP ${response.status}${codeDetail}.`);
         throw new AppError(502, 'SMS_DELIVERY_FAILED', 'We could not send a verification code right now. Check the number and try again.');
       }
     } catch (error) {
