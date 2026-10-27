@@ -1,0 +1,35 @@
+services:
+  - type: web
+    name: projectqr-preview
+    runtime: node
+    region: singapore
+    plan: free
+    buildCommand: npm ci --include=dev && npm run build
+    startCommand: npm run start -w server
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: 24.21.0
+      - key: MONGODB_URI
+        sync: false
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: OTP_SECRET
+        generateValue: true
+      - key: OTP_MODE
+        value: sms
+      - key: CLIENT_ORIGIN
+        fromService:
+          name: projectqr-preview
+          type: web
+          envVarKey: RENDER_EXTERNAL_URL
+      - key: PUBLIC_APP_URL
+        fromService:
+          name: projectqr-preview
+          type: web
+          envVarKey: RENDER_EXTERNAL_URL
+      - key: UPLOAD_DIR
+        value: /opt/render/project/src/server/uploads
