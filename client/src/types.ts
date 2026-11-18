@@ -28,6 +28,8 @@ export interface Category {
   active: boolean;
 }
 
+export type DietaryType = 'VEG' | 'NON_VEG' | 'EGG';
+
 export interface MenuItem {
   _id: string;
   categoryId: string;
@@ -36,6 +38,7 @@ export interface MenuItem {
   pricePaise: number;
   imageUrl: string;
   available: boolean;
+  dietary?: DietaryType;
   preparationMinutes: number | null;
   displayOrder: number;
 }

@@ -78,10 +78,25 @@ img { max-width: 100%; }
 .customer-intro h2 { margin: 8px 0; font-size: clamp(30px, 8vw, 42px); line-height: 1.08; letter-spacing: -.055em; }
 .customer-intro p { max-width: 470px; margin: 0; color: var(--muted); line-height: 1.6; }
 .customer-card { margin-top: 20px; padding: 22px; }
-.menu-categories { display: flex; gap: 8px; overflow-x: auto; padding: 4px 0 15px; scrollbar-width: none; }
+.menu-categories { display: flex; gap: 8px; overflow-x: auto; padding: 4px 0 10px; scrollbar-width: none; }
 .menu-categories::-webkit-scrollbar { display: none; }
 .category-chip { flex: 0 0 auto; padding: 9px 13px; border: 1px solid var(--line); border-radius: 999px; color: #565b51; background: white; font-size: 12px; font-weight: 650; }
 .category-chip.active { border-color: var(--green); color: white; background: var(--green); }
+
+.dietary-badge { display: inline-flex; align-items: center; justify-content: center; width: 15px; height: 15px; border-width: 1.5px; border-style: solid; border-radius: 3px; padding: 1px; flex-shrink: 0; vertical-align: middle; background: #ffffff; }
+.dietary-badge.veg { border-color: #0f8a45; }
+.dietary-badge.veg .dietary-symbol { width: 7px; height: 7px; border-radius: 50%; background-color: #0f8a45; }
+.dietary-badge.non-veg { border-color: #b91c1c; }
+.dietary-badge.non-veg .dietary-symbol { width: 7px; height: 7px; border-radius: 50%; background-color: #b91c1c; }
+.dietary-badge.egg { border-color: #d97706; }
+.dietary-badge.egg .dietary-symbol { width: 7px; height: 7px; border-radius: 50%; background-color: #d97706; }
+
+.dietary-filter-bar { display: flex; gap: 7px; overflow-x: auto; padding: 0 0 14px; scrollbar-width: none; }
+.dietary-filter-bar::-webkit-scrollbar { display: none; }
+.dietary-filter-chip { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border: 1px solid var(--line); border-radius: 999px; color: #565b51; background: white; font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap; transition: all .15s; }
+.dietary-filter-chip:hover { background: #f4f4ec; }
+.dietary-filter-chip.active { border-color: var(--green); color: white; background: var(--green); }
+.dietary-filter-chip.active .dietary-badge { background: white; }
 .menu-section { scroll-margin-top: 20px; margin: 18px 0 27px; }
 .menu-section h2 { margin: 0 0 13px; font-size: 20px; letter-spacing: -.035em; }
 .menu-card { display: grid; grid-template-columns: minmax(0, 1fr) 108px; gap: 15px; padding: 15px 0; border-bottom: 1px solid var(--line); }

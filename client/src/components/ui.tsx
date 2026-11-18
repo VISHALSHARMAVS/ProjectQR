@@ -1,6 +1,16 @@
 import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import type { OrderStatus } from '../types';
+import type { DietaryType, OrderStatus } from '../types';
+
+export function DietaryBadge({ type = 'VEG' }: { type?: DietaryType }) {
+  if (type === 'NON_VEG') {
+    return <span className="dietary-badge non-veg" title="Non-Vegetarian" aria-label="Non-Vegetarian"><span className="dietary-symbol" /></span>;
+  }
+  if (type === 'EGG') {
+    return <span className="dietary-badge egg" title="Contains Egg" aria-label="Contains Egg"><span className="dietary-symbol" /></span>;
+  }
+  return <span className="dietary-badge veg" title="Pure Vegetarian" aria-label="Pure Vegetarian"><span className="dietary-symbol" /></span>;
+}
 
 export function Brand({ light = false }: { light?: boolean }) {
   return <span className="brand"><span className="brand-mark" style={light ? { color: 'var(--green)', background: 'white' } : undefined}>QR</span><span className="brand-name">ProjectQR</span></span>;

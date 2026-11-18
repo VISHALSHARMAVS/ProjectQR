@@ -50,6 +50,7 @@ const menuFields = {
   pricePaise: z.number().int().min(0).max(100000000),
   imageUrl: imageUrlSchema.default(''),
   available: z.boolean().default(true),
+  dietary: z.enum(['VEG', 'NON_VEG', 'EGG']).default('VEG'),
   preparationMinutes: z.number().int().min(1).max(600).nullable().default(null),
   displayOrder: z.number().int().min(0).max(10000).default(0)
 };
