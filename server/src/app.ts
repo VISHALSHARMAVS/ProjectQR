@@ -98,9 +98,14 @@ export function createApplication(sessionStore?: Store): ProjectQrApplication {
         return next();
       }
       if (currentSession.customerSessionId) {
-        const customerSession = await CustomerSession.findOne({ _id: currentSession.customerSessionId, revokedAt: null, expiresAt: { $gt: new Date() } }).select('_id');
+        const customerSession = await CustomerSession.findOne({ _id: currentSession.customerSessionId, revokedAt: null, expiresAt: { $gt: new Date() } }).select('_id tableId restaurantId');
         if (!customerSession) return next(new Error('Authentication required'));
-        socket.data.principal = { type: 'customer', customerSessionId: String(customerSession._id) };
+        socket.data.principal = {
+          type: 'customer',
+          customerSessionId: String(customerSession._id),
+          tableId: String(customerSession.tableId),
+          restaurantId: String(customerSession.restaurantId)
+        };
         return next();
       }
       next(new Error('Authentication required'));
@@ -109,9 +114,15 @@ export function createApplication(sessionStore?: Store): ProjectQrApplication {
     }
   });
   io.on('connection', (socket) => {
-    const principal = socket.data.principal as { type: 'staff'; userId: string; restaurantId: string } | { type: 'customer'; customerSessionId: string };
-    if (principal.type === 'staff') socket.join(`restaurant:${principal.restaurantId}`);
-    else socket.join(`customer:${principal.customerSessionId}`);
+    const principal = socket.data.principal as
+      | { type: 'staff'; userId: string; restaurantId: string }
+      | { type: 'customer'; customerSessionId: string; tableId: string; restaurantId: string };
+    if (principal.type === 'staff') {
+      socket.join(`restaurant:${principal.restaurantId}`);
+    } else {
+      socket.join(`customer:${principal.customerSessionId}`);
+      socket.join(`table:${principal.tableId}`);
+    }
     socket.emit('connection:ready', { connected: true });
     const checkTimer = setInterval(async () => {
       try {

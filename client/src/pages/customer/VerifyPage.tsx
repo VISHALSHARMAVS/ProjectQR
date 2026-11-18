@@ -22,8 +22,20 @@ export default function VerifyPage() {
   const [code, setCode] = useState('');
   const [mockOtp, setMockOtp] = useState('');
   const [error, setError] = useState('');
+  const [joinMode, setJoinMode] = useState<'quick' | 'phone'>('quick');
+
+  const quickJoinMutation = useMutation({
+    mutationFn: () => api.post<VerifiedSession>('/customer/quick-join', { token, name: name.trim() }),
+    onSuccess: (response) => {
+      setError('');
+      queryClient.setQueryData(['customer-session', token], response);
+      navigate(`/order/${encodeURIComponent(token)}/menu`, { replace: true });
+    },
+    onError: (cause) => setError(cause instanceof ApiError ? cause.message : 'Could not join table.')
+  });
+
   const requestMutation = useMutation({
-    mutationFn: () => api.post<OtpResponse>('/customer/request-otp', { token, name, phone }),
+    mutationFn: () => api.post<OtpResponse>('/customer/request-otp', { token, name: name.trim(), phone }),
     onSuccess: (response) => {
       setError('');
       setMockOtp(response.mockOtp ?? '');
@@ -31,7 +43,7 @@ export default function VerifyPage() {
     }
   });
   const verifyMutation = useMutation({
-    mutationFn: () => api.post<VerifiedSession>('/customer/verify-otp', { token, name, phone, code }),
+    mutationFn: () => api.post<VerifiedSession>('/customer/verify-otp', { token, name: name.trim(), phone, code }),
     onSuccess: (response) => { setError(''); localStorage.removeItem(`projectqr-cart:${token}`); queryClient.setQueryData(['customer-session', token], response); navigate(`/order/${encodeURIComponent(token)}/menu`, { replace: true }); },
     onError: (cause) => setError(cause instanceof ApiError ? cause.message : 'That code could not be verified.')
   });
@@ -44,7 +56,7 @@ export default function VerifyPage() {
     '--green': restaurant.brandColor,
     '--green-dark': restaurant.brandColor
   } as CSSProperties) : undefined;
-  const isPending = requestMutation.isPending || verifyMutation.isPending;
+  const isPending = quickJoinMutation.isPending || requestMutation.isPending || verifyMutation.isPending;
 
   return <main className="customer-wrap customer-page" style={brandStyle}>
     <header className="customer-header">
@@ -54,22 +66,159 @@ export default function VerifyPage() {
         <p>{formatTableLabel(table.label)}</p>
       </div>
     </header>
-    <section className="customer-intro"><span className="eyebrow">A quick check</span><h2>Who’s joining<br />us today?</h2><p>We’ll use your phone number to keep this table’s order updates together. No account needed.</p></section>
-    <section className="customer-card surface"><form className="form-grid" onSubmit={(event) => { event.preventDefault(); setError(''); if (!requested) requestMutation.mutate(); else verifyMutation.mutate(); }}>
-      <div className="field"><label htmlFor="customer-name">Your name</label><input className="input" id="customer-name" autoComplete="name" required minLength={2} maxLength={100} value={name} onChange={(event) => { setName(event.target.value); if (requested) { requestMutation.reset(); setCode(''); setMockOtp(''); } }} placeholder="Name for the order" /></div>
-      {sessionQuery.error instanceof ApiError && sessionQuery.error.code === 'CUSTOMER_SESSION_TABLE_MISMATCH' && <div className="notice">You’re signed in for another table. Verify again to start a visit here.</div>}
-      <div className="field"><label htmlFor="customer-phone">Phone number</label><input className="input" id="customer-phone" type="tel" autoComplete="tel" required minLength={8} maxLength={25} value={phone} onChange={(event) => { setPhone(event.target.value); if (requested) { requestMutation.reset(); setCode(''); setMockOtp(''); } }} placeholder="98765 43210" /><span className="muted" style={{ fontSize: 11 }}>A one-time code will be sent to verify your number.</span></div>
-      {requested && <>
-        {mockOtp && <div className="notice success" role="status"><strong>Demo / Preview OTP Mode</strong><br />Your verification code is <strong>{mockOtp}</strong> (auto-filled below).</div>}
-        <div className="field"><label htmlFor="otp-code">Six-digit code</label><input className="input" id="otp-code" inputMode="numeric" autoComplete="one-time-code" required pattern="[0-9]{6}" maxLength={6} value={code} onChange={(event) => setCode(event.target.value.replace(/\D/g, '').slice(0, 6))} placeholder="000000" /></div>
-        <button className="btn ghost small" type="button" onClick={() => requestMutation.mutate()} disabled={requestMutation.isPending}>Send a new code</button>
-      </>}
-      {error && <div className="form-error" role="alert">{error}</div>}
-      {(requestMutation.error || verifyMutation.error) && !error && <div className="form-error" role="alert">{(requestMutation.error ?? verifyMutation.error) instanceof ApiError ? (requestMutation.error ?? verifyMutation.error as ApiError).message : 'Something went wrong. Please try again.'}</div>}
-      <button className="btn full" disabled={isPending}>
-        {isPending && <span className="btn-spinner" aria-hidden="true" />}
-        {isPending ? 'Please wait…' : requested ? 'Verify and view menu' : 'Send verification code'}
+    <section className="customer-intro">
+      <span className="eyebrow">Welcome</span>
+      <h2>Who’s joining<br />us today?</h2>
+      <p>Enter your name to browse the menu and order together with everyone at {formatTableLabel(table.label)}.</p>
+    </section>
+
+    <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+      <button
+        type="button"
+        className={`btn small ${joinMode === 'quick' ? '' : 'secondary'}`}
+        onClick={() => { setJoinMode('quick'); setError(''); }}
+        style={{ flex: 1 }}
+      >
+        ⚡ Quick Join (Name Only)
       </button>
-    </form></section>
+      <button
+        type="button"
+        className={`btn small ${joinMode === 'phone' ? '' : 'secondary'}`}
+        onClick={() => { setJoinMode('phone'); setError(''); }}
+        style={{ flex: 1 }}
+      >
+        📱 Verify Phone
+      </button>
+    </div>
+
+    <section className="customer-card surface">
+      {sessionQuery.error instanceof ApiError && sessionQuery.error.code === 'CUSTOMER_SESSION_TABLE_MISMATCH' && (
+        <div className="notice" style={{ marginBottom: 14 }}>
+          You were seated at a different table. Enter your name below to start your session at {formatTableLabel(table.label)}.
+        </div>
+      )}
+
+      {joinMode === 'quick' ? (
+        <form
+          className="form-grid"
+          onSubmit={(e) => {
+            e.preventDefault();
+            setError('');
+            if (name.trim().length >= 2) quickJoinMutation.mutate();
+          }}
+        >
+          <div className="field">
+            <label htmlFor="quick-name">Your Name</label>
+            <input
+              className="input"
+              id="quick-name"
+              autoComplete="name"
+              required
+              minLength={2}
+              maxLength={100}
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g. Rahul, Priya, Alex"
+              autoFocus
+            />
+            <span className="muted" style={{ fontSize: 11 }}>
+              Your name will appear next to items you add to the shared table cart.
+            </span>
+          </div>
+
+          {error && <div className="form-error" role="alert">{error}</div>}
+          {quickJoinMutation.error && !error && (
+            <div className="form-error" role="alert">
+              {quickJoinMutation.error instanceof ApiError ? quickJoinMutation.error.message : 'Could not join table. Please try again.'}
+            </div>
+          )}
+
+          <button className="btn full" disabled={isPending || name.trim().length < 2}>
+            {quickJoinMutation.isPending && <span className="btn-spinner" aria-hidden="true" />}
+            {quickJoinMutation.isPending ? 'Joining Table…' : `Join ${formatTableLabel(table.label)} Menu →`}
+          </button>
+        </form>
+      ) : (
+        <form
+          className="form-grid"
+          onSubmit={(event) => {
+            event.preventDefault();
+            setError('');
+            if (!requested) requestMutation.mutate();
+            else verifyMutation.mutate();
+          }}
+        >
+          <div className="field">
+            <label htmlFor="customer-name">Your name</label>
+            <input
+              className="input"
+              id="customer-name"
+              autoComplete="name"
+              required
+              minLength={2}
+              maxLength={100}
+              value={name}
+              onChange={(event) => {
+                setName(event.target.value);
+                if (requested) { requestMutation.reset(); setCode(''); setMockOtp(''); }
+              }}
+              placeholder="Name for the order"
+            />
+          </div>
+
+          <div className="field">
+            <label htmlFor="customer-phone">Phone number</label>
+            <input
+              className="input"
+              id="customer-phone"
+              type="tel"
+              autoComplete="tel"
+              required
+              minLength={8}
+              maxLength={25}
+              value={phone}
+              onChange={(event) => {
+                setPhone(event.target.value);
+                if (requested) { requestMutation.reset(); setCode(''); setMockOtp(''); }
+              }}
+              placeholder="98765 43210"
+            />
+            <span className="muted" style={{ fontSize: 11 }}>We’ll send an SMS code to verify your phone.</span>
+          </div>
+
+          {requested && <>
+            {mockOtp && <div className="notice success" role="status"><strong>Demo / Preview OTP Mode</strong><br />Your verification code is <strong>{mockOtp}</strong> (auto-filled below).</div>}
+            <div className="field">
+              <label htmlFor="otp-code">Six-digit code</label>
+              <input
+                className="input"
+                id="otp-code"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                required
+                pattern="[0-9]{6}"
+                maxLength={6}
+                value={code}
+                onChange={(event) => setCode(event.target.value.replace(/\D/g, '').slice(0, 6))}
+                placeholder="000000"
+              />
+            </div>
+            <button className="btn ghost small" type="button" onClick={() => requestMutation.mutate()} disabled={requestMutation.isPending}>Send a new code</button>
+          </>}
+
+          {error && <div className="form-error" role="alert">{error}</div>}
+          {(requestMutation.error || verifyMutation.error) && !error && (
+            <div className="form-error" role="alert">
+              {(requestMutation.error ?? verifyMutation.error) instanceof ApiError ? (requestMutation.error ?? verifyMutation.error as ApiError).message : 'Something went wrong. Please try again.'}
+            </div>
+          )}
+
+          <button className="btn full" disabled={isPending}>
+            {isPending && <span className="btn-spinner" aria-hidden="true" />}
+            {isPending ? 'Please wait…' : requested ? 'Verify and view menu' : 'Send verification code'}
+          </button>
+        </form>
+      )}
+    </section>
   </main>;
 }

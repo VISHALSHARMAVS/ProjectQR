@@ -1,12 +1,12 @@
-import { useEffect, useMemo, useState, type CSSProperties } from 'react';
+import { useMemo, useState, type CSSProperties } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
 import { api, ApiError } from '../../lib/api';
-import { addCartLine, readCart, setCartQuantity, type CartLine } from '../../lib/cart';
 import { formatTableLabel, money } from '../../lib/format';
 import { DietaryBadge, EmptyState, Loading } from '../../components/ui';
 import { CustomerAssistanceModal } from '../../components/CustomerAssistanceModal';
-import type { Category, DietaryType, MenuItem, RestaurantInfo } from '../../types';
+import { useOrderSocket } from '../../hooks/useOrderSocket';
+import type { Category, DietaryType, MenuItem, RestaurantInfo, TableCartLine } from '../../types';
 
 interface CustomerSession { sessionId: string; customer: { id: string; name: string }; restaurant: RestaurantInfo; table: { id: string; label: string } }
 interface CustomerMenu { categories: Category[]; items: MenuItem[] }
@@ -16,14 +16,64 @@ export default function CustomerMenuPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const cartKey = `projectqr-cart:${token}`;
+  useOrderSocket(true);
   const session = useQuery({ queryKey: ['customer-session', token], queryFn: () => api.get<CustomerSession>(`/customer/session?token=${encodeURIComponent(token)}`), retry: false });
   const menu = useQuery({ queryKey: ['customer-menu', token], queryFn: () => api.get<CustomerMenu>(`/customer/menu?token=${encodeURIComponent(token)}`), enabled: Boolean(session.data), retry: false });
-  const endVisit = useMutation({ mutationFn: () => api.post('/customer/logout'), onSuccess: async () => { localStorage.removeItem(cartKey); await queryClient.removeQueries({ queryKey: ['customer-session', token] }); navigate(`/order/${encodeURIComponent(token)}`, { replace: true }); } });
-  const [cart, setCart] = useState<CartLine[]>(() => readCart(cartKey));
+  const tableCartQuery = useQuery({
+    queryKey: ['table-cart', token],
+    queryFn: () => api.get<{ items: TableCartLine[] }>(`/customer/cart?token=${encodeURIComponent(token)}`),
+    enabled: Boolean(session.data),
+    retry: false,
+    refetchInterval: 10_000
+  });
+
+  const endVisit = useMutation({
+    mutationFn: () => api.post('/customer/logout'),
+    onSuccess: async () => {
+      localStorage.removeItem(cartKey);
+      await queryClient.removeQueries({ queryKey: ['customer-session', token] });
+      navigate(`/order/${encodeURIComponent(token)}`, { replace: true });
+    }
+  });
+
+  const cart = tableCartQuery.data?.items ?? [];
   const [activeCategory, setActiveCategory] = useState('');
   const [dietaryFilter, setDietaryFilter] = useState<'ALL' | DietaryType>('ALL');
   const [assistanceOpen, setAssistanceOpen] = useState(false);
-  useEffect(() => { localStorage.setItem(cartKey, JSON.stringify(cart)); }, [cart, cartKey]);
+
+  const updateItemMutation = useMutation({
+    mutationFn: ({ item, quantity, notes }: { item: MenuItem; quantity: number; notes?: string }) =>
+      api.post<{ items: TableCartLine[] }>('/customer/cart/items', { token, menuItemId: item._id, quantity, notes }),
+    onMutate: async ({ item, quantity, notes }) => {
+      await queryClient.cancelQueries({ queryKey: ['table-cart', token] });
+      const previous = queryClient.getQueryData<{ items: TableCartLine[] }>(['table-cart', token]);
+      const currentItems = previous?.items ? [...previous.items] : [];
+      const existingIndex = currentItems.findIndex((line) => line.menuItemId === item._id);
+      if (quantity <= 0) {
+        if (existingIndex >= 0) currentItems.splice(existingIndex, 1);
+      } else if (existingIndex >= 0) {
+        currentItems[existingIndex] = { ...currentItems[existingIndex], quantity, notes: notes ?? currentItems[existingIndex].notes };
+      } else {
+        currentItems.push({
+          menuItemId: item._id,
+          name: item.name,
+          unitPricePaise: item.pricePaise,
+          quantity,
+          notes: notes ?? '',
+          addedByName: session.data?.customer?.name || 'You'
+        });
+      }
+      queryClient.setQueryData(['table-cart', token], { items: currentItems });
+      return { previous };
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previous) queryClient.setQueryData(['table-cart', token], context.previous);
+    },
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: ['table-cart', token] });
+    }
+  });
+
   const quantityById = useMemo(() => new Map(cart.map((line) => [line.menuItemId, line.quantity])), [cart]);
   if (session.error instanceof ApiError && (session.error.status === 401 || session.error.code === 'CUSTOMER_SESSION_TABLE_MISMATCH')) return <Navigate to={`/order/${encodeURIComponent(token)}/verify`} replace />;
   if (session.isLoading || menu.isLoading) return <div className="customer-wrap"><Loading label="Setting your table…" /></div>;
@@ -35,8 +85,8 @@ export default function CustomerMenuPage() {
   const filteredItems = items.filter((item) => dietaryFilter === 'ALL' || (item.dietary ?? 'VEG') === dietaryFilter);
   const availableCategories = categories.filter((category) => filteredItems.some((item) => item.categoryId === category._id));
 
-  const updateQuantity = (item: MenuItem, value: number): void => setCart(setCartQuantity(cart, item._id, value));
-  const addItem = (item: MenuItem): void => setCart(addCartLine(cart, { menuItemId: item._id, name: item.name, unitPricePaise: item.pricePaise }));
+  const updateQuantity = (item: MenuItem, value: number): void => updateItemMutation.mutate({ item, quantity: value });
+  const addItem = (item: MenuItem): void => updateItemMutation.mutate({ item, quantity: 1 });
   const scrollTo = (id: string): void => { setActiveCategory(id); document.getElementById(`category-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' }); };
   const totalQuantity = cart.reduce((sum, line) => sum + line.quantity, 0);
   const subtotal = cart.reduce((sum, line) => sum + line.quantity * line.unitPricePaise, 0);
@@ -115,7 +165,15 @@ export default function CustomerMenuPage() {
       <span>🔔</span> Call Staff
     </button>
 
-    {cart.length > 0 && <Link className="cart-bar" to={`/order/${encodeURIComponent(token)}/checkout`}><span><strong>{totalQuantity} {totalQuantity === 1 ? 'item' : 'items'}</strong><small>View your order</small></span><strong>{money(subtotal)} <span aria-hidden="true">→</span></strong></Link>}
+    {cart.length > 0 && (
+      <Link className="cart-bar" to={`/order/${encodeURIComponent(token)}/checkout`}>
+        <span>
+          <strong>{totalQuantity} {totalQuantity === 1 ? 'item' : 'items'} · Table Cart</strong>
+          <small>Shared with {formatTableLabel(table.label)}</small>
+        </span>
+        <strong>{money(subtotal)} <span aria-hidden="true">→</span></strong>
+      </Link>
+    )}
 
     <CustomerAssistanceModal
       isOpen={assistanceOpen}

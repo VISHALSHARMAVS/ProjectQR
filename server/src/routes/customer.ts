@@ -1,4 +1,4 @@
-import { createHmac, randomInt, timingSafeEqual } from 'node:crypto';
+import { createHmac, randomBytes, randomInt, timingSafeEqual } from 'node:crypto';
 import { Router } from 'express';
 import { rateLimit } from 'express-rate-limit';
 import { z } from 'zod';
@@ -12,6 +12,7 @@ import { MenuItem } from '../models/MenuItem.js';
 import { OtpChallenge } from '../models/OtpChallenge.js';
 import { Restaurant } from '../models/Restaurant.js';
 import { ServiceRequest } from '../models/ServiceRequest.js';
+import { TableCart } from '../models/TableCart.js';
 import { DevelopmentOtpDelivery, TwilioSmsDelivery, TwilioVerifyDelivery, UnconfiguredSmsDelivery, type OtpDelivery } from '../services/otpDelivery.js';
 import { AppError } from '../utils/errors.js';
 import { phoneSchema } from '../utils/validation.js';
@@ -207,6 +208,134 @@ customerRouter.post('/logout', requireCustomer, async (req, res, next) => {
     res.clearCookie('projectqr.sid');
     res.status(204).end();
   });
+});
+
+const quickJoinSchema = z.object({
+  token: z.string().min(32).max(100),
+  name: z.string().trim().min(2).max(100)
+});
+
+customerRouter.post('/quick-join', async (req, res) => {
+  const parsed = quickJoinSchema.safeParse(req.body);
+  if (!parsed.success) throw new AppError(400, 'INVALID_INPUT', 'Please enter your name.');
+  const { table, restaurant } = await resolveActiveTable(parsed.data.token);
+
+  const guestPhone = `guest-${table._id.toString().slice(-6)}-${randomBytes(4).toString('hex')}`;
+  const customer = await Customer.create({
+    name: parsed.data.name,
+    phone: guestPhone
+  });
+
+  if (req.session.customerSessionId) {
+    await CustomerSession.updateOne({ _id: req.session.customerSessionId, revokedAt: null }, { $set: { revokedAt: new Date() } });
+  }
+  const expiresAt = new Date(Date.now() + 4 * 60 * 60 * 1000);
+  const customerSession = await CustomerSession.create({
+    customerId: customer._id,
+    restaurantId: restaurant._id,
+    tableId: table._id,
+    expiresAt
+  });
+  await regenerateSession(req);
+  req.session.customerSessionId = String(customerSession._id);
+  res.json({
+    sessionId: String(customerSession._id),
+    customer: { id: customer.id, name: customer.name },
+    restaurant: {
+      id: restaurant.id,
+      name: restaurant.name,
+      logoUrl: restaurant.logoUrl,
+      brandColor: restaurant.brandColor,
+      bannerUrl: restaurant.bannerUrl,
+      welcomeTagline: restaurant.welcomeTagline
+    },
+    table: { id: table.id, label: table.label },
+    expiresAt
+  });
+});
+
+const cartItemSchema = z.object({
+  token: z.string().optional(),
+  menuItemId: z.string().regex(/^[a-fA-F0-9]{24}$/, 'Invalid item ID'),
+  quantity: z.number().int().min(0).max(99),
+  notes: z.string().trim().max(200).default('')
+});
+
+customerRouter.get('/cart', requireCustomer, requireCustomerQr, async (req, res) => {
+  const cart = await TableCart.findOne({ tableId: req.customer!.tableId, restaurantId: req.customer!.restaurantId }).lean();
+  res.json({
+    items: (cart?.items || []).map((item) => ({
+      menuItemId: String(item.menuItemId),
+      name: item.name,
+      unitPricePaise: item.unitPricePaise,
+      quantity: item.quantity,
+      notes: item.notes || '',
+      addedByName: item.addedByName || 'Guest'
+    }))
+  });
+});
+
+customerRouter.post('/cart/items', requireCustomer, requireCustomerQr, async (req, res) => {
+  const parsed = cartItemSchema.safeParse(req.body);
+  if (!parsed.success) throw new AppError(400, 'INVALID_INPUT', parsed.error.issues[0]?.message ?? 'Invalid item input.');
+
+  const [customer, menuItem] = await Promise.all([
+    Customer.findById(req.customer!.customerId).select('name'),
+    MenuItem.findOne({ _id: parsed.data.menuItemId, restaurantId: req.customer!.restaurantId, available: true })
+  ]);
+  if (!menuItem) throw new AppError(409, 'ITEM_UNAVAILABLE', 'This menu item is currently unavailable.');
+
+  let cart = await TableCart.findOne({ tableId: req.customer!.tableId, restaurantId: req.customer!.restaurantId });
+  if (!cart) {
+    cart = new TableCart({
+      restaurantId: req.customer!.restaurantId,
+      tableId: req.customer!.tableId,
+      items: []
+    });
+  }
+
+  const existingIndex = cart.items.findIndex((item) => String(item.menuItemId) === parsed.data.menuItemId);
+  if (parsed.data.quantity <= 0) {
+    if (existingIndex >= 0) cart.items.splice(existingIndex, 1);
+  } else if (existingIndex >= 0 && cart.items[existingIndex]) {
+    const existing = cart.items[existingIndex];
+    existing.quantity = parsed.data.quantity;
+    if (parsed.data.notes) existing.notes = parsed.data.notes;
+    existing.addedByName = customer?.name || 'Guest';
+  } else {
+    cart.items.push({
+      menuItemId: menuItem._id,
+      name: menuItem.name,
+      unitPricePaise: menuItem.pricePaise,
+      quantity: parsed.data.quantity,
+      notes: parsed.data.notes,
+      addedByName: customer?.name || 'Guest',
+      addedByCustomerId: req.customer!.customerId
+    });
+  }
+
+  await cart.save();
+
+  const serializedItems = cart.items.map((item) => ({
+    menuItemId: String(item.menuItemId),
+    name: item.name,
+    unitPricePaise: item.unitPricePaise,
+    quantity: item.quantity,
+    notes: item.notes || '',
+    addedByName: item.addedByName || 'Guest'
+  }));
+
+  const io = getOrderSocket();
+  io?.to(`table:${req.customer!.tableId}`).emit('table-cart:updated', { items: serializedItems });
+
+  res.json({ items: serializedItems });
+});
+
+customerRouter.delete('/cart', requireCustomer, requireCustomerQr, async (req, res) => {
+  await TableCart.findOneAndUpdate({ tableId: req.customer!.tableId, restaurantId: req.customer!.restaurantId }, { $set: { items: [] } });
+  const io = getOrderSocket();
+  io?.to(`table:${req.customer!.tableId}`).emit('table-cart:updated', { items: [] });
+  res.json({ items: [] });
 });
 
 const serviceRequestSchema = z.object({

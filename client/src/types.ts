@@ -52,6 +52,16 @@ export interface TableRecord {
 }
 
 export type OrderStatus = 'NEW' | 'ACCEPTED' | 'PREPARING' | 'READY' | 'DELIVERED' | 'REJECTED';
+
+export interface TableCartLine {
+  menuItemId: string;
+  name: string;
+  unitPricePaise: number;
+  quantity: number;
+  notes?: string;
+  addedByName?: string;
+}
+
 export interface OrderRecord {
   id: string;
   orderNumber: string;

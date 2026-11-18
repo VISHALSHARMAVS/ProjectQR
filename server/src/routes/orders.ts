@@ -8,6 +8,7 @@ import { DiningTable } from '../models/DiningTable.js';
 import { MenuItem } from '../models/MenuItem.js';
 import { Order, orderStatuses, type OrderDoc, type OrderStatus } from '../models/Order.js';
 import { Restaurant } from '../models/Restaurant.js';
+import { TableCart } from '../models/TableCart.js';
 import { AppError } from '../utils/errors.js';
 import { calculateSubtotal, nextOrderStatus } from '../utils/orderRules.js';
 import { objectIdSchema } from '../utils/validation.js';
@@ -124,20 +125,31 @@ customerOrders.post('/', async (req, res) => {
     return res.status(200).json({ order: serializeOrder(existing as unknown as OrderDoc, table.label) });
   }
   const response = serializeOrder(order as unknown as OrderDoc, table.label);
+  await TableCart.findOneAndUpdate({ tableId, restaurantId }, { $set: { items: [] } });
   orderSocket?.to(`restaurant:${restaurantId}`).emit('order:new', response);
   orderSocket?.to(`customer:${sessionId}`).emit('order:status', { id: order.id, orderNumber: order.orderNumber, status: order.status, updatedAt: order.updatedAt });
+  orderSocket?.to(`table:${tableId}`).emit('table-cart:updated', { items: [] });
+  orderSocket?.to(`table:${tableId}`).emit('order:status', { id: order.id, orderNumber: order.orderNumber, status: order.status, updatedAt: order.updatedAt });
   res.status(201).json({ order: response });
 });
 
 customerOrders.get('/', async (req, res) => {
-  const orders = await Order.find({ customerSessionId: req.customer!.sessionId }).sort({ createdAt: -1 }).limit(30) as unknown as OrderDoc[];
+  const orders = await Order.find({
+    tableId: req.customer!.tableId,
+    restaurantId: req.customer!.restaurantId,
+    createdAt: { $gt: new Date(Date.now() - 12 * 60 * 60 * 1000) }
+  }).sort({ createdAt: -1 }).limit(30) as unknown as OrderDoc[];
   const labels = await tableLabelMap(orders);
   res.json({ orders: orders.map((order) => serializeOrder(order, labels.get(String(order.tableId)) ?? 'Table')) });
 });
 
 customerOrders.get('/:id', async (req, res) => {
   if (!objectIdSchema.safeParse(req.params.id).success) throw new AppError(400, 'INVALID_ID', 'Invalid order identifier.');
-  const order = await Order.findOne({ _id: req.params.id, customerSessionId: req.customer!.sessionId }) as unknown as OrderDoc | null;
+  const order = await Order.findOne({
+    _id: req.params.id,
+    tableId: req.customer!.tableId,
+    restaurantId: req.customer!.restaurantId
+  }) as unknown as OrderDoc | null;
   if (!order) throw new AppError(404, 'NOT_FOUND', 'Order not found.');
   const table = await DiningTable.findOne({ _id: order.tableId, restaurantId: order.restaurantId }).select('label');
   res.json({ order: serializeOrder(order, table?.label ?? 'Table') });
@@ -176,6 +188,7 @@ restaurantOrders.patch('/:id/status', async (req, res) => {
   const event = { id: response.id, orderNumber: response.orderNumber, status: response.status, updatedAt: response.updatedAt, ...(status === 'REJECTED' ? { rejectionReason: response.rejectionReason } : {}) };
   orderSocket?.to(`restaurant:${req.staff!.restaurantId}`).emit('order:status', event);
   if (customerSession) orderSocket?.to(`customer:${customerSession._id}`).emit('order:status', event);
+  orderSocket?.to(`table:${updated.tableId}`).emit('order:status', event);
   res.json({ order: response });
 });
 

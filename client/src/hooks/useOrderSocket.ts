@@ -18,6 +18,7 @@ export function useOrderSocket(
     const sync = (): void => {
       void queryClient.invalidateQueries({ queryKey: ['customer-order'] });
       void queryClient.invalidateQueries({ queryKey: ['customer-orders'] });
+      void queryClient.invalidateQueries({ queryKey: ['table-cart'] });
       void queryClient.invalidateQueries({ queryKey: ['staff-orders'] });
       void queryClient.invalidateQueries({ queryKey: ['service-requests'] });
       void queryClient.invalidateQueries({ queryKey: ['dashboard'] });
@@ -26,6 +27,9 @@ export function useOrderSocket(
     socket.on('order:new', () => {
       onNewOrderRef.current?.();
       sync();
+    });
+    socket.on('table-cart:updated', () => {
+      void queryClient.invalidateQueries({ queryKey: ['table-cart'] });
     });
     socket.on('service-request:new', (payload) => {
       onServiceRequestRef.current?.(payload);

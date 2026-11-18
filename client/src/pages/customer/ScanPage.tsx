@@ -7,10 +7,14 @@ import { formatTableLabel } from '../../lib/format';
 import type { RestaurantInfo } from '../../types';
 
 interface TableLanding { restaurant: RestaurantInfo; table: { id: string; label: string } }
+interface VerifiedSession { sessionId: string; customer: { id: string; name: string }; restaurant: RestaurantInfo; table: { id: string; label: string } }
 
 export default function ScanPage() {
   const { token = '' } = useParams();
   const query = useQuery({ queryKey: ['public-table', token], queryFn: () => api.get<TableLanding>(`/public/tables/${encodeURIComponent(token)}`), retry: false });
+  const sessionQuery = useQuery({ queryKey: ['customer-session', token], queryFn: () => api.get<VerifiedSession>(`/customer/session?token=${encodeURIComponent(token)}`), retry: false });
+
+  if (sessionQuery.data) return <Navigate to={`/order/${encodeURIComponent(token)}/menu`} replace />;
   if (query.isLoading) return <div className="customer-wrap"><Loading label="Finding your table…" /></div>;
   if (query.error) {
     const message = query.error instanceof ApiError ? query.error.message : 'This QR code could not be opened.';
