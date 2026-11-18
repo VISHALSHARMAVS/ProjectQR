@@ -20,7 +20,7 @@ services:
       - key: OTP_SECRET
         generateValue: true
       - key: OTP_MODE
-        value: sms
+        value: mock
       - key: CLIENT_ORIGIN
         fromService:
           name: projectqr-preview
