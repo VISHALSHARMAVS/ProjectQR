@@ -5,6 +5,7 @@ import { api, ApiError } from '../../lib/api';
 import { addCartLine, readCart, setCartQuantity, type CartLine } from '../../lib/cart';
 import { formatTableLabel, money } from '../../lib/format';
 import { DietaryBadge, EmptyState, Loading } from '../../components/ui';
+import { CustomerAssistanceModal } from '../../components/CustomerAssistanceModal';
 import type { Category, DietaryType, MenuItem, RestaurantInfo } from '../../types';
 
 interface CustomerSession { sessionId: string; customer: { id: string; name: string }; restaurant: RestaurantInfo; table: { id: string; label: string } }
@@ -21,6 +22,7 @@ export default function CustomerMenuPage() {
   const [cart, setCart] = useState<CartLine[]>(() => readCart(cartKey));
   const [activeCategory, setActiveCategory] = useState('');
   const [dietaryFilter, setDietaryFilter] = useState<'ALL' | DietaryType>('ALL');
+  const [assistanceOpen, setAssistanceOpen] = useState(false);
   useEffect(() => { localStorage.setItem(cartKey, JSON.stringify(cart)); }, [cart, cartKey]);
   const quantityById = useMemo(() => new Map(cart.map((line) => [line.menuItemId, line.quantity])), [cart]);
   if (session.error instanceof ApiError && (session.error.status === 401 || session.error.code === 'CUSTOMER_SESSION_TABLE_MISMATCH')) return <Navigate to={`/order/${encodeURIComponent(token)}/verify`} replace />;
@@ -44,13 +46,21 @@ export default function CustomerMenuPage() {
     '--green-dark': restaurant.brandColor
   } as CSSProperties) : undefined;
 
-  return <main className="customer-wrap customer-page" style={brandStyle}>
+  return <main className={`customer-wrap customer-page ${cart.length > 0 ? 'cart-active' : ''}`} style={brandStyle}>
     <header className="customer-header">
       <div className="restaurant-logo">{restaurant.logoUrl ? <img src={restaurant.logoUrl} alt="" /> : restaurant.name.slice(0, 1).toUpperCase()}</div>
       <div style={{ flex: 1 }}>
         <h1>{restaurant.name}</h1>
         <p>{formatTableLabel(table.label)} · Hi, {session.data.customer.name}</p>
       </div>
+      <button
+        type="button"
+        className="btn secondary small"
+        onClick={() => setAssistanceOpen(true)}
+        title="Request water, cutlery, bill or call a waiter"
+      >
+        🔔 Help
+      </button>
       <Link className="btn secondary small" to={`/order/${encodeURIComponent(token)}/tracking`}>Orders</Link>
       <button className="btn ghost small" onClick={() => endVisit.mutate()} disabled={endVisit.isPending}>{endVisit.isPending ? 'Ending…' : 'End visit'}</button>
     </header>
@@ -93,8 +103,25 @@ export default function CustomerMenuPage() {
     </div>
     {availableCategories.length === 0 ? <div className="surface"><EmptyState title="No items match this filter" description="Try selecting 'All Items' or choose another category." /></div> : availableCategories.map((category) => <section className="menu-section" id={`category-${category._id}`} key={category._id}><h2>{category.name}</h2>{category.description && <p className="muted" style={{ margin: '-6px 0 10px', fontSize: 12 }}>{category.description}</p>}{filteredItems.filter((item) => item.categoryId === category._id).map((item) => {
       const quantity = quantityById.get(item._id) ?? 0;
-      return <article className="menu-card" key={item._id}><div><div style={{ display: 'flex', alignItems: 'center', gap: 7 }}><h3>{item.name}</h3><DietaryBadge type={item.dietary} /></div>{item.description && <p>{item.description}</p>}<span className="menu-price">{money(item.pricePaise)}</span><div className="menu-action">{item.available ? quantity > 0 ? <div className="qty-control"><button aria-label={`Remove one ${item.name}`} onClick={() => updateQuantity(item, quantity - 1)}>−</button><strong>{quantity}</strong><button aria-label={`Add one ${item.name}`} onClick={() => updateQuantity(item, quantity + 1)}>+</button></div> : <button className="btn small" onClick={() => addItem(item)}>Add <span aria-hidden="true">+</span></button> : <span className="pill gray">Currently unavailable</span>}</div></div>{item.imageUrl ? <img src={item.imageUrl} alt={item.name} loading="lazy" /> : <div style={{ width: '100%', height: 100, borderRadius: 13, display: 'grid', placeItems: 'center', color: '#799078', background: '#edf0e8', fontSize: 12 }}>Made fresh</div>}</article>;
+      return <article className={`menu-card ${item.available ? '' : 'is-sold-out'}`} key={item._id}><div><div style={{ display: 'flex', alignItems: 'center', gap: 7 }}><h3>{item.name}</h3><DietaryBadge type={item.dietary} /></div>{item.description && <p>{item.description}</p>}<span className="menu-price">{money(item.pricePaise)}</span><div className="menu-action">{item.available ? quantity > 0 ? <div className="qty-control"><button aria-label={`Remove one ${item.name}`} onClick={() => updateQuantity(item, quantity - 1)}>−</button><strong>{quantity}</strong><button aria-label={`Add one ${item.name}`} onClick={() => updateQuantity(item, quantity + 1)}>+</button></div> : <button className="btn small" onClick={() => addItem(item)}>Add <span aria-hidden="true">+</span></button> : <span className="pill red" style={{ fontSize: 11, fontWeight: 700 }}>✕ Sold Out</span>}</div></div>{item.imageUrl ? <img src={item.imageUrl} alt={item.name} loading="lazy" /> : <div style={{ width: '100%', height: 100, borderRadius: 13, display: 'grid', placeItems: 'center', color: '#799078', background: '#edf0e8', fontSize: 12 }}>Made fresh</div>}</article>;
     })}</section>)}
+
+    <button
+      type="button"
+      className="assistance-float-pill"
+      onClick={() => setAssistanceOpen(true)}
+      title="Request water, cutlery, bill or call a waiter"
+    >
+      <span>🔔</span> Call Staff
+    </button>
+
     {cart.length > 0 && <Link className="cart-bar" to={`/order/${encodeURIComponent(token)}/checkout`}><span><strong>{totalQuantity} {totalQuantity === 1 ? 'item' : 'items'}</strong><small>View your order</small></span><strong>{money(subtotal)} <span aria-hidden="true">→</span></strong></Link>}
+
+    <CustomerAssistanceModal
+      isOpen={assistanceOpen}
+      onClose={() => setAssistanceOpen(false)}
+      token={token}
+      tableLabel={formatTableLabel(table.label)}
+    />
   </main>;
 }

@@ -184,3 +184,7 @@ export function mountOrderRoutes(app: import('express').Express, io: Server): vo
   app.use('/api/customer/orders', customerOrders);
   app.use('/api/restaurant/orders', restaurantOrders);
 }
+
+export function getOrderSocket(): Server | undefined {
+  return orderSocket;
+}

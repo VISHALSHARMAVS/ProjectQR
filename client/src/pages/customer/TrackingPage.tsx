@@ -1,8 +1,10 @@
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link, Navigate, useParams } from 'react-router-dom';
 import { api, ApiError } from '../../lib/api';
 import { elapsedSince, formatTableLabel, money } from '../../lib/format';
 import { Loading, StatusPill } from '../../components/ui';
+import { CustomerAssistanceModal } from '../../components/CustomerAssistanceModal';
 import { useOrderSocket } from '../../hooks/useOrderSocket';
 import type { OrderRecord, OrderStatus } from '../../types';
 
@@ -17,6 +19,7 @@ const progress: { status: OrderStatus; label: string; description: string }[] = 
 
 export default function TrackingPage() {
   const { token = '', orderId = '' } = useParams();
+  const [assistanceOpen, setAssistanceOpen] = useState(false);
   const orderQuery = useQuery({ queryKey: ['customer-order', orderId, token], queryFn: () => api.get<OrderResponse>(`/customer/orders/${encodeURIComponent(orderId)}?token=${encodeURIComponent(token)}`), enabled: Boolean(orderId), refetchInterval: false, retry: false });
   useOrderSocket(true);
   if (!orderId) return <main className="customer-wrap customer-page"><div className="customer-intro"><span className="eyebrow">Your orders</span><h2>Orders from this visit</h2><p>Choose an order to see its latest status.</p></div><OrdersList token={token} /></main>;
@@ -27,15 +30,59 @@ export default function TrackingPage() {
   const rejected = order.status === 'REJECTED';
   const reachedIndex = progress.findIndex(({ status }) => status === order.status);
   return <main className="customer-wrap customer-page">
-    <header className="customer-header"><div className="restaurant-logo">✓</div><div><h1>Order placed</h1><p>{formatTableLabel(order.table.label)}</p></div></header>
+    <header className="customer-header">
+      <div className="restaurant-logo">✓</div>
+      <div style={{ flex: 1 }}>
+        <h1>Order placed</h1>
+        <p>{formatTableLabel(order.table.label)}</p>
+      </div>
+      <button
+        type="button"
+        className="btn secondary small"
+        onClick={() => setAssistanceOpen(true)}
+      >
+        🔔 Call Staff
+      </button>
+    </header>
     <section className="customer-intro" style={{ paddingTop: 33 }}><span className="eyebrow">{order.orderNumber}</span><h2>{rejected ? 'Please speak with a team member.' : order.status === 'DELIVERED' ? 'Enjoy your meal.' : 'We’re on it.'}</h2><p>{rejected ? order.rejectionReason || 'The restaurant could not accept this order.' : 'Your order status updates here as the kitchen works on it.'}</p></section>
     <section className="customer-card surface"><div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, marginBottom: 17 }}><strong>Order progress</strong><StatusPill status={order.status} /></div>{rejected ? <div className="form-error">Order rejected: {order.rejectionReason || 'Please ask a team member for help.'}</div> : progress.map((step, index) => {
       const completed = reachedIndex >= index;
       const timestamp = order.statusHistory.find((event) => event.status === step.status)?.at;
       return <div className={`tracking-step ${completed ? 'done' : ''}`} key={step.status}><div className="tracking-dot">{completed ? '✓' : index + 1}</div><div><h3>{step.label}</h3><p>{timestamp ? new Date(timestamp).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : step.description}</p></div></div>;
     })}<p className="muted" style={{ fontSize: 11 }}>Placed {elapsedSince(order.createdAt)} · Updates appear automatically.</p></section>
-    <section className="customer-card surface"><h2 style={{ margin: '0 0 15px', fontSize: 17 }}>Your order</h2><div className="cart-list">{order.items.map((item) => <div className="total-row" key={item.menuItemId}><span>{item.quantity} × {item.name}{item.notes && <small style={{ display: 'block', marginTop: 3 }}>{item.notes}</small>}</span><strong>{money(item.subtotalPaise)}</strong></div>)}</div><div className="total-row grand"><span>Total</span><strong>{money(order.totalPaise)}</strong></div></section>
+    <section className="customer-card surface">
+      <h2 style={{ margin: '0 0 15px', fontSize: 17 }}>Your order</h2>
+      <div className="cart-list">
+        {order.items.map((item) => (
+          <div className="total-row" key={item.menuItemId}>
+            <span>{item.quantity} × {item.name}{item.notes && <small style={{ display: 'block', marginTop: 3 }}>{item.notes}</small>}</span>
+            <strong>{money(item.subtotalPaise)}</strong>
+          </div>
+        ))}
+      </div>
+      <div className="total-row grand">
+        <span>Total</span>
+        <strong>{money(order.totalPaise)}</strong>
+      </div>
+      <div style={{ marginTop: 16, paddingTop: 14, borderTop: '1px dashed var(--line)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <span className="muted" style={{ fontSize: 13 }}>Need water, cutlery or bill?</span>
+        <button
+          type="button"
+          className="btn secondary small"
+          onClick={() => setAssistanceOpen(true)}
+        >
+          🔔 Request Help / Bill
+        </button>
+      </div>
+    </section>
     <Link className="btn secondary full" style={{ marginTop: 14 }} to={`/order/${encodeURIComponent(token)}/menu`}>Back to the menu</Link>
+
+    <CustomerAssistanceModal
+      isOpen={assistanceOpen}
+      onClose={() => setAssistanceOpen(false)}
+      token={token}
+      tableLabel={formatTableLabel(order.table.label)}
+    />
   </main>;
 }
 

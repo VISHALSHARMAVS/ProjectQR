@@ -11,9 +11,11 @@ import { DiningTable } from '../models/DiningTable.js';
 import { MenuItem } from '../models/MenuItem.js';
 import { OtpChallenge } from '../models/OtpChallenge.js';
 import { Restaurant } from '../models/Restaurant.js';
+import { ServiceRequest } from '../models/ServiceRequest.js';
 import { DevelopmentOtpDelivery, TwilioSmsDelivery, TwilioVerifyDelivery, UnconfiguredSmsDelivery, type OtpDelivery } from '../services/otpDelivery.js';
 import { AppError } from '../utils/errors.js';
 import { phoneSchema } from '../utils/validation.js';
+import { getOrderSocket } from './orders.js';
 
 export const publicRouter = Router();
 publicRouter.get('/tables/:token', async (req, res) => {
@@ -205,4 +207,49 @@ customerRouter.post('/logout', requireCustomer, async (req, res, next) => {
     res.clearCookie('projectqr.sid');
     res.status(204).end();
   });
+});
+
+const serviceRequestSchema = z.object({
+  token: z.string().optional(),
+  type: z.enum(['WATER', 'CUTLERY', 'BILL', 'WAITER']),
+  notes: z.string().trim().max(200).default('')
+});
+
+customerRouter.post('/service-request', requireCustomer, requireCustomerQr, async (req, res) => {
+  const parsed = serviceRequestSchema.safeParse(req.body);
+  if (!parsed.success) throw new AppError(400, 'INVALID_INPUT', 'Please choose a valid request type.');
+
+  const recent = await ServiceRequest.findOne({
+    tableId: req.customer!.tableId,
+    type: parsed.data.type,
+    status: 'PENDING',
+    createdAt: { $gt: new Date(Date.now() - 60_000) }
+  });
+  if (recent) throw new AppError(429, 'REQUEST_COOLDOWN', 'Your request has already been sent to staff. Someone is on their way.');
+
+  const [table, restaurant] = await Promise.all([
+    DiningTable.findById(req.customer!.tableId).select('label'),
+    Restaurant.findById(req.customer!.restaurantId).select('name')
+  ]);
+  if (!table || !restaurant) throw new AppError(404, 'NOT_FOUND', 'Table or restaurant not found.');
+
+  const request = await ServiceRequest.create({
+    restaurantId: req.customer!.restaurantId,
+    tableId: req.customer!.tableId,
+    type: parsed.data.type,
+    notes: parsed.data.notes
+  });
+
+  const payload = {
+    id: String(request._id),
+    type: request.type,
+    tableLabel: table.label,
+    notes: request.notes,
+    createdAt: request.createdAt
+  };
+
+  const io = getOrderSocket();
+  io?.to(`restaurant:${req.customer!.restaurantId}`).emit('service-request:new', payload);
+
+  res.status(201).json({ request: payload, message: 'Request sent to restaurant staff.' });
 });

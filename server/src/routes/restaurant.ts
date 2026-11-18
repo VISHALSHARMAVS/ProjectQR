@@ -8,6 +8,7 @@ import { DiningTable } from '../models/DiningTable.js';
 import { MenuItem } from '../models/MenuItem.js';
 import { Order, type OrderDoc } from '../models/Order.js';
 import { Restaurant } from '../models/Restaurant.js';
+import { ServiceRequest } from '../models/ServiceRequest.js';
 import { User } from '../models/User.js';
 import { hashPassword } from '../services/password.js';
 import { AppError } from '../utils/errors.js';
@@ -53,6 +54,37 @@ restaurantRouter.patch('/settings', requireRoles('owner'), async (req, res) => {
   const restaurant = await Restaurant.findByIdAndUpdate(req.staff!.restaurantId, parsed.data, { returnDocument: 'after', runValidators: true }).select('name slug description logoUrl brandColor bannerUrl welcomeTagline address contactPhone contactEmail active');
   if (!restaurant) throw new AppError(404, 'NOT_FOUND', 'Restaurant not found.');
   res.json({ restaurant });
+});
+
+restaurantRouter.get('/service-requests', async (req, res) => {
+  const requests = await ServiceRequest.find(tenantFilter(req.staff!.restaurantId, { status: 'PENDING' }))
+    .sort({ createdAt: -1 })
+    .limit(30)
+    .lean();
+  const tables = new Map(
+    (await DiningTable.find({ _id: { $in: requests.map((r) => r.tableId) }, restaurantId: req.staff!.restaurantId }).select('_id label').lean())
+      .map((t) => [String(t._id), t.label])
+  );
+  res.json({
+    requests: requests.map((r) => ({
+      id: String(r._id),
+      type: r.type,
+      tableLabel: tables.get(String(r.tableId)) ?? 'Table',
+      notes: r.notes,
+      createdAt: r.createdAt
+    }))
+  });
+});
+
+restaurantRouter.patch('/service-requests/:id/resolve', async (req, res) => {
+  if (!objectIdSchema.safeParse(req.params.id).success) throw new AppError(400, 'INVALID_ID', 'Invalid request identifier.');
+  const request = await ServiceRequest.findOneAndUpdate(
+    tenantFilter(req.staff!.restaurantId, { _id: req.params.id }),
+    { $set: { status: 'RESOLVED', resolvedAt: new Date() } },
+    { returnDocument: 'after' }
+  );
+  if (!request) throw new AppError(404, 'NOT_FOUND', 'Service request not found.');
+  res.json({ success: true, id: String(request._id) });
 });
 
 export const tablesRouter = Router();
