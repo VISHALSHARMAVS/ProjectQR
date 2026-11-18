@@ -10,5 +10,18 @@ export default function LandingPage() {
         {[['01', 'One QR per table', 'Guests land in the right restaurant and at the right table.'], ['02', 'A menu that stays current', 'Change prices and availability whenever your menu changes.'], ['03', 'Orders your team can follow', 'The customer and kitchen see the same order progress.']].map(([number, title, copy]) => <article className="surface" key={number} style={{ padding: 21 }}><span className="eyebrow">{number}</span><h2 style={{ margin: '20px 0 8px', fontSize: 17, letterSpacing: '-.025em' }}>{title}</h2><p className="muted" style={{ margin: 0, fontSize: 13, lineHeight: 1.6 }}>{copy}</p></article>)}
       </div>
     </main>
+    <footer style={{ borderTop: '1px solid var(--line)', background: '#fbfaf6', padding: '36px 0', marginTop: 40 }}>
+      <div className="page-wrap" style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: 16 }}>
+        <div>
+          <strong style={{ fontSize: 14, color: 'var(--green-dark)' }}>ProjectQR</strong>
+          <p className="muted" style={{ fontSize: 12, margin: '4px 0 0' }}>Effortless table-side ordering & real-time kitchen operations.</p>
+        </div>
+        <div style={{ display: 'flex', gap: 18, fontSize: 12 }}>
+          <Link to="/register" style={{ color: 'var(--green)', fontWeight: 650 }}>Get started</Link>
+          <Link to="/login" className="muted">Sign in</Link>
+          <span className="muted">© {new Date().getFullYear()} ProjectQR. All rights reserved.</span>
+        </div>
+      </div>
+    </footer>
   </div>;
 }

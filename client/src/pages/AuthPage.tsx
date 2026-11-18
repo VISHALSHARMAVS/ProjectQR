@@ -43,7 +43,10 @@ export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
         <div className="field"><label htmlFor="email">Email address</label><input className="input" id="email" type="email" autoComplete="email" required value={email} onChange={(event) => setEmail(event.target.value)} placeholder="you@restaurant.com" /></div>
         <div className="field"><label htmlFor="password">Password</label><input className="input" id="password" type="password" autoComplete={isRegister ? 'new-password' : 'current-password'} required minLength={isRegister ? 10 : 1} value={password} onChange={(event) => setPassword(event.target.value)} placeholder={isRegister ? 'At least 10 characters' : 'Your password'} /></div>
         {error && <div className="form-error" role="alert">{error}</div>}
-        <button className="btn full" disabled={mutation.isPending}>{mutation.isPending ? 'Please wait…' : isRegister ? 'Create restaurant' : 'Sign in'}</button>
+        <button className="btn full" disabled={mutation.isPending}>
+          {mutation.isPending && <span className="btn-spinner" aria-hidden="true" />}
+          {mutation.isPending ? 'Please wait…' : isRegister ? 'Create restaurant' : 'Sign in'}
+        </button>
       </form>
       <p className="muted" style={{ margin: '20px 0 0', textAlign: 'center', fontSize: 12 }}>{isRegister ? 'Already set up?' : 'New to ProjectQR?'}{' '}<Link to={isRegister ? '/login' : '/register'} style={{ color: 'var(--green)', fontWeight: 700 }}>{isRegister ? 'Sign in' : 'Create a restaurant'}</Link></p>
     </div></section>

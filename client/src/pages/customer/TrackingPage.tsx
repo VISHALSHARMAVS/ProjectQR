@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link, Navigate, useParams } from 'react-router-dom';
 import { api, ApiError } from '../../lib/api';
-import { elapsedSince, money } from '../../lib/format';
+import { elapsedSince, formatTableLabel, money } from '../../lib/format';
 import { Loading, StatusPill } from '../../components/ui';
 import { useOrderSocket } from '../../hooks/useOrderSocket';
 import type { OrderRecord, OrderStatus } from '../../types';
@@ -27,7 +27,7 @@ export default function TrackingPage() {
   const rejected = order.status === 'REJECTED';
   const reachedIndex = progress.findIndex(({ status }) => status === order.status);
   return <main className="customer-wrap customer-page">
-    <header className="customer-header"><div className="restaurant-logo">✓</div><div><h1>Order placed</h1><p>Table {order.table.label}</p></div></header>
+    <header className="customer-header"><div className="restaurant-logo">✓</div><div><h1>Order placed</h1><p>{formatTableLabel(order.table.label)}</p></div></header>
     <section className="customer-intro" style={{ paddingTop: 33 }}><span className="eyebrow">{order.orderNumber}</span><h2>{rejected ? 'Please speak with a team member.' : order.status === 'DELIVERED' ? 'Enjoy your meal.' : 'We’re on it.'}</h2><p>{rejected ? order.rejectionReason || 'The restaurant could not accept this order.' : 'Your order status updates here as the kitchen works on it.'}</p></section>
     <section className="customer-card surface"><div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, marginBottom: 17 }}><strong>Order progress</strong><StatusPill status={order.status} /></div>{rejected ? <div className="form-error">Order rejected: {order.rejectionReason || 'Please ask a team member for help.'}</div> : progress.map((step, index) => {
       const completed = reachedIndex >= index;

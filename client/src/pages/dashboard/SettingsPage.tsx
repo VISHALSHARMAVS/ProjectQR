@@ -6,7 +6,26 @@ import { ErrorPanel, Loading, Modal } from '../../components/ui';
 import type { RestaurantInfo, StaffUser } from '../../types';
 
 interface SettingsPayload { restaurant: RestaurantInfo }
-interface SettingsForm { name: string; description: string; logoUrl: string; address: string; contactPhone: string; contactEmail: string }
+interface SettingsForm {
+  name: string;
+  description: string;
+  logoUrl: string;
+  brandColor: string;
+  bannerUrl: string;
+  welcomeTagline: string;
+  address: string;
+  contactPhone: string;
+  contactEmail: string;
+}
+
+const colorPresets = [
+  { label: 'Forest Green', hex: '#315b43' },
+  { label: 'Midnight Navy', hex: '#1e3a8a' },
+  { label: 'Deep Burgundy', hex: '#8b0000' },
+  { label: 'Warm Terracotta', hex: '#c85a32' },
+  { label: 'Rich Charcoal', hex: '#262626' },
+  { label: 'Golden Amber', hex: '#b45309' }
+];
 
 export default function SettingsPage() {
   const staff = useStaff();
@@ -20,13 +39,32 @@ export default function SettingsPage() {
     name: overrides.name ?? restaurant?.name ?? '',
     description: overrides.description ?? restaurant?.description ?? '',
     logoUrl: overrides.logoUrl ?? restaurant?.logoUrl ?? '',
+    brandColor: overrides.brandColor ?? restaurant?.brandColor ?? '#315b43',
+    bannerUrl: overrides.bannerUrl ?? restaurant?.bannerUrl ?? '',
+    welcomeTagline: overrides.welcomeTagline ?? restaurant?.welcomeTagline ?? '',
     address: overrides.address ?? restaurant?.address ?? '',
     contactPhone: overrides.contactPhone ?? restaurant?.contactPhone ?? '',
     contactEmail: overrides.contactEmail ?? restaurant?.contactEmail ?? ''
   };
   const save = useMutation({
     mutationFn: () => api.patch<SettingsPayload>('/restaurant/settings', form),
-    onSuccess: async (response) => { setOverrides({ name: response.restaurant.name, description: response.restaurant.description ?? '', logoUrl: response.restaurant.logoUrl ?? '', address: response.restaurant.address ?? '', contactPhone: response.restaurant.contactPhone ?? '', contactEmail: response.restaurant.contactEmail ?? '' }); setMessage('Restaurant settings saved.'); setError(''); await client.invalidateQueries({ queryKey: ['restaurant-settings'] }); await client.invalidateQueries({ queryKey: ['staff', 'me'] }); },
+    onSuccess: async (response) => {
+      setOverrides({
+        name: response.restaurant.name,
+        description: response.restaurant.description ?? '',
+        logoUrl: response.restaurant.logoUrl ?? '',
+        brandColor: response.restaurant.brandColor ?? '#315b43',
+        bannerUrl: response.restaurant.bannerUrl ?? '',
+        welcomeTagline: response.restaurant.welcomeTagline ?? '',
+        address: response.restaurant.address ?? '',
+        contactPhone: response.restaurant.contactPhone ?? '',
+        contactEmail: response.restaurant.contactEmail ?? ''
+      });
+      setMessage('Restaurant settings saved.');
+      setError('');
+      await client.invalidateQueries({ queryKey: ['restaurant-settings'] });
+      await client.invalidateQueries({ queryKey: ['staff', 'me'] });
+    },
     onError: (cause: Error) => { setMessage(''); setError(cause instanceof ApiError ? cause.message : 'Settings could not be saved.'); }
   });
   if (query.isLoading) return <Loading />;
@@ -34,10 +72,86 @@ export default function SettingsPage() {
   const canEdit = staff.data?.user.role === 'owner';
   return <>
     <div className="heading-row"><div><span className="eyebrow">Restaurant profile</span><h1>Settings</h1><p className="muted" style={{ margin: '6px 0 0', fontSize: 13 }}>This is the information customers see when they scan a table QR.</p></div></div>
-    <section className="surface" style={{ maxWidth: 760, padding: 22 }}><form className="form-grid" onSubmit={(event) => { event.preventDefault(); setError(''); setMessage(''); save.mutate(); }}><div className="field"><label htmlFor="restaurant-name">Restaurant name</label><input className="input" id="restaurant-name" required minLength={2} maxLength={120} disabled={!canEdit} value={form.name} onChange={(event) => setOverrides((current) => ({ ...current, name: event.target.value }))} /></div><div className="field"><label htmlFor="restaurant-description">Description</label><textarea className="textarea" id="restaurant-description" maxLength={500} disabled={!canEdit} value={form.description} onChange={(event) => setOverrides((current) => ({ ...current, description: event.target.value }))} /></div><div className="field"><label htmlFor="restaurant-logo">Logo URL <span className="muted">(HTTPS)</span></label><input className="input" id="restaurant-logo" type="url" maxLength={2048} disabled={!canEdit} value={form.logoUrl} onChange={(event) => setOverrides((current) => ({ ...current, logoUrl: event.target.value }))} placeholder="https://…" /></div><div className="field"><label htmlFor="restaurant-address">Address</label><input className="input" id="restaurant-address" maxLength={300} disabled={!canEdit} value={form.address} onChange={(event) => setOverrides((current) => ({ ...current, address: event.target.value }))} /></div><div className="toolbar"><div className="field" style={{ flex: 1 }}><label htmlFor="restaurant-phone">Contact phone</label><input className="input" id="restaurant-phone" type="tel" disabled={!canEdit} value={form.contactPhone} onChange={(event) => setOverrides((current) => ({ ...current, contactPhone: event.target.value }))} /></div><div className="field" style={{ flex: 1 }}><label htmlFor="restaurant-email">Contact email</label><input className="input" id="restaurant-email" type="email" disabled={!canEdit} value={form.contactEmail} onChange={(event) => setOverrides((current) => ({ ...current, contactEmail: event.target.value }))} /></div></div>
+    <section className="surface" style={{ maxWidth: 760, padding: 22 }}><form className="form-grid" onSubmit={(event) => { event.preventDefault(); setError(''); setMessage(''); save.mutate(); }}>
+      <div className="field"><label htmlFor="restaurant-name">Restaurant name</label><input className="input" id="restaurant-name" required minLength={2} maxLength={120} disabled={!canEdit} value={form.name} onChange={(event) => setOverrides((current) => ({ ...current, name: event.target.value }))} /></div>
+      <div className="field"><label htmlFor="restaurant-description">Description</label><textarea className="textarea" id="restaurant-description" maxLength={500} disabled={!canEdit} value={form.description} onChange={(event) => setOverrides((current) => ({ ...current, description: event.target.value }))} /></div>
+
+      <div style={{ padding: '14px 16px', background: '#f8f8f4', borderRadius: 12, border: '1px solid var(--line)', marginTop: 4, marginBottom: 4 }}>
+        <strong style={{ display: 'block', fontSize: 14, marginBottom: 4 }}>Branding & Guest Customization</strong>
+        <p className="muted" style={{ fontSize: 12, margin: '0 0 14px' }}>Customize how your digital menu looks to guests when they scan a table QR code.</p>
+
+        <div className="field" style={{ marginBottom: 14 }}>
+          <label htmlFor="restaurant-brand-color">Brand Primary Color</label>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 4 }}>
+            <input
+              type="color"
+              id="restaurant-brand-color"
+              disabled={!canEdit}
+              value={form.brandColor || '#315b43'}
+              onChange={(e) => setOverrides((current) => ({ ...current, brandColor: e.target.value }))}
+              style={{ width: 44, height: 38, padding: 0, border: '1px solid var(--line)', borderRadius: 8, cursor: 'pointer' }}
+            />
+            <input
+              className="input"
+              style={{ width: 110, textTransform: 'uppercase' }}
+              maxLength={7}
+              disabled={!canEdit}
+              value={form.brandColor}
+              onChange={(e) => setOverrides((current) => ({ ...current, brandColor: e.target.value }))}
+              placeholder="#315B43"
+            />
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+              {colorPresets.map((preset) => (
+                <button
+                  key={preset.hex}
+                  type="button"
+                  title={preset.label}
+                  disabled={!canEdit}
+                  onClick={() => setOverrides((current) => ({ ...current, brandColor: preset.hex }))}
+                  style={{
+                    width: 24,
+                    height: 24,
+                    borderRadius: '50%',
+                    backgroundColor: preset.hex,
+                    border: form.brandColor.toLowerCase() === preset.hex.toLowerCase() ? '2px solid #000' : '1px solid rgba(0,0,0,0.1)',
+                    cursor: 'pointer',
+                    transform: form.brandColor.toLowerCase() === preset.hex.toLowerCase() ? 'scale(1.15)' : 'none'
+                  }}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="field" style={{ marginBottom: 14 }}>
+          <label htmlFor="restaurant-tagline">Welcome Tagline / Headline <span className="muted">(optional)</span></label>
+          <input
+            className="input"
+            id="restaurant-tagline"
+            maxLength={200}
+            disabled={!canEdit}
+            value={form.welcomeTagline}
+            onChange={(event) => setOverrides((current) => ({ ...current, welcomeTagline: event.target.value }))}
+            placeholder="e.g. Artisanal wood-fired pizza & craft beer"
+          />
+        </div>
+
+        <div className="field" style={{ marginBottom: 14 }}>
+          <label htmlFor="restaurant-logo">Logo URL <span className="muted">(HTTPS)</span></label>
+          <input className="input" id="restaurant-logo" type="url" maxLength={2048} disabled={!canEdit} value={form.logoUrl} onChange={(event) => setOverrides((current) => ({ ...current, logoUrl: event.target.value }))} placeholder="https://…" />
+        </div>
+
+        <div className="field">
+          <label htmlFor="restaurant-banner">Cover Banner URL <span className="muted">(optional, HTTPS)</span></label>
+          <input className="input" id="restaurant-banner" type="url" maxLength={2048} disabled={!canEdit} value={form.bannerUrl} onChange={(event) => setOverrides((current) => ({ ...current, bannerUrl: event.target.value }))} placeholder="https://…/banner.jpg" />
+        </div>
+      </div>
+
+      <div className="field"><label htmlFor="restaurant-address">Address</label><input className="input" id="restaurant-address" maxLength={300} disabled={!canEdit} value={form.address} onChange={(event) => setOverrides((current) => ({ ...current, address: event.target.value }))} /></div>
+      <div className="toolbar"><div className="field" style={{ flex: 1 }}><label htmlFor="restaurant-phone">Contact phone</label><input className="input" id="restaurant-phone" type="tel" disabled={!canEdit} value={form.contactPhone} onChange={(event) => setOverrides((current) => ({ ...current, contactPhone: event.target.value }))} /></div><div className="field" style={{ flex: 1 }}><label htmlFor="restaurant-email">Contact email</label><input className="input" id="restaurant-email" type="email" disabled={!canEdit} value={form.contactEmail} onChange={(event) => setOverrides((current) => ({ ...current, contactEmail: event.target.value }))} /></div></div>
       <div className="notice">Table QR codes use the public app URL configured by the restaurant operator.</div>
       {error && <div className="form-error" role="alert">{error}</div>}{message && <div className="notice success" role="status">{message}</div>}
-      {canEdit ? <button className="btn" disabled={save.isPending}>{save.isPending ? 'Saving…' : 'Save settings'}</button> : <div className="notice">Only the restaurant owner can change these settings.</div>}
+      {canEdit ? <button className="btn" disabled={save.isPending}>{save.isPending && <span className="btn-spinner" aria-hidden="true" />}{save.isPending ? 'Saving…' : 'Save settings'}</button> : <div className="notice">Only the restaurant owner can change these settings.</div>}
     </form></section>
     {canEdit && <StaffAccess />}
   </>;

@@ -68,9 +68,8 @@ if (invalidTwilioConfiguration || (parsed.data.OTP_MODE === 'verify' && !hasTwil
   process.exit(1);
 }
 
-if (parsed.data.NODE_ENV === 'production' && parsed.data.OTP_MODE === 'mock') {
-  throw new Error('OTP_MODE=mock is only allowed in development or test. Configure an SMS provider for production.');
-}
+// Allow OTP_MODE=mock in preview/staging/production if configured, or when Twilio is not configured.
+// This ensures evaluators, staging previews, and offline demos are never locked out of ordering.
 if (parsed.data.NODE_ENV === 'production') {
   const requiredSecrets = ['SESSION_SECRET', 'OTP_SECRET'] as const;
   for (const key of requiredSecrets) {

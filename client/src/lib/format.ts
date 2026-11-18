@@ -14,3 +14,12 @@ export function elapsedSince(date: string, now = Date.now()): string {
   if (minutes < 60) return `${minutes}m ago`;
   return `${Math.floor(minutes / 60)}h ${minutes % 60}m ago`;
 }
+
+export function formatTableLabel(raw?: string): string {
+  const trimmed = (raw ?? '').trim();
+  if (!trimmed) return 'Table';
+  if (/^(table|booth|patio|bar|seat|room|deck|counter)\b/i.test(trimmed)) {
+    return trimmed;
+  }
+  return `Table ${trimmed}`;
+}

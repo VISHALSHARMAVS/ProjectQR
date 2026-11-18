@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
 import { api, ApiError } from '../../lib/api';
 import { addCartLine, readCart, setCartQuantity, type CartLine } from '../../lib/cart';
-import { money } from '../../lib/format';
+import { formatTableLabel, money } from '../../lib/format';
 import { EmptyState, Loading } from '../../components/ui';
 import type { Category, MenuItem, RestaurantInfo } from '../../types';
 
@@ -35,8 +35,21 @@ export default function CustomerMenuPage() {
   const totalQuantity = cart.reduce((sum, line) => sum + line.quantity, 0);
   const subtotal = cart.reduce((sum, line) => sum + line.quantity * line.unitPricePaise, 0);
 
-  return <main className="customer-wrap customer-page">
-    <header className="customer-header"><div className="restaurant-logo">{restaurant.logoUrl ? <img src={restaurant.logoUrl} alt="" /> : restaurant.name.slice(0, 1).toUpperCase()}</div><div style={{ flex: 1 }}><h1>{restaurant.name}</h1><p>Table {table.label} · Hi, {session.data.customer.name}</p></div><Link className="btn secondary small" to={`/order/${encodeURIComponent(token)}/tracking`}>Orders</Link><button className="btn ghost small" onClick={() => endVisit.mutate()} disabled={endVisit.isPending}>{endVisit.isPending ? 'Ending…' : 'End visit'}</button></header>
+  const brandStyle = restaurant.brandColor ? ({
+    '--green': restaurant.brandColor,
+    '--green-dark': restaurant.brandColor
+  } as CSSProperties) : undefined;
+
+  return <main className="customer-wrap customer-page" style={brandStyle}>
+    <header className="customer-header">
+      <div className="restaurant-logo">{restaurant.logoUrl ? <img src={restaurant.logoUrl} alt="" /> : restaurant.name.slice(0, 1).toUpperCase()}</div>
+      <div style={{ flex: 1 }}>
+        <h1>{restaurant.name}</h1>
+        <p>{formatTableLabel(table.label)} · Hi, {session.data.customer.name}</p>
+      </div>
+      <Link className="btn secondary small" to={`/order/${encodeURIComponent(token)}/tracking`}>Orders</Link>
+      <button className="btn ghost small" onClick={() => endVisit.mutate()} disabled={endVisit.isPending}>{endVisit.isPending ? 'Ending…' : 'End visit'}</button>
+    </header>
     <div style={{ paddingTop: 24 }}><span className="eyebrow">Made fresh for you</span><h1 style={{ margin: '5px 0 16px', fontSize: 31, letterSpacing: '-.05em' }}>The menu</h1>
       {availableCategories.length > 0 && <nav className="menu-categories" aria-label="Menu categories">{availableCategories.map((category) => <button key={category._id} className={`category-chip ${activeCategory === category._id ? 'active' : ''}`} onClick={() => scrollTo(category._id)}>{category.name}</button>)}</nav>}
     </div>

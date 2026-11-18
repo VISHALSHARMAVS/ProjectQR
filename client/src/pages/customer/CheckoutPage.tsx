@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type CSSProperties } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
 import { api, ApiError } from '../../lib/api';
 import { readCart, setCartQuantity, type CartLine } from '../../lib/cart';
-import { money } from '../../lib/format';
+import { formatTableLabel, money } from '../../lib/format';
 import { createIdempotencyKey } from '../../lib/idempotency';
 import { EmptyState, Loading } from '../../components/ui';
 import type { MenuItem, OrderStatus, RestaurantInfo } from '../../types';
@@ -43,10 +43,22 @@ export default function CheckoutPage() {
   if (session.isLoading || menu.isLoading) return <div className="customer-wrap"><Loading label="Reviewing your order…" /></div>;
   if (!session.data) return <div className="customer-wrap"><Loading /></div>;
   if (menu.error) return <main className="customer-wrap customer-page"><div className="form-error" style={{ marginTop: 24 }}>We couldn’t verify the current menu. Please refresh before placing your order.</div><button className="btn secondary" style={{ marginTop: 12 }} onClick={() => void menu.refetch()}>Refresh menu</button></main>;
-  if (cart.length === 0) return <main className="customer-wrap customer-page"><header className="customer-header"><div className="restaurant-logo">{session.data.restaurant.name.slice(0, 1)}</div><div><h1>{session.data.restaurant.name}</h1><p>Table {session.data.table.label}</p></div></header><div className="surface" style={{ marginTop: 28 }}><EmptyState title="Your cart is empty" description="Take a look at the menu and add something you like." action={<Link className="btn" to={`/order/${encodeURIComponent(token)}/menu`}>Back to menu</Link>} /></div></main>;
+  const { restaurant, table, customer } = session.data;
+  const brandStyle = restaurant.brandColor ? ({
+    '--green': restaurant.brandColor,
+    '--green-dark': restaurant.brandColor
+  } as CSSProperties) : undefined;
 
-  return <main className="customer-wrap customer-page">
-    <header className="customer-header"><div className="restaurant-logo">{session.data.restaurant.name.slice(0, 1)}</div><div><h1>{session.data.restaurant.name}</h1><p>Table {session.data.table.label} · Order for {session.data.customer.name}</p></div></header>
+  if (cart.length === 0) return <main className="customer-wrap customer-page" style={brandStyle}><header className="customer-header"><div className="restaurant-logo">{restaurant.logoUrl ? <img src={restaurant.logoUrl} alt="" /> : restaurant.name.slice(0, 1).toUpperCase()}</div><div><h1>{restaurant.name}</h1><p>{formatTableLabel(table.label)}</p></div></header><div className="surface" style={{ marginTop: 28 }}><EmptyState title="Your cart is empty" description="Take a look at the menu and add something you like." action={<Link className="btn" to={`/order/${encodeURIComponent(token)}/menu`}>Back to menu</Link>} /></div></main>;
+
+  return <main className="customer-wrap customer-page" style={brandStyle}>
+    <header className="customer-header">
+      <div className="restaurant-logo">{restaurant.logoUrl ? <img src={restaurant.logoUrl} alt="" /> : restaurant.name.slice(0, 1).toUpperCase()}</div>
+      <div>
+        <h1>{restaurant.name}</h1>
+        <p>{formatTableLabel(table.label)} · Order for {customer.name}</p>
+      </div>
+    </header>
     <div style={{ paddingTop: 27 }}><span className="eyebrow">Almost there</span><h1 style={{ margin: '4px 0 17px', fontSize: 31, letterSpacing: '-.05em' }}>Review your order</h1></div>
     <section className="customer-card surface"><div className="cart-list">{cart.map((line) => <article className="cart-line" key={line.menuItemId}><div><h3>{line.name}</h3><div className="muted" style={{ marginTop: 5, fontSize: 12 }}>{money(line.unitPricePaise)} each</div><div className="qty-control" style={{ marginTop: 10 }}><button aria-label={`Remove one ${line.name}`} onClick={() => setCart(setCartQuantity(cart, line.menuItemId, line.quantity - 1))}>−</button><strong>{line.quantity}</strong><button aria-label={`Add one ${line.name}`} onClick={() => setCart(setCartQuantity(cart, line.menuItemId, line.quantity + 1))}>+</button><button className="btn ghost small" style={{ marginLeft: 5 }} onClick={() => setCart(setCartQuantity(cart, line.menuItemId, 0))}>Remove</button></div><div className="field" style={{ marginTop: 10 }}><label htmlFor={`note-${line.menuItemId}`}>Note for the kitchen <span className="muted">(optional)</span></label><input className="input" id={`note-${line.menuItemId}`} maxLength={250} value={line.notes} onChange={(event) => setCart(cart.map((current) => current.menuItemId === line.menuItemId ? { ...current, notes: event.target.value } : current))} placeholder="e.g. No onions" /></div></div><span className="line-total">{money(line.quantity * line.unitPricePaise)}</span></article>)}</div>
       <div className="field" style={{ marginTop: 19 }}><label htmlFor="order-notes">Order note <span className="muted">(optional)</span></label><textarea className="textarea" id="order-notes" maxLength={500} value={orderNotes} onChange={(event) => setOrderNotes(event.target.value)} placeholder="Anything else we should know?" /></div>
@@ -54,7 +66,13 @@ export default function CheckoutPage() {
     </section>
     {stale.length > 0 && <div className="form-error" style={{ marginTop: 14 }}><strong>Review your cart</strong><ul style={{ margin: '7px 0 0', paddingLeft: 18 }}>{stale.map(({ line, reason }) => <li key={line.menuItemId}>{line.name}: {reason === 'price' ? `now ${money(current.get(line.menuItemId)?.pricePaise ?? 0)}` : 'no longer available'}.</li>)}</ul><Link to={`/order/${encodeURIComponent(token)}/menu`} style={{ display: 'inline-block', marginTop: 8, textDecoration: 'underline' }}>Return to the menu</Link></div>}
     {message && <div className="form-error" role="alert" style={{ marginTop: 14 }}>{message}</div>}
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.4fr', gap: 10, marginTop: 17 }}><Link className="btn secondary" to={`/order/${encodeURIComponent(token)}/menu`}>Back</Link><button className="btn" disabled={stale.length > 0 || mutation.isPending || cart.length === 0} onClick={() => { setMessage(''); mutation.mutate(); }}>{mutation.isPending ? 'Placing order…' : `Confirm order · ${money(subtotal)}`}</button></div>
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.4fr', gap: 10, marginTop: 17 }}>
+      <Link className="btn secondary" to={`/order/${encodeURIComponent(token)}/menu`}>Back</Link>
+      <button className="btn" disabled={stale.length > 0 || mutation.isPending || cart.length === 0} onClick={() => { setMessage(''); mutation.mutate(); }}>
+        {mutation.isPending && <span className="btn-spinner" aria-hidden="true" />}
+        {mutation.isPending ? 'Placing order…' : `Confirm order · ${money(subtotal)}`}
+      </button>
+    </div>
     <p className="muted" style={{ fontSize: 11, textAlign: 'center', lineHeight: 1.5 }}>Payment is handled by the restaurant. Your order will be sent to the kitchen after you confirm.</p>
   </main>;
 }

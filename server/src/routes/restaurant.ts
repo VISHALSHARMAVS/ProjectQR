@@ -35,19 +35,22 @@ const settingsSchema = z.object({
   name: z.string().trim().min(2).max(120).optional(),
   description: z.string().trim().max(500).optional(),
   logoUrl: z.string().trim().max(2048).refine((value) => !value || value.startsWith('/uploads/') || /^https:\/\//i.test(value), 'Use an HTTPS URL or uploaded image').optional(),
+  brandColor: z.string().trim().regex(/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/, 'Provide a valid hex color code (e.g. #315b43)').optional(),
+  bannerUrl: z.string().trim().max(2048).refine((value) => !value || value.startsWith('/uploads/') || /^https:\/\//i.test(value), 'Use an HTTPS URL or uploaded image').optional(),
+  welcomeTagline: z.string().trim().max(200).optional(),
   address: z.string().trim().max(300).optional(),
   contactPhone: z.string().trim().max(30).optional(),
   contactEmail: z.union([z.literal(''), z.email().trim().toLowerCase()]).optional()
 }).strict();
 restaurantRouter.get('/settings', async (req, res) => {
-  const restaurant = await Restaurant.findById(req.staff!.restaurantId).select('name slug description logoUrl address contactPhone contactEmail active');
+  const restaurant = await Restaurant.findById(req.staff!.restaurantId).select('name slug description logoUrl brandColor bannerUrl welcomeTagline address contactPhone contactEmail active');
   if (!restaurant) throw new AppError(404, 'NOT_FOUND', 'Restaurant not found.');
   res.json({ restaurant });
 });
 restaurantRouter.patch('/settings', requireRoles('owner'), async (req, res) => {
   const parsed = settingsSchema.safeParse(req.body);
   if (!parsed.success || Object.keys(parsed.data ?? {}).length === 0) throw new AppError(400, 'INVALID_INPUT', parsed.success ? 'Provide at least one setting.' : parsed.error.issues[0]?.message ?? 'Invalid settings.');
-  const restaurant = await Restaurant.findByIdAndUpdate(req.staff!.restaurantId, parsed.data, { returnDocument: 'after', runValidators: true }).select('name slug description logoUrl address contactPhone contactEmail active');
+  const restaurant = await Restaurant.findByIdAndUpdate(req.staff!.restaurantId, parsed.data, { returnDocument: 'after', runValidators: true }).select('name slug description logoUrl brandColor bannerUrl welcomeTagline address contactPhone contactEmail active');
   if (!restaurant) throw new AppError(404, 'NOT_FOUND', 'Restaurant not found.');
   res.json({ restaurant });
 });

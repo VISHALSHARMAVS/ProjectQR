@@ -4,6 +4,9 @@ export interface RestaurantInfo {
   slug?: string;
   description?: string;
   logoUrl?: string;
+  brandColor?: string;
+  bannerUrl?: string;
+  welcomeTagline?: string;
   address?: string;
   contactPhone?: string;
   contactEmail?: string;
