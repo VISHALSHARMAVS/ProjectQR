@@ -8,6 +8,14 @@ const orderItemSchema = new Schema({
   name: { type: String, required: true },
   unitPricePaise: { type: Number, required: true, min: 0 },
   quantity: { type: Number, required: true, min: 1, max: 50 },
+  selectedVariant: {
+    type: new Schema({ name: { type: String, required: true }, pricePaise: { type: Number, required: true } }, { _id: false }),
+    default: null
+  },
+  selectedAddons: {
+    type: [new Schema({ name: { type: String, required: true }, pricePaise: { type: Number, required: true } }, { _id: false })],
+    default: []
+  },
   notes: { type: String, trim: true, maxlength: 250, default: '' },
   subtotalPaise: { type: Number, required: true, min: 0 }
 }, { _id: false });
@@ -38,6 +46,15 @@ orderSchema.index({ restaurantId: 1, status: 1, createdAt: 1 });
 orderSchema.index({ restaurantId: 1, orderNumber: 1 }, { unique: true });
 orderSchema.index({ customerSessionId: 1, idempotencyKey: 1 }, { unique: true });
 
-export interface OrderItemSnapshot { menuItemId: Types.ObjectId; name: string; unitPricePaise: number; quantity: number; notes: string; subtotalPaise: number }
+export interface OrderItemSnapshot {
+  menuItemId: Types.ObjectId;
+  name: string;
+  unitPricePaise: number;
+  quantity: number;
+  selectedVariant?: { name: string; pricePaise: number } | null;
+  selectedAddons?: { name: string; pricePaise: number }[];
+  notes: string;
+  subtotalPaise: number;
+}
 export interface OrderDoc { _id: Types.ObjectId; restaurantId: Types.ObjectId; tableId: Types.ObjectId; customerId: Types.ObjectId; customerSessionId: Types.ObjectId; idempotencyKey: string; orderNumber: string; items: OrderItemSnapshot[]; status: OrderStatus; statusHistory: { status: OrderStatus; at: Date; note: string }[]; subtotalPaise: number; totalPaise: number; notes: string; rejectionReason: string; createdAt: Date; updatedAt: Date }
 export const Order = model('Order', orderSchema);

@@ -34,8 +34,27 @@ export default function CheckoutPage() {
   const cart = tableCartQuery.data?.items ?? [];
 
   const updateItem = useMutation({
-    mutationFn: ({ menuItemId, quantity, notes }: { menuItemId: string; quantity: number; notes?: string }) =>
-      api.post<{ items: TableCartLine[] }>('/customer/cart/items', { token, menuItemId, quantity, notes }),
+    mutationFn: ({
+      menuItemId,
+      quantity,
+      selectedVariant,
+      selectedAddons,
+      notes
+    }: {
+      menuItemId: string;
+      quantity: number;
+      selectedVariant?: TableCartLine['selectedVariant'];
+      selectedAddons?: TableCartLine['selectedAddons'];
+      notes?: string;
+    }) =>
+      api.post<{ items: TableCartLine[] }>('/customer/cart/items', {
+        token,
+        menuItemId,
+        quantity,
+        selectedVariant: selectedVariant ?? null,
+        selectedAddons: selectedAddons ?? [],
+        notes
+      }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['table-cart', token] })
   });
 
@@ -52,7 +71,14 @@ export default function CheckoutPage() {
     mutationFn: () => api.post<CreatedOrder>('/customer/orders', {
       token,
       idempotencyKey,
-      items: cart.map((line) => ({ menuItemId: line.menuItemId, quantity: line.quantity, notes: line.notes, expectedUnitPricePaise: line.unitPricePaise })),
+      items: cart.map((line) => ({
+        menuItemId: line.menuItemId,
+        quantity: line.quantity,
+        selectedVariant: line.selectedVariant ?? null,
+        selectedAddons: line.selectedAddons ?? [],
+        notes: line.notes,
+        expectedUnitPricePaise: line.unitPricePaise
+      })),
       notes: orderNotes
     }),
     onSuccess: async (response) => {
@@ -102,17 +128,32 @@ export default function CheckoutPage() {
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 7, flexWrap: 'wrap' }}>
                 <h3>{line.name}</h3>
+                {line.selectedVariant && (
+                  <span className="pill" style={{ fontSize: 11, background: 'var(--soft-green)', color: 'var(--green-dark)' }}>
+                    {line.selectedVariant.name}
+                  </span>
+                )}
                 {line.addedByName && (
                   <span className="pill gray" style={{ fontSize: 10, padding: '2px 8px' }}>
                     Added by {line.addedByName}
                   </span>
                 )}
               </div>
+              {line.selectedAddons && line.selectedAddons.length > 0 && (
+                <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 2 }}>
+                  Extras: {line.selectedAddons.map((a) => `${a.name} (+${money(a.pricePaise)})`).join(', ')}
+                </div>
+              )}
               <div className="muted" style={{ marginTop: 5, fontSize: 12 }}>{money(line.unitPricePaise)} each</div>
               <div className="qty-control" style={{ marginTop: 10 }}>
                 <button
                   aria-label={`Remove one ${line.name}`}
-                  onClick={() => updateItem.mutate({ menuItemId: line.menuItemId, quantity: line.quantity - 1 })}
+                  onClick={() => updateItem.mutate({
+                    menuItemId: line.menuItemId,
+                    quantity: line.quantity - 1,
+                    selectedVariant: line.selectedVariant,
+                    selectedAddons: line.selectedAddons
+                  })}
                   disabled={updateItem.isPending}
                 >
                   −
@@ -120,7 +161,12 @@ export default function CheckoutPage() {
                 <strong>{line.quantity}</strong>
                 <button
                   aria-label={`Add one ${line.name}`}
-                  onClick={() => updateItem.mutate({ menuItemId: line.menuItemId, quantity: line.quantity + 1 })}
+                  onClick={() => updateItem.mutate({
+                    menuItemId: line.menuItemId,
+                    quantity: line.quantity + 1,
+                    selectedVariant: line.selectedVariant,
+                    selectedAddons: line.selectedAddons
+                  })}
                   disabled={updateItem.isPending}
                 >
                   +
@@ -128,7 +174,12 @@ export default function CheckoutPage() {
                 <button
                   className="btn ghost small"
                   style={{ marginLeft: 5 }}
-                  onClick={() => updateItem.mutate({ menuItemId: line.menuItemId, quantity: 0 })}
+                  onClick={() => updateItem.mutate({
+                    menuItemId: line.menuItemId,
+                    quantity: 0,
+                    selectedVariant: line.selectedVariant,
+                    selectedAddons: line.selectedAddons
+                  })}
                   disabled={updateItem.isPending}
                 >
                   Remove

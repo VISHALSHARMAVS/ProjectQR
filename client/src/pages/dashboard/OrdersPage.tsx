@@ -236,7 +236,27 @@ export default function OrdersPage({ kitchen = false }: { kitchen?: boolean }) {
     {error && !rejectionOrder && <div className="form-error" style={{ marginBottom: 14 }} role="alert">{error}</div>}
     {orders.length === 0 ? <section className="surface"><EmptyState title={filter === 'NEW' ? 'No new orders' : 'No orders in this view'} description="New customer orders will appear here as soon as they are placed." /></section> : <section className="order-grid">{orders.map((order) => {
       const action = next[order.status];
-      return <article className="order-card surface" key={order.id}><header><div><h3>{order.orderNumber}</h3><span className="muted" style={{ display: 'block', marginTop: 4, fontSize: 12 }}>{formatTableLabel(order.table.label)} · {new Date(order.createdAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</span></div><StatusPill status={order.status} /></header><div style={{ marginTop: 12 }}><span className="pill gray">{elapsedSince(order.createdAt, now)}</span></div><ul className="order-items">{order.items.map((item) => <li key={item.menuItemId}><span><strong>{item.quantity} × {item.name}</strong>{item.notes && <small>Note: {item.notes}</small>}</span><span>{money(item.subtotalPaise)}</span></li>)}</ul>{order.notes && <div className="notice" style={{ fontSize: 12 }}><strong>Order note:</strong> {order.notes}</div>}{order.rejectionReason && <div className="form-error" style={{ fontSize: 12 }}><strong>Rejection reason:</strong> {order.rejectionReason}</div>}<div className="total-row" style={{ borderTop: '1px solid var(--line)', paddingTop: 12 }}><span>Total</span><strong>{money(order.totalPaise)}</strong></div>{action && <div className="order-actions"><button className="btn small" onClick={() => update.mutate({ order, status: action.status })} disabled={update.isPending}>{action.label}</button>{order.status === 'NEW' && <button className="btn danger small" onClick={() => { setRejectionOrder(order); setRejectionReason(''); setError(''); }}>Reject</button>}</div>}</article>;
+      return <article className="order-card surface" key={order.id}><header><div><h3>{order.orderNumber}</h3><span className="muted" style={{ display: 'block', marginTop: 4, fontSize: 12 }}>{formatTableLabel(order.table.label)} · {new Date(order.createdAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</span></div><StatusPill status={order.status} /></header><div style={{ marginTop: 12 }}><span className="pill gray">{elapsedSince(order.createdAt, now)}</span></div>                <ul className="order-items">
+                  {order.items.map((item, idx) => (
+                    <li key={idx}>
+                      <span>
+                        <strong>{item.quantity} × {item.name}</strong>
+                        {item.selectedVariant && (
+                          <span className="pill" style={{ fontSize: 10, marginLeft: 6, background: '#e0e7ff', color: '#3730a3', padding: '1px 6px' }}>
+                            {item.selectedVariant.name}
+                          </span>
+                        )}
+                        {item.selectedAddons && item.selectedAddons.length > 0 && (
+                          <small style={{ color: '#4b5563', display: 'block', marginTop: 1 }}>
+                            + {item.selectedAddons.map((a) => a.name).join(', ')}
+                          </small>
+                        )}
+                        {item.notes && <small style={{ display: 'block' }}>Note: {item.notes}</small>}
+                      </span>
+                      <span>{money(item.subtotalPaise)}</span>
+                    </li>
+                  ))}
+                </ul>{order.notes && <div className="notice" style={{ fontSize: 12 }}><strong>Order note:</strong> {order.notes}</div>}{order.rejectionReason && <div className="form-error" style={{ fontSize: 12 }}><strong>Rejection reason:</strong> {order.rejectionReason}</div>}<div className="total-row" style={{ borderTop: '1px solid var(--line)', paddingTop: 12 }}><span>Total</span><strong>{money(order.totalPaise)}</strong></div>{action && <div className="order-actions"><button className="btn small" onClick={() => update.mutate({ order, status: action.status })} disabled={update.isPending}>{action.label}</button>{order.status === 'NEW' && <button className="btn danger small" onClick={() => { setRejectionOrder(order); setRejectionReason(''); setError(''); }}>Reject</button>}</div>}</article>;
     })}</section>}
     {rejectionOrder && <Modal title="Reject this order?" onClose={() => { setRejectionOrder(null); setError(''); }}><p className="muted">Tell the customer why {rejectionOrder.orderNumber} cannot be accepted. This message will appear on their tracking page.</p><div className="field" style={{ margin: '15px 0' }}><label htmlFor="reject-reason">Reason</label><textarea className="textarea" id="reject-reason" autoFocus required minLength={2} maxLength={300} value={rejectionReason} onChange={(event) => setRejectionReason(event.target.value)} placeholder="e.g. One of the items is unavailable" /></div>{error && <div className="form-error" style={{ marginBottom: 12 }}>{error}</div>}<div className="toolbar" style={{ justifyContent: 'end' }}><button className="btn secondary" onClick={() => setRejectionOrder(null)}>Cancel</button><button className="btn danger" onClick={reject} disabled={update.isPending || rejectionReason.trim().length < 2}>{update.isPending ? 'Updating…' : 'Reject order'}</button></div></Modal>}
   </>;

@@ -30,12 +30,24 @@ export interface Category {
 
 export type DietaryType = 'VEG' | 'NON_VEG' | 'EGG';
 
+export interface MenuItemVariant {
+  name: string;
+  pricePaise: number;
+}
+
+export interface MenuItemAddon {
+  name: string;
+  pricePaise: number;
+}
+
 export interface MenuItem {
   _id: string;
   categoryId: string;
   name: string;
   description: string;
   pricePaise: number;
+  variants?: MenuItemVariant[];
+  addons?: MenuItemAddon[];
   imageUrl: string;
   available: boolean;
   dietary?: DietaryType;
@@ -82,6 +94,8 @@ export interface TableCartLine {
   name: string;
   unitPricePaise: number;
   quantity: number;
+  selectedVariant?: MenuItemVariant | null;
+  selectedAddons?: MenuItemAddon[];
   notes?: string;
   addedByName?: string;
 }
@@ -90,7 +104,16 @@ export interface OrderRecord {
   id: string;
   orderNumber: string;
   table: { label: string };
-  items: { menuItemId: string; name: string; unitPricePaise: number; quantity: number; notes: string; subtotalPaise: number }[];
+  items: {
+    menuItemId: string;
+    name: string;
+    unitPricePaise: number;
+    quantity: number;
+    selectedVariant?: MenuItemVariant | null;
+    selectedAddons?: MenuItemAddon[];
+    notes: string;
+    subtotalPaise: number;
+  }[];
   status: OrderStatus;
   statusHistory: { status: OrderStatus; at: string; note: string }[];
   subtotalPaise: number;

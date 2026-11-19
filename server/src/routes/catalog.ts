@@ -43,11 +43,21 @@ categoryRouter.delete('/:id', async (req, res) => {
 
 export const menuRouter = Router();
 const imageUrlSchema = z.string().trim().max(2048).refine((value) => !value || value.startsWith('/uploads/') || /^https:\/\//i.test(value), 'Use an HTTPS image URL or an uploaded image');
+const variantOptionInput = z.object({
+  name: z.string().trim().min(1).max(60),
+  pricePaise: z.number().int().min(0).max(100000000)
+});
+const addonOptionInput = z.object({
+  name: z.string().trim().min(1).max(60),
+  pricePaise: z.number().int().min(0).max(100000000)
+});
 const menuFields = {
   categoryId: objectIdSchema,
   name: z.string().trim().min(1).max(120),
   description: z.string().trim().max(500).default(''),
   pricePaise: z.number().int().min(0).max(100000000),
+  variants: z.array(variantOptionInput).default([]),
+  addons: z.array(addonOptionInput).default([]),
   imageUrl: imageUrlSchema.default(''),
   available: z.boolean().default(true),
   dietary: z.enum(['VEG', 'NON_VEG', 'EGG']).default('VEG'),

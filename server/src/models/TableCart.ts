@@ -5,6 +5,14 @@ const tableCartItemSchema = new Schema({
   name: { type: String, required: true },
   unitPricePaise: { type: Number, required: true },
   quantity: { type: Number, required: true, min: 1 },
+  selectedVariant: {
+    type: new Schema({ name: { type: String, required: true }, pricePaise: { type: Number, required: true } }, { _id: false }),
+    default: null
+  },
+  selectedAddons: {
+    type: [new Schema({ name: { type: String, required: true }, pricePaise: { type: Number, required: true } }, { _id: false })],
+    default: []
+  },
   notes: { type: String, default: '' },
   addedByName: { type: String, default: 'Guest' },
   addedByCustomerId: { type: Schema.Types.ObjectId, ref: 'Customer' }
@@ -21,6 +29,8 @@ export interface TableCartItemDoc {
   name: string;
   unitPricePaise: number;
   quantity: number;
+  selectedVariant?: { name: string; pricePaise: number } | null;
+  selectedAddons?: { name: string; pricePaise: number }[];
   notes?: string;
   addedByName?: string;
   addedByCustomerId?: Types.ObjectId;

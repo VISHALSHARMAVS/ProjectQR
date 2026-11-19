@@ -17,12 +17,24 @@ import { tenantFilter } from '../utils/tenant.js';
 const customerOrders = Router();
 const restaurantOrders = Router();
 let orderSocket: Server | undefined;
+const variantSelectionSchema = z.object({
+  name: z.string().trim().min(1).max(60),
+  pricePaise: z.number().int().min(0)
+});
+
+const addonSelectionSchema = z.object({
+  name: z.string().trim().min(1).max(60),
+  pricePaise: z.number().int().min(0)
+});
+
 const createOrderSchema = z.object({
   token: z.string().min(32).max(100),
   idempotencyKey: z.string().trim().min(12).max(80).regex(/^[a-zA-Z0-9_-]+$/),
   items: z.array(z.object({
     menuItemId: objectIdSchema,
     quantity: z.number().int().min(1).max(50),
+    selectedVariant: variantSelectionSchema.nullable().optional(),
+    selectedAddons: z.array(addonSelectionSchema).optional(),
     notes: z.string().trim().max(250).default(''),
     expectedUnitPricePaise: z.number().int().min(0).optional()
   })).min(1).max(50),
@@ -41,7 +53,16 @@ function serializeOrder(order: OrderDoc, tableLabel: string) {
     id: String(order._id),
     orderNumber: order.orderNumber,
     table: { label: tableLabel },
-    items: order.items.map((item) => ({ menuItemId: String(item.menuItemId), name: item.name, unitPricePaise: item.unitPricePaise, quantity: item.quantity, notes: item.notes, subtotalPaise: item.subtotalPaise })),
+    items: order.items.map((item) => ({
+      menuItemId: String(item.menuItemId),
+      name: item.name,
+      unitPricePaise: item.unitPricePaise,
+      quantity: item.quantity,
+      selectedVariant: item.selectedVariant ?? null,
+      selectedAddons: item.selectedAddons ?? [],
+      notes: item.notes,
+      subtotalPaise: item.subtotalPaise
+    })),
     status: order.status,
     statusHistory: order.statusHistory,
     subtotalPaise: order.subtotalPaise,
@@ -79,30 +100,37 @@ customerOrders.post('/', async (req, res) => {
   if (!restaurant) throw new AppError(403, 'RESTAURANT_INACTIVE', 'This restaurant is not currently accepting orders.');
 
   const ids = parsed.data.items.map((item) => item.menuItemId);
-  if (new Set(ids).size !== ids.length) throw new AppError(400, 'DUPLICATE_ORDER_ITEM', 'Each menu item should appear only once in the cart.');
   const menuItems = await MenuItem.find(tenantFilter(restaurantId, { _id: { $in: ids }, available: true }));
   const itemMap = new Map(menuItems.map((item) => [String(item._id), item]));
   const unavailable = parsed.data.items.filter((item) => !itemMap.has(item.menuItemId));
   if (unavailable.length) throw new AppError(409, 'ITEM_UNAVAILABLE', 'One or more items are no longer available. Review your cart and try again.');
-  const priceChanges = parsed.data.items.flatMap((requested) => {
-    const item = itemMap.get(requested.menuItemId)!;
-    return requested.expectedUnitPricePaise !== undefined && requested.expectedUnitPricePaise !== item.pricePaise
-      ? [{ menuItemId: requested.menuItemId, name: item.name, expectedPricePaise: requested.expectedUnitPricePaise, currentPricePaise: item.pricePaise }]
-      : [];
-  });
-  if (priceChanges.length) throw new AppError(409, 'PRICE_CHANGED', 'Some prices changed. Review your cart before placing the order.');
 
   const snapshotItems = parsed.data.items.map((requested) => {
     const menuItem = itemMap.get(requested.menuItemId)!;
+    // Calculate unit price: variant price (if selected) or base price + sum of selected addons
+    let basePrice = requested.selectedVariant ? requested.selectedVariant.pricePaise : menuItem.pricePaise;
+    const addonsTotal = (requested.selectedAddons || []).reduce((sum, a) => sum + a.pricePaise, 0);
+    const calculatedUnitPrice = basePrice + addonsTotal;
+
     return {
       menuItemId: menuItem._id,
       name: menuItem.name,
-      unitPricePaise: menuItem.pricePaise,
+      unitPricePaise: calculatedUnitPrice,
       quantity: requested.quantity,
+      selectedVariant: requested.selectedVariant ?? null,
+      selectedAddons: requested.selectedAddons ?? [],
       notes: requested.notes,
-      subtotalPaise: menuItem.pricePaise * requested.quantity
+      subtotalPaise: calculatedUnitPrice * requested.quantity
     };
   });
+
+  const priceChanges = parsed.data.items.flatMap((requested, index) => {
+    const calc = snapshotItems[index];
+    return requested.expectedUnitPricePaise !== undefined && calc && requested.expectedUnitPricePaise !== calc.unitPricePaise
+      ? [{ menuItemId: requested.menuItemId, name: calc.name, expectedPricePaise: requested.expectedUnitPricePaise, currentPricePaise: calc.unitPricePaise }]
+      : [];
+  });
+  if (priceChanges.length) throw new AppError(409, 'PRICE_CHANGED', 'Some prices changed. Review your cart before placing the order.');
   const subtotalPaise = calculateSubtotal(snapshotItems.map((item) => ({ pricePaise: item.unitPricePaise, quantity: item.quantity })));
   const order = new Order({
     restaurantId, tableId, customerId, customerSessionId: sessionId,

@@ -260,6 +260,8 @@ const cartItemSchema = z.object({
   token: z.string().optional(),
   menuItemId: z.string().regex(/^[a-fA-F0-9]{24}$/, 'Invalid item ID'),
   quantity: z.number().int().min(0).max(99),
+  selectedVariant: z.object({ name: z.string().trim().min(1).max(60), pricePaise: z.number().int().min(0) }).nullable().optional(),
+  selectedAddons: z.array(z.object({ name: z.string().trim().min(1).max(60), pricePaise: z.number().int().min(0) })).optional(),
   notes: z.string().trim().max(200).default('')
 });
 
@@ -271,6 +273,8 @@ customerRouter.get('/cart', requireCustomer, requireCustomerQr, async (req, res)
       name: item.name,
       unitPricePaise: item.unitPricePaise,
       quantity: item.quantity,
+      selectedVariant: item.selectedVariant ?? null,
+      selectedAddons: item.selectedAddons ?? [],
       notes: item.notes || '',
       addedByName: item.addedByName || 'Guest'
     }))
@@ -296,20 +300,36 @@ customerRouter.post('/cart/items', requireCustomer, requireCustomerQr, async (re
     });
   }
 
-  const existingIndex = cart.items.findIndex((item) => String(item.menuItemId) === parsed.data.menuItemId);
+  // Calculate unit price from base/variant + addons
+  const basePrice = parsed.data.selectedVariant ? parsed.data.selectedVariant.pricePaise : menuItem.pricePaise;
+  const addonsTotal = (parsed.data.selectedAddons || []).reduce((sum, a) => sum + a.pricePaise, 0);
+  const calculatedUnitPrice = basePrice + addonsTotal;
+
+  // Match items based on menuItemId AND selected variant name
+  const variantName = parsed.data.selectedVariant?.name || '';
+  const existingIndex = cart.items.findIndex((item) => {
+    const itemVariantName = item.selectedVariant?.name || '';
+    return String(item.menuItemId) === parsed.data.menuItemId && itemVariantName === variantName;
+  });
+
   if (parsed.data.quantity <= 0) {
     if (existingIndex >= 0) cart.items.splice(existingIndex, 1);
   } else if (existingIndex >= 0 && cart.items[existingIndex]) {
     const existing = cart.items[existingIndex];
     existing.quantity = parsed.data.quantity;
+    existing.unitPricePaise = calculatedUnitPrice;
+    existing.selectedVariant = parsed.data.selectedVariant ?? null;
+    (existing as unknown as { selectedAddons: unknown[] }).selectedAddons = parsed.data.selectedAddons ?? [];
     if (parsed.data.notes) existing.notes = parsed.data.notes;
     existing.addedByName = customer?.name || 'Guest';
   } else {
     cart.items.push({
       menuItemId: menuItem._id,
       name: menuItem.name,
-      unitPricePaise: menuItem.pricePaise,
+      unitPricePaise: calculatedUnitPrice,
       quantity: parsed.data.quantity,
+      selectedVariant: parsed.data.selectedVariant ?? null,
+      selectedAddons: parsed.data.selectedAddons ?? [],
       notes: parsed.data.notes,
       addedByName: customer?.name || 'Guest',
       addedByCustomerId: req.customer!.customerId
@@ -323,6 +343,8 @@ customerRouter.post('/cart/items', requireCustomer, requireCustomerQr, async (re
     name: item.name,
     unitPricePaise: item.unitPricePaise,
     quantity: item.quantity,
+    selectedVariant: item.selectedVariant ?? null,
+    selectedAddons: item.selectedAddons ?? [],
     notes: item.notes || '',
     addedByName: item.addedByName || 'Guest'
   }));
