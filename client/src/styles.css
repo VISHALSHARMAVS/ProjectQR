@@ -58,7 +58,7 @@ img { max-width: 100%; }
 .heading-row h1, .heading-row h2 { margin: 3px 0 0; letter-spacing: -.04em; }
 .heading-row h1 { font-size: clamp(25px, 4vw, 36px); }
 .heading-row h2 { font-size: 22px; }
-.pill { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 999px; color: #47644d; background: var(--soft-green); font-size: 11px; font-weight: 700; }
+.pill { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 999px; color: var(--green-dark); background: var(--soft-green); font-size: 11px; font-weight: 700; }
 .pill.orange { color: #96532f; background: var(--soft-orange); }
 .pill.red { color: #963b36; background: #f8e9e6; }
 .pill.gray { color: #686d63; background: #efefe9; }
@@ -195,7 +195,7 @@ img { max-width: 100%; }
 
 /* Staff workspace */
 .staff-layout { display: grid; grid-template-columns: 235px minmax(0, 1fr); min-height: 100vh; }
-.sidebar { position: sticky; top: 0; display: flex; height: 100vh; flex-direction: column; padding: 22px 15px; border-right: 1px solid var(--line); background: #fbfaf6; }
+.sidebar { position: sticky; top: 0; display: flex; height: 100vh; flex-direction: column; padding: 22px 15px; border-right: 1px solid var(--line); border-top: 3px solid var(--green); background: #fbfaf6; }
 .sidebar .brand { padding: 0 10px 24px; }
 .sidebar-label { padding: 17px 10px 8px; color: #999c92; font-size: 10px; font-weight: 750; letter-spacing: .12em; text-transform: uppercase; }
 .nav-list { display: grid; gap: 4px; }
@@ -222,7 +222,7 @@ img { max-width: 100%; }
 }
 .sidebar-bottom { display: grid; gap: 4px; margin-top: auto; }
 .staff-main { min-width: 0; }
-.staff-topbar { display: flex; height: 72px; align-items: center; justify-content: space-between; padding: 0 clamp(18px, 4vw, 48px); border-bottom: 1px solid var(--line); background: rgba(255, 254, 250, .75); }
+.staff-topbar { display: flex; height: 72px; align-items: center; justify-content: space-between; padding: 0 clamp(18px, 4vw, 48px); border-bottom: 1px solid var(--line); border-top: 3px solid var(--green); background: rgba(255, 254, 250, .75); }
 .staff-content { width: min(1320px, 100%); margin: 0 auto; padding: 12px clamp(18px, 4vw, 48px) 48px; }
 .stat-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
 .stat-card { padding: 18px; }

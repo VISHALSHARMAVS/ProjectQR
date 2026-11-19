@@ -32,6 +32,10 @@ export default function SettingsPage() {
   const client = useQueryClient();
   const query = useQuery({ queryKey: ['restaurant-settings'], queryFn: () => api.get<SettingsPayload>('/restaurant/settings') });
   const [overrides, setOverrides] = useState<Partial<SettingsForm>>({});
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string>('');
+  const [bannerFile, setBannerFile] = useState<File | null>(null);
+  const [bannerPreview, setBannerPreview] = useState<string>('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const restaurant = query.data?.restaurant;
@@ -46,9 +50,46 @@ export default function SettingsPage() {
     contactPhone: overrides.contactPhone ?? restaurant?.contactPhone ?? '',
     contactEmail: overrides.contactEmail ?? restaurant?.contactEmail ?? ''
   };
+
+  const handleLogoChange = (file: File | null) => {
+    setLogoFile(file);
+    if (file) {
+      setLogoPreview(URL.createObjectURL(file));
+    } else {
+      setLogoPreview('');
+    }
+  };
+
+  const handleBannerChange = (file: File | null) => {
+    setBannerFile(file);
+    if (file) {
+      setBannerPreview(URL.createObjectURL(file));
+    } else {
+      setBannerPreview('');
+    }
+  };
+
   const save = useMutation({
-    mutationFn: () => api.patch<SettingsPayload>('/restaurant/settings', form),
+    mutationFn: async () => {
+      // 1. Save general settings
+      const response = await api.patch<SettingsPayload>('/restaurant/settings', form);
+      // 2. Upload logo if chosen from local storage
+      if (logoFile) {
+        const uploadRes = await api.upload<{ restaurant: RestaurantInfo; logoUrl: string }>('/restaurant/logo', logoFile, 'logo');
+        response.restaurant.logoUrl = uploadRes.logoUrl;
+      }
+      // 3. Upload banner if chosen from local storage
+      if (bannerFile) {
+        const uploadRes = await api.upload<{ restaurant: RestaurantInfo; bannerUrl: string }>('/restaurant/banner', bannerFile, 'banner');
+        response.restaurant.bannerUrl = uploadRes.bannerUrl;
+      }
+      return response;
+    },
     onSuccess: async (response) => {
+      setLogoFile(null);
+      setLogoPreview('');
+      setBannerFile(null);
+      setBannerPreview('');
       setOverrides({
         name: response.restaurant.name,
         description: response.restaurant.description ?? '',
@@ -60,7 +101,7 @@ export default function SettingsPage() {
         contactPhone: response.restaurant.contactPhone ?? '',
         contactEmail: response.restaurant.contactEmail ?? ''
       });
-      setMessage('Restaurant settings saved.');
+      setMessage('Restaurant settings, logo and branding saved successfully!');
       setError('');
       await client.invalidateQueries({ queryKey: ['restaurant-settings'] });
       await client.invalidateQueries({ queryKey: ['staff', 'me'] });
@@ -70,24 +111,124 @@ export default function SettingsPage() {
   if (query.isLoading) return <Loading />;
   if (query.error || !query.data) return <ErrorPanel message="Restaurant settings could not be loaded." retry={() => void query.refetch()} />;
   const canEdit = staff.data?.user.role === 'owner';
+  const effectiveBrandColor = form.brandColor || '#315b43';
+
   return <>
     <div className="heading-row"><div><span className="eyebrow">Restaurant profile</span><h1>Settings</h1><p className="muted" style={{ margin: '6px 0 0', fontSize: 13 }}>This is the information customers see when they scan a table QR.</p></div></div>
     <section className="surface" style={{ maxWidth: 760, padding: 22 }}><form className="form-grid" onSubmit={(event) => { event.preventDefault(); setError(''); setMessage(''); save.mutate(); }}>
       <div className="field"><label htmlFor="restaurant-name">Restaurant name</label><input className="input" id="restaurant-name" required minLength={2} maxLength={120} disabled={!canEdit} value={form.name} onChange={(event) => setOverrides((current) => ({ ...current, name: event.target.value }))} /></div>
       <div className="field"><label htmlFor="restaurant-description">Description</label><textarea className="textarea" id="restaurant-description" maxLength={500} disabled={!canEdit} value={form.description} onChange={(event) => setOverrides((current) => ({ ...current, description: event.target.value }))} /></div>
 
-      <div style={{ padding: '14px 16px', background: '#f8f8f4', borderRadius: 12, border: '1px solid var(--line)', marginTop: 4, marginBottom: 4 }}>
-        <strong style={{ display: 'block', fontSize: 14, marginBottom: 4 }}>Branding & Guest Customization</strong>
-        <p className="muted" style={{ fontSize: 12, margin: '0 0 14px' }}>Customize how your digital menu looks to guests when they scan a table QR code.</p>
+      <div style={{ padding: '16px 18px', background: '#f8f8f4', borderRadius: 14, border: '1px solid var(--line)', marginTop: 4, marginBottom: 4 }}>
+        <strong style={{ display: 'block', fontSize: 15, marginBottom: 4 }}>Branding & Visual Identity</strong>
+        <p className="muted" style={{ fontSize: 12, margin: '0 0 16px' }}>Customize your restaurant logo, brand theme color, and mobile cover banner across both the customer menu and staff dashboard.</p>
 
-        <div className="field" style={{ marginBottom: 14 }}>
+        {/* Logo Upload Section */}
+        <div className="field" style={{ marginBottom: 18 }}>
+          <label htmlFor="restaurant-logo-upload">Restaurant Logo</label>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginTop: 6 }}>
+            <div style={{
+              width: 58,
+              height: 58,
+              borderRadius: 14,
+              border: '1px solid var(--line)',
+              background: '#ffffff',
+              display: 'grid',
+              placeItems: 'center',
+              overflow: 'hidden',
+              flexShrink: 0,
+              boxShadow: '0 2px 8px rgba(0,0,0,0.06)'
+            }}>
+              {(logoPreview || form.logoUrl) ? (
+                <img
+                  src={logoPreview || form.logoUrl}
+                  alt="Restaurant Logo"
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                />
+              ) : (
+                <span style={{ fontSize: 24 }}>🍽️</span>
+              )}
+            </div>
+            <div style={{ flex: 1 }}>
+              <input
+                type="file"
+                id="restaurant-logo-upload"
+                accept="image/jpeg,image/png,image/webp"
+                disabled={!canEdit}
+                onChange={(e) => handleLogoChange(e.target.files?.[0] ?? null)}
+                style={{ fontSize: 13 }}
+              />
+              <div className="muted" style={{ fontSize: 11, marginTop: 4 }}>
+                Upload directly from your device (PNG, JPG, or WebP up to 5 MB).
+              </div>
+            </div>
+            {(logoPreview || form.logoUrl) && (
+              <button
+                type="button"
+                className="btn ghost small"
+                disabled={!canEdit}
+                onClick={() => {
+                  setLogoFile(null);
+                  setLogoPreview('');
+                  setOverrides((current) => ({ ...current, logoUrl: '' }));
+                }}
+              >
+                Remove
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Cover Banner Upload Section */}
+        <div className="field" style={{ marginBottom: 18 }}>
+          <label htmlFor="restaurant-banner-upload">Cover Banner <span className="muted">(optional)</span></label>
+          {(bannerPreview || form.bannerUrl) && (
+            <div style={{ width: '100%', height: 110, borderRadius: 12, overflow: 'hidden', marginBottom: 8, border: '1px solid var(--line)' }}>
+              <img
+                src={bannerPreview || form.bannerUrl}
+                alt="Banner preview"
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+              />
+            </div>
+          )}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <input
+              type="file"
+              id="restaurant-banner-upload"
+              accept="image/jpeg,image/png,image/webp"
+              disabled={!canEdit}
+              onChange={(e) => handleBannerChange(e.target.files?.[0] ?? null)}
+              style={{ fontSize: 13, flex: 1 }}
+            />
+            {(bannerPreview || form.bannerUrl) && (
+              <button
+                type="button"
+                className="btn ghost small"
+                disabled={!canEdit}
+                onClick={() => {
+                  setBannerFile(null);
+                  setBannerPreview('');
+                  setOverrides((current) => ({ ...current, bannerUrl: '' }));
+                }}
+              >
+                Remove
+              </button>
+            )}
+          </div>
+          <div className="muted" style={{ fontSize: 11, marginTop: 4 }}>
+            Appears at the top of the guest table landing page.
+          </div>
+        </div>
+
+        {/* Brand Theme Color Section */}
+        <div className="field" style={{ marginBottom: 16 }}>
           <label htmlFor="restaurant-brand-color">Brand Primary Color</label>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 4 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 6, flexWrap: 'wrap' }}>
             <input
               type="color"
               id="restaurant-brand-color"
               disabled={!canEdit}
-              value={form.brandColor || '#315b43'}
+              value={effectiveBrandColor}
               onChange={(e) => setOverrides((current) => ({ ...current, brandColor: e.target.value }))}
               style={{ width: 44, height: 38, padding: 0, border: '1px solid var(--line)', borderRadius: 8, cursor: 'pointer' }}
             />
@@ -109,8 +250,8 @@ export default function SettingsPage() {
                   disabled={!canEdit}
                   onClick={() => setOverrides((current) => ({ ...current, brandColor: preset.hex }))}
                   style={{
-                    width: 24,
-                    height: 24,
+                    width: 26,
+                    height: 26,
                     borderRadius: '50%',
                     backgroundColor: preset.hex,
                     border: form.brandColor.toLowerCase() === preset.hex.toLowerCase() ? '2px solid #000' : '1px solid rgba(0,0,0,0.1)',
@@ -121,9 +262,20 @@ export default function SettingsPage() {
               ))}
             </div>
           </div>
+
+          {/* Live Preview Card */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', background: 'white', borderRadius: 10, border: '1px solid var(--line)', marginTop: 10 }}>
+            <span style={{ fontSize: 12, fontWeight: 600 }}>Theme Preview:</span>
+            <button type="button" className="btn small" style={{ pointerEvents: 'none', background: effectiveBrandColor }}>
+              Primary Button
+            </button>
+            <span className="pill" style={{ background: `${effectiveBrandColor}20`, color: effectiveBrandColor, fontWeight: 700 }}>
+              Active Tab / Pill
+            </span>
+          </div>
         </div>
 
-        <div className="field" style={{ marginBottom: 14 }}>
+        <div className="field">
           <label htmlFor="restaurant-tagline">Welcome Tagline / Headline <span className="muted">(optional)</span></label>
           <input
             className="input"
@@ -132,18 +284,8 @@ export default function SettingsPage() {
             disabled={!canEdit}
             value={form.welcomeTagline}
             onChange={(event) => setOverrides((current) => ({ ...current, welcomeTagline: event.target.value }))}
-            placeholder="e.g. Artisanal wood-fired pizza & craft beer"
+            placeholder="e.g. Authentic Highway Dhaba & Wood-fired Specialties"
           />
-        </div>
-
-        <div className="field" style={{ marginBottom: 14 }}>
-          <label htmlFor="restaurant-logo">Logo URL <span className="muted">(HTTPS)</span></label>
-          <input className="input" id="restaurant-logo" type="url" maxLength={2048} disabled={!canEdit} value={form.logoUrl} onChange={(event) => setOverrides((current) => ({ ...current, logoUrl: event.target.value }))} placeholder="https://…" />
-        </div>
-
-        <div className="field">
-          <label htmlFor="restaurant-banner">Cover Banner URL <span className="muted">(optional, HTTPS)</span></label>
-          <input className="input" id="restaurant-banner" type="url" maxLength={2048} disabled={!canEdit} value={form.bannerUrl} onChange={(event) => setOverrides((current) => ({ ...current, bannerUrl: event.target.value }))} placeholder="https://…/banner.jpg" />
         </div>
       </div>
 

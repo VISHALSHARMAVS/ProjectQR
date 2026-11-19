@@ -29,9 +29,9 @@ export const api = {
   post: <T>(path: string, body?: unknown) => request<T>(path, { method: 'POST', ...(body === undefined ? {} : { body: JSON.stringify(body) }) }),
   patch: <T>(path: string, body: unknown) => request<T>(path, { method: 'PATCH', body: JSON.stringify(body) }),
   delete: <T>(path: string) => request<T>(path, { method: 'DELETE' }),
-  upload: <T>(path: string, file: File) => {
+  upload: <T>(path: string, file: File, fieldName = 'image') => {
     const body = new FormData();
-    body.set('image', file);
+    body.set(fieldName, file);
     return request<T>(path, { method: 'POST', body });
   }
 };

@@ -1,9 +1,9 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link, Navigate, NavLink, Outlet, useNavigate } from 'react-router-dom';
-import type { ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import { useStaff } from '../hooks/useStaff';
 import { api } from '../lib/api';
-import { Brand, Loading } from './ui';
+import { Loading } from './ui';
 
 const links = [
   { to: '/dashboard/overview', label: 'Overview', icon: '⌂' },
@@ -45,12 +45,29 @@ export default function DashboardLayout() {
       <span className="nav-label">{item.label}</span>
     </NavLink>
   );
-  const name = staff.data?.restaurant.name ?? 'Restaurant';
+  const restaurant = staff.data?.restaurant;
+  const name = restaurant?.name ?? 'Restaurant';
+  const brandColor = restaurant?.brandColor || '#315b43';
+  const brandStyle = {
+    '--green': brandColor,
+    '--green-dark': brandColor,
+    '--soft-green': `${brandColor}18`
+  } as CSSProperties;
+
   const visibleLinks = staff.data?.user.role === 'kitchen' ? links.filter((item) => ['/dashboard/orders', '/dashboard/kitchen'].includes(item.to)) : links;
 
-  return <div className="staff-layout">
+  return <div className="staff-layout" style={brandStyle}>
     <aside className="sidebar">
-      <Link to="/dashboard/overview"><Brand /></Link>
+      <Link to="/dashboard/overview" className="brand">
+        {restaurant?.logoUrl ? (
+          <div style={{ width: 34, height: 34, borderRadius: 10, overflow: 'hidden', flexShrink: 0, background: '#f0f0eb' }}>
+            <img src={restaurant.logoUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          </div>
+        ) : (
+          <span className="brand-mark">{name.slice(0, 1).toUpperCase()}</span>
+        )}
+        <span className="brand-name">{name}</span>
+      </Link>
       <div className="sidebar-label">Workspace</div>
       <nav className="nav-list" aria-label="Restaurant navigation">{visibleLinks.map(itemLink)}</nav>
       <div className="sidebar-bottom">
@@ -64,7 +81,23 @@ export default function DashboardLayout() {
         </button>
       </div>
     </aside>
-    <div className="staff-main"><header className="staff-topbar"><div><div className="eyebrow">Restaurant workspace</div><strong style={{ fontSize: 14 }}>{name}</strong></div><span className="pill">{staff.data?.user.role ?? 'owner'}</span></header><main className="staff-content"><Outlet /></main></div>
+    <div className="staff-main">
+      <header className="staff-topbar">
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          {restaurant?.logoUrl && (
+            <div style={{ width: 32, height: 32, borderRadius: 8, overflow: 'hidden', flexShrink: 0, background: '#f0f0eb' }}>
+              <img src={restaurant.logoUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            </div>
+          )}
+          <div>
+            <div className="eyebrow">Restaurant workspace</div>
+            <strong style={{ fontSize: 14 }}>{name}</strong>
+          </div>
+        </div>
+        <span className="pill">{staff.data?.user.role ?? 'owner'}</span>
+      </header>
+      <main className="staff-content"><Outlet /></main>
+    </div>
     <nav className="mobile-nav" aria-label="Quick navigation">{visibleLinks.filter((item) => staff.data?.user.role === 'kitchen' || ['/dashboard/overview', '/dashboard/menu', '/dashboard/tables', '/dashboard/kitchen', '/dashboard/settings'].includes(item.to)).map(itemLink)}</nav>
   </div>;
 }

@@ -1,5 +1,6 @@
 import { randomBytes } from 'node:crypto';
 import { Router } from 'express';
+import multer from 'multer';
 import QRCode from 'qrcode';
 import { z } from 'zod';
 import { env } from '../config/env.js';
@@ -10,10 +11,13 @@ import { Order, type OrderDoc } from '../models/Order.js';
 import { Restaurant } from '../models/Restaurant.js';
 import { ServiceRequest } from '../models/ServiceRequest.js';
 import { User } from '../models/User.js';
+import { saveMenuImage } from '../services/imageStorage.js';
 import { hashPassword } from '../services/password.js';
 import { AppError } from '../utils/errors.js';
 import { labelSchema, objectIdSchema } from '../utils/validation.js';
 import { tenantFilter } from '../utils/tenant.js';
+
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024, files: 1 } });
 
 export const restaurantRouter = Router();
 restaurantRouter.use(requireStaff);
@@ -54,6 +58,34 @@ restaurantRouter.patch('/settings', requireRoles('owner'), async (req, res) => {
   const restaurant = await Restaurant.findByIdAndUpdate(req.staff!.restaurantId, parsed.data, { returnDocument: 'after', runValidators: true }).select('name slug description logoUrl brandColor bannerUrl welcomeTagline address contactPhone contactEmail active');
   if (!restaurant) throw new AppError(404, 'NOT_FOUND', 'Restaurant not found.');
   res.json({ restaurant });
+});
+
+restaurantRouter.post('/logo', requireRoles('owner'), upload.fields([{ name: 'logo', maxCount: 1 }, { name: 'image', maxCount: 1 }]), async (req, res) => {
+  const files = req.files as { [fieldname: string]: Express.Multer.File[] } | undefined;
+  const file = files?.logo?.[0] || files?.image?.[0];
+  if (!file) throw new AppError(400, 'IMAGE_REQUIRED', 'Choose an image file to upload.');
+  const logoUrl = await saveMenuImage(file.buffer);
+  const restaurant = await Restaurant.findByIdAndUpdate(
+    req.staff!.restaurantId,
+    { logoUrl },
+    { returnDocument: 'after' }
+  ).select('name slug description logoUrl brandColor bannerUrl welcomeTagline address contactPhone contactEmail active');
+  if (!restaurant) throw new AppError(404, 'NOT_FOUND', 'Restaurant not found.');
+  res.json({ restaurant, logoUrl });
+});
+
+restaurantRouter.post('/banner', requireRoles('owner'), upload.fields([{ name: 'banner', maxCount: 1 }, { name: 'image', maxCount: 1 }]), async (req, res) => {
+  const files = req.files as { [fieldname: string]: Express.Multer.File[] } | undefined;
+  const file = files?.banner?.[0] || files?.image?.[0];
+  if (!file) throw new AppError(400, 'IMAGE_REQUIRED', 'Choose an image file to upload.');
+  const bannerUrl = await saveMenuImage(file.buffer);
+  const restaurant = await Restaurant.findByIdAndUpdate(
+    req.staff!.restaurantId,
+    { bannerUrl },
+    { returnDocument: 'after' }
+  ).select('name slug description logoUrl brandColor bannerUrl welcomeTagline address contactPhone contactEmail active');
+  if (!restaurant) throw new AppError(404, 'NOT_FOUND', 'Restaurant not found.');
+  res.json({ restaurant, bannerUrl });
 });
 
 restaurantRouter.get('/service-requests', async (req, res) => {

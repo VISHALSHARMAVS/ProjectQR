@@ -81,7 +81,7 @@ router.post('/logout', (req, res, next) => {
 });
 
 router.get('/me', requireStaff, async (req, res) => {
-  const restaurant = await Restaurant.findById(req.staff!.restaurantId).select('name slug logoUrl description');
+  const restaurant = await Restaurant.findById(req.staff!.restaurantId).select('name slug logoUrl brandColor bannerUrl welcomeTagline description');
   res.json({ user: req.staff, restaurant });
 });
 
