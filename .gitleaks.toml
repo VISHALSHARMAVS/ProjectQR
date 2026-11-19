@@ -1,0 +1,7 @@
+# Gitleaks configuration
+[allowlist]
+description = "Ignore mock/dummy secrets in automated test files"
+paths = [
+  '''server/src/.*\.test\.ts$''',
+  '''client/src/.*\.test\.ts$'''
+]
