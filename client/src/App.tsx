@@ -8,6 +8,7 @@ import CustomerMenuPage from './pages/customer/MenuPage';
 import CheckoutPage from './pages/customer/CheckoutPage';
 import TrackingPage from './pages/customer/TrackingPage';
 import OverviewPage from './pages/dashboard/OverviewPage';
+import FloorMapPage from './pages/dashboard/FloorMapPage';
 import MenuPage from './pages/dashboard/MenuPage';
 import CategoriesPage from './pages/dashboard/CategoriesPage';
 import TablesPage from './pages/dashboard/TablesPage';
@@ -33,6 +34,7 @@ export default function App() {
       <Route path="/dashboard" element={<DashboardLayout />}>
         <Route index element={<Navigate to="overview" replace />} />
         <Route path="overview" element={<OverviewPage />} />
+        <Route path="floor-map" element={<FloorMapPage />} />
         <Route path="menu" element={<ManagementOnly><MenuPage /></ManagementOnly>} />
         <Route path="categories" element={<ManagementOnly><CategoriesPage /></ManagementOnly>} />
         <Route path="tables" element={<ManagementOnly><TablesPage /></ManagementOnly>} />

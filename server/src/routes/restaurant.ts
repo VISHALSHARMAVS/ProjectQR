@@ -172,6 +172,103 @@ restaurantRouter.patch('/service-requests/:id/resolve', async (req, res) => {
 
 export const tablesRouter = Router();
 tablesRouter.use(requireStaff, requireRoles('owner', 'staff'));
+
+tablesRouter.get('/live-status', async (req, res) => {
+  const restaurantId = req.staff!.restaurantId;
+
+  // 1. Fetch all tables
+  const tables = await DiningTable.find(tenantFilter(restaurantId))
+    .sort({ label: 1, createdAt: 1 })
+    .select('-qrToken')
+    .lean();
+
+  const tableIds = tables.map((t) => t._id);
+
+  // 2. Fetch active assistance requests (PENDING)
+  const pendingRequests = await ServiceRequest.find({
+    restaurantId,
+    tableId: { $in: tableIds },
+    status: 'PENDING'
+  }).sort({ createdAt: -1 }).lean();
+
+  const requestByTable = new Map<string, { id: string; type: string; notes?: string; createdAt: Date }>();
+  for (const reqItem of pendingRequests) {
+    const tid = String(reqItem.tableId);
+    if (!requestByTable.has(tid)) {
+      requestByTable.set(tid, {
+        id: String(reqItem._id),
+        type: reqItem.type,
+        notes: reqItem.notes,
+        createdAt: reqItem.createdAt
+      });
+    }
+  }
+
+  // 3. Fetch active orders (NEW, ACCEPTED, PREPARING, READY)
+  const activeOrders = await Order.find({
+    restaurantId,
+    tableId: { $in: tableIds },
+    status: { $in: ['NEW', 'ACCEPTED', 'PREPARING', 'READY'] }
+  }).sort({ createdAt: -1 }).lean();
+
+  const ordersByTable = new Map<string, typeof activeOrders>();
+  for (const ord of activeOrders) {
+    const tid = String(ord.tableId);
+    if (!ordersByTable.has(tid)) {
+      ordersByTable.set(tid, []);
+    }
+    ordersByTable.get(tid)!.push(ord);
+  }
+
+  // 4. Construct live status summary per table
+  const tableStatuses = tables.map((table) => {
+    const tid = String(table._id);
+    const pendingRequest = requestByTable.get(tid);
+    const tableOrders = ordersByTable.get(tid) || [];
+
+    // Derive status
+    let state: 'VACANT' | 'SEATED' | 'PREPARING' | 'READY' | 'HELP_NEEDED' | 'BILL_REQUESTED' = 'VACANT';
+
+    if (pendingRequest?.type === 'BILL') {
+      state = 'BILL_REQUESTED';
+    } else if (pendingRequest) {
+      state = 'HELP_NEEDED';
+    } else if (tableOrders.some((o) => o.status === 'READY')) {
+      state = 'READY';
+    } else if (tableOrders.some((o) => ['ACCEPTED', 'PREPARING'].includes(o.status))) {
+      state = 'PREPARING';
+    } else if (tableOrders.some((o) => o.status === 'NEW')) {
+      state = 'SEATED';
+    }
+
+    const totalActiveBillPaise = tableOrders.reduce((sum, o) => sum + o.totalPaise, 0);
+
+    return {
+      id: String(table._id),
+      label: table.label,
+      active: table.active,
+      state,
+      pendingRequest: pendingRequest ? {
+        id: pendingRequest.id,
+        type: pendingRequest.type,
+        notes: pendingRequest.notes,
+        createdAt: pendingRequest.createdAt
+      } : null,
+      orders: tableOrders.map((o) => ({
+        id: String(o._id),
+        orderNumber: o.orderNumber,
+        status: o.status,
+        totalPaise: o.totalPaise,
+        items: o.items.map((i) => ({ name: i.name, quantity: i.quantity, subtotalPaise: i.subtotalPaise })),
+        createdAt: o.createdAt
+      })),
+      totalBillPaise: totalActiveBillPaise
+    };
+  });
+
+  res.json({ tables: tableStatuses });
+});
+
 tablesRouter.get('/', async (req, res) => {
   const tables = await DiningTable.find(tenantFilter(req.staff!.restaurantId)).sort({ createdAt: 1, label: 1 }).select('-qrToken').lean();
   res.json({ tables });

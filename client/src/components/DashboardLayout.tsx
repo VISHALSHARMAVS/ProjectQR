@@ -7,6 +7,7 @@ import { Loading } from './ui';
 
 const links = [
   { to: '/dashboard/overview', label: 'Overview', icon: '⌂' },
+  { to: '/dashboard/floor-map', label: 'Floor Map', icon: '⛶' },
   { to: '/dashboard/menu', label: 'Menu', icon: '▤' },
   { to: '/dashboard/categories', label: 'Categories', icon: '◈' },
   { to: '/dashboard/tables', label: 'Tables & QR', icon: '⌗' },
@@ -54,7 +55,9 @@ export default function DashboardLayout() {
     '--soft-green': `${brandColor}18`
   } as CSSProperties;
 
-  const visibleLinks = staff.data?.user.role === 'kitchen' ? links.filter((item) => ['/dashboard/orders', '/dashboard/kitchen'].includes(item.to)) : links;
+  const visibleLinks = staff.data?.user.role === 'kitchen'
+    ? links.filter((item) => ['/dashboard/orders', '/dashboard/kitchen'].includes(item.to))
+    : links;
 
   return <div className="staff-layout" style={brandStyle}>
     <aside className="sidebar">
@@ -98,6 +101,6 @@ export default function DashboardLayout() {
       </header>
       <main className="staff-content"><Outlet /></main>
     </div>
-    <nav className="mobile-nav" aria-label="Quick navigation">{visibleLinks.filter((item) => staff.data?.user.role === 'kitchen' || ['/dashboard/overview', '/dashboard/menu', '/dashboard/tables', '/dashboard/kitchen', '/dashboard/settings'].includes(item.to)).map(itemLink)}</nav>
+    <nav className="mobile-nav" aria-label="Quick navigation">{visibleLinks.filter((item) => staff.data?.user.role === 'kitchen' || ['/dashboard/overview', '/dashboard/floor-map', '/dashboard/orders', '/dashboard/kitchen', '/dashboard/settings'].includes(item.to)).map(itemLink)}</nav>
   </div>;
 }

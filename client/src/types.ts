@@ -51,6 +51,30 @@ export interface TableRecord {
   createdAt?: string;
 }
 
+export type TableLiveState = 'VACANT' | 'SEATED' | 'PREPARING' | 'READY' | 'HELP_NEEDED' | 'BILL_REQUESTED';
+
+export interface LiveTableInfo {
+  id: string;
+  label: string;
+  active: boolean;
+  state: TableLiveState;
+  pendingRequest: {
+    id: string;
+    type: 'WATER' | 'CUTLERY' | 'BILL' | 'WAITER';
+    notes?: string;
+    createdAt: string;
+  } | null;
+  orders: {
+    id: string;
+    orderNumber: string;
+    status: OrderStatus;
+    totalPaise: number;
+    items: { name: string; quantity: number; subtotalPaise: number }[];
+    createdAt: string;
+  }[];
+  totalBillPaise: number;
+}
+
 export type OrderStatus = 'NEW' | 'ACCEPTED' | 'PREPARING' | 'READY' | 'DELIVERED' | 'REJECTED';
 
 export interface TableCartLine {
