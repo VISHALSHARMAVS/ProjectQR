@@ -36,6 +36,10 @@ const schema = z.object({
   TWILIO_MESSAGING_SERVICE_SID: optionalEnvString,
   TWILIO_VERIFY_SERVICE_SID: optionalEnvString,
   UPLOAD_DIR: z.string().default('./uploads'),
+  CLOUDINARY_CLOUD_NAME: optionalEnvString,
+  CLOUDINARY_API_KEY: optionalEnvString,
+  CLOUDINARY_API_SECRET: optionalEnvString,
+  CLOUDINARY_URL: optionalEnvString,
   COOKIE_SECURE: z.enum(['true', 'false']).optional()
 });
 
@@ -91,6 +95,7 @@ export const env = {
   ...parsed.data,
   twilioSmsConfigured: Boolean(parsed.data.TWILIO_ACCOUNT_SID && parsed.data.TWILIO_AUTH_TOKEN && hasExactlyOneTwilioSender),
   twilioVerifyConfigured: Boolean(parsed.data.TWILIO_ACCOUNT_SID && parsed.data.TWILIO_AUTH_TOKEN && parsed.data.TWILIO_VERIFY_SERVICE_SID),
+  cloudinaryConfigured: Boolean((parsed.data.CLOUDINARY_CLOUD_NAME && parsed.data.CLOUDINARY_API_KEY && parsed.data.CLOUDINARY_API_SECRET) || parsed.data.CLOUDINARY_URL),
   cookieSecure: parsed.data.COOKIE_SECURE === 'true' || parsed.data.NODE_ENV === 'production',
   uploadPath: parsed.data.UPLOAD_DIR
 };
