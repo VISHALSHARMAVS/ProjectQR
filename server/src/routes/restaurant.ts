@@ -24,16 +24,67 @@ restaurantRouter.use(requireStaff);
 
 restaurantRouter.get('/dashboard', async (req, res) => {
   const restaurantId = req.staff!.restaurantId;
-  const [menuItems, activeTables, newOrders, preparingOrders, completed] = await Promise.all([
+  const [menuItems, activeTables, newOrders, preparingOrders, completed, topItemsAgg, revenueAgg] = await Promise.all([
     MenuItem.countDocuments({ restaurantId }),
     DiningTable.countDocuments(tenantFilter(restaurantId, { active: true })),
     Order.countDocuments(tenantFilter(restaurantId, { status: 'NEW' })),
     Order.countDocuments(tenantFilter(restaurantId, { status: { $in: ['ACCEPTED', 'PREPARING'] } })),
-    Order.find(tenantFilter(restaurantId, { status: { $in: ['DELIVERED', 'REJECTED'] } })).sort({ updatedAt: -1 }).limit(8)
+    Order.find(tenantFilter(restaurantId, { status: { $in: ['DELIVERED', 'REJECTED'] } })).sort({ updatedAt: -1 }).limit(8),
+    Order.aggregate([
+      { $match: { restaurantId, status: { $ne: 'REJECTED' } } },
+      { $unwind: '$items' },
+      {
+        $group: {
+          _id: '$items.menuItemId',
+          name: { $first: '$items.name' },
+          totalQuantity: { $sum: '$items.quantity' },
+          totalRevenuePaise: { $sum: '$items.subtotalPaise' }
+        }
+      },
+      { $sort: { totalQuantity: -1 } },
+      { $limit: 5 }
+    ]),
+    Order.aggregate([
+      { $match: { restaurantId, status: { $ne: 'REJECTED' } } },
+      {
+        $group: {
+          _id: null,
+          totalSalesPaise: { $sum: '$totalPaise' },
+          completedOrdersCount: { $sum: 1 }
+        }
+      }
+    ])
   ]);
   const recent = completed as unknown as OrderDoc[];
   const labels = new Map((await DiningTable.find({ _id: { $in: recent.map((order) => order.tableId) }, restaurantId }).select('_id label').lean()).map((table) => [String(table._id), table.label]));
-  res.json({ metrics: { menuItems, activeTables, newOrders, preparingOrders }, recentlyCompleted: recent.map((order) => ({ id: String(order._id), orderNumber: order.orderNumber, status: order.status, totalPaise: order.totalPaise, updatedAt: order.updatedAt, tableLabel: labels.get(String(order.tableId)) ?? 'Table' })) });
+  
+  const revenueSummary = revenueAgg[0] || { totalSalesPaise: 0, completedOrdersCount: 0 };
+  const topSellers = topItemsAgg.map((item) => ({
+    menuItemId: String(item._id),
+    name: item.name,
+    totalQuantity: item.totalQuantity,
+    totalRevenuePaise: item.totalRevenuePaise
+  }));
+
+  res.json({
+    metrics: {
+      menuItems,
+      activeTables,
+      newOrders,
+      preparingOrders,
+      totalSalesPaise: revenueSummary.totalSalesPaise,
+      totalOrdersCount: revenueSummary.completedOrdersCount
+    },
+    topSellers,
+    recentlyCompleted: recent.map((order) => ({
+      id: String(order._id),
+      orderNumber: order.orderNumber,
+      status: order.status,
+      totalPaise: order.totalPaise,
+      updatedAt: order.updatedAt,
+      tableLabel: labels.get(String(order.tableId)) ?? 'Table'
+    }))
+  });
 });
 
 const settingsSchema = z.object({

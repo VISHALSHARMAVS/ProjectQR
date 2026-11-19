@@ -76,3 +76,26 @@ export interface OrderRecord {
   createdAt: string;
   updatedAt: string;
 }
+
+export interface CustomerHistory {
+  lastVisit: {
+    date: string;
+    orderNumber: string;
+    totalPaise: number;
+  } | null;
+  favoriteItems: {
+    menuItemId: string;
+    name: string;
+    pricePaise: number;
+    dietaryType?: DietaryType;
+    imageUrl?: string;
+    orderCount: number;
+  }[];
+  pastOrders: {
+    id: string;
+    orderNumber: string;
+    createdAt: string;
+    totalPaise: number;
+    items: { name: string; quantity: number; pricePaise: number }[];
+  }[];
+}

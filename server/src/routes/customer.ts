@@ -9,6 +9,7 @@ import { Customer } from '../models/Customer.js';
 import { CustomerSession } from '../models/CustomerSession.js';
 import { DiningTable } from '../models/DiningTable.js';
 import { MenuItem } from '../models/MenuItem.js';
+import { Order, type OrderDoc } from '../models/Order.js';
 import { OtpChallenge } from '../models/OtpChallenge.js';
 import { Restaurant } from '../models/Restaurant.js';
 import { ServiceRequest } from '../models/ServiceRequest.js';
@@ -383,3 +384,71 @@ customerRouter.post('/service-request', requireCustomer, requireCustomerQr, asyn
 
   res.status(201).json({ request: payload, message: 'Request sent to restaurant staff.' });
 });
+
+customerRouter.get('/history', requireCustomer, requireCustomerQr, async (req, res) => {
+  const customerId = req.customer!.customerId;
+  const restaurantId = req.customer!.restaurantId;
+
+  // Find previous orders placed by this customer at this restaurant, sorted by newest first
+  const pastOrders = await Order.find({
+    customerId,
+    restaurantId,
+    status: { $ne: 'REJECTED' }
+  })
+    .sort({ createdAt: -1 })
+    .limit(10) as unknown as OrderDoc[];
+
+  if (pastOrders.length === 0) {
+    return res.json({ lastVisit: null, pastOrders: [] });
+  }
+
+  // Get current active menu items so we only show items that are still available
+  const availableItems = await MenuItem.find({
+    restaurantId,
+    available: true
+  }).select('_id name pricePaise description dietary imageUrl').lean();
+
+  const availableMap = new Map(availableItems.map((item) => [String(item._id), item]));
+
+  // Deduplicate dishes ordered across their past visits for 1-tap reordering
+  const reorderMap = new Map<string, { menuItemId: string; name: string; pricePaise: number; dietaryType?: string; imageUrl?: string; orderCount: number }>();
+
+  for (const order of pastOrders) {
+    for (const item of order.items) {
+      const active = availableMap.get(String(item.menuItemId));
+      if (!active) continue; // Skip item if currently removed or 86'd
+      const existing = reorderMap.get(String(item.menuItemId));
+      if (existing) {
+        existing.orderCount += item.quantity;
+      } else {
+        reorderMap.set(String(item.menuItemId), {
+          menuItemId: String(active._id),
+          name: active.name,
+          pricePaise: active.pricePaise,
+          dietaryType: active.dietary,
+          imageUrl: active.imageUrl,
+          orderCount: item.quantity
+        });
+      }
+    }
+  }
+
+  const latestOrder = pastOrders[0];
+
+  res.json({
+    lastVisit: latestOrder ? {
+      date: latestOrder.createdAt,
+      orderNumber: latestOrder.orderNumber,
+      totalPaise: latestOrder.totalPaise
+    } : null,
+    favoriteItems: Array.from(reorderMap.values()).sort((a, b) => b.orderCount - a.orderCount).slice(0, 6),
+    pastOrders: pastOrders.map((o: OrderDoc) => ({
+      id: String(o._id),
+      orderNumber: o.orderNumber,
+      createdAt: o.createdAt,
+      totalPaise: o.totalPaise,
+      items: o.items.map((i) => ({ name: i.name, quantity: i.quantity, pricePaise: i.unitPricePaise }))
+    }))
+  });
+});
+

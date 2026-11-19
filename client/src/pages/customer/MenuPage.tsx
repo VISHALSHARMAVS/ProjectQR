@@ -6,7 +6,7 @@ import { formatTableLabel, money } from '../../lib/format';
 import { DietaryBadge, EmptyState, Loading } from '../../components/ui';
 import { CustomerAssistanceModal } from '../../components/CustomerAssistanceModal';
 import { useOrderSocket } from '../../hooks/useOrderSocket';
-import type { Category, DietaryType, MenuItem, RestaurantInfo, TableCartLine } from '../../types';
+import type { Category, CustomerHistory, DietaryType, MenuItem, RestaurantInfo, TableCartLine } from '../../types';
 
 interface CustomerSession { sessionId: string; customer: { id: string; name: string }; restaurant: RestaurantInfo; table: { id: string; label: string } }
 interface CustomerMenu { categories: Category[]; items: MenuItem[] }
@@ -25,6 +25,13 @@ export default function CustomerMenuPage() {
     enabled: Boolean(session.data),
     retry: false,
     refetchInterval: 10_000
+  });
+
+  const historyQuery = useQuery({
+    queryKey: ['customer-history', token],
+    queryFn: () => api.get<CustomerHistory>(`/customer/history?token=${encodeURIComponent(token)}`),
+    enabled: Boolean(session.data),
+    retry: false
   });
 
   const endVisit = useMutation({
@@ -148,6 +155,89 @@ export default function CustomerMenuPage() {
           <DietaryBadge type="EGG" /> Contains Egg
         </button>
       </div>
+
+      {/* Quick Reorder Carousel from Previous Visit */}
+      {historyQuery.data?.favoriteItems && historyQuery.data.favoriteItems.length > 0 && (
+        <section style={{ marginBottom: 20, padding: '14px 16px', background: '#fdfbf7', border: '1px solid #ebd9c8', borderRadius: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+            <div>
+              <span className="eyebrow" style={{ color: '#9a3412', fontSize: 10, letterSpacing: '0.12em' }}>
+                WELCOME BACK
+              </span>
+              <h2 style={{ fontSize: 16, margin: '2px 0 0', fontWeight: 750, color: '#431407' }}>
+                🕒 Reorder from your last visits
+              </h2>
+            </div>
+            {historyQuery.data.lastVisit && (
+              <span className="muted" style={{ fontSize: 11 }}>
+                Last visited {new Date(historyQuery.data.lastVisit.date).toLocaleDateString([], { month: 'short', day: 'numeric' })}
+              </span>
+            )}
+          </div>
+          <div style={{ display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 6, WebkitOverflowScrolling: 'touch' }}>
+            {historyQuery.data.favoriteItems.map((fav) => {
+              const matchedMenuItem = menu.data?.items.find((i) => i._id === fav.menuItemId);
+              const qty = quantityById.get(fav.menuItemId) ?? 0;
+              return (
+                <div
+                  key={fav.menuItemId}
+                  style={{
+                    flex: '0 0 170px',
+                    background: 'white',
+                    padding: 10,
+                    borderRadius: 12,
+                    border: '1px solid var(--line)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                    boxShadow: '0 2px 6px rgba(0,0,0,0.03)'
+                  }}
+                >
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 4 }}>
+                      <DietaryBadge type={fav.dietaryType} />
+                      <strong style={{ fontSize: 13, lineHeight: 1.25, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                        {fav.name}
+                      </strong>
+                    </div>
+                    <span style={{ fontSize: 12, color: 'var(--muted)', fontWeight: 600 }}>
+                      {money(fav.pricePaise)}
+                    </span>
+                  </div>
+                  <div style={{ marginTop: 10 }}>
+                    {qty > 0 ? (
+                      <div className="qty-control" style={{ width: '100%', height: 32 }}>
+                        <button
+                          aria-label={`Remove one ${fav.name}`}
+                          onClick={() => matchedMenuItem && updateQuantity(matchedMenuItem, qty - 1)}
+                        >
+                          −
+                        </button>
+                        <strong>{qty}</strong>
+                        <button
+                          aria-label={`Add one ${fav.name}`}
+                          onClick={() => matchedMenuItem && updateQuantity(matchedMenuItem, qty + 1)}
+                        >
+                          +
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        className="btn small full"
+                        style={{ minHeight: 32, fontSize: 12, padding: '0 8px' }}
+                        onClick={() => matchedMenuItem && addItem(matchedMenuItem)}
+                      >
+                        + Add
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
 
       {availableCategories.length > 0 && <nav className="menu-categories" aria-label="Menu categories">{availableCategories.map((category) => <button key={category._id} className={`category-chip ${activeCategory === category._id ? 'active' : ''}`} onClick={() => scrollTo(category._id)}>{category.name}</button>)}</nav>}
     </div>
