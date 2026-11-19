@@ -5,6 +5,8 @@ import { elapsedSince, formatTableLabel, money } from '../../lib/format';
 import { playKitchenChime, playWaiterCallAlert } from '../../lib/audio';
 import { EmptyState, ErrorPanel, Loading, Modal, StatusPill } from '../../components/ui';
 import { useOrderSocket } from '../../hooks/useOrderSocket';
+import { printOrderReceipt } from '../../lib/printer';
+import { useStaff } from '../../hooks/useStaff';
 import type { OrderRecord, OrderStatus } from '../../types';
 
 interface OrderList { orders: OrderRecord[] }
@@ -36,6 +38,8 @@ const next: Partial<Record<OrderStatus, { status: OrderStatus; label: string }>>
 
 export default function OrdersPage({ kitchen = false }: { kitchen?: boolean }) {
   const queryClient = useQueryClient();
+  const staff = useStaff();
+  const restaurantName = staff.data?.restaurant?.name || 'Restaurant';
   const [filter, setFilter] = useState(kitchen ? 'NEW' : '');
   const [now, setNow] = useState(0);
   const [rejectionOrder, setRejectionOrder] = useState<OrderRecord | null>(null);
@@ -256,7 +260,45 @@ export default function OrdersPage({ kitchen = false }: { kitchen?: boolean }) {
                       <span>{money(item.subtotalPaise)}</span>
                     </li>
                   ))}
-                </ul>{order.notes && <div className="notice" style={{ fontSize: 12 }}><strong>Order note:</strong> {order.notes}</div>}{order.rejectionReason && <div className="form-error" style={{ fontSize: 12 }}><strong>Rejection reason:</strong> {order.rejectionReason}</div>}<div className="total-row" style={{ borderTop: '1px solid var(--line)', paddingTop: 12 }}><span>Total</span><strong>{money(order.totalPaise)}</strong></div>{action && <div className="order-actions"><button className="btn small" onClick={() => update.mutate({ order, status: action.status })} disabled={update.isPending}>{action.label}</button>{order.status === 'NEW' && <button className="btn danger small" onClick={() => { setRejectionOrder(order); setRejectionReason(''); setError(''); }}>Reject</button>}</div>}</article>;
+                </ul>{order.notes && <div className="notice" style={{ fontSize: 12 }}><strong>Order note:</strong> {order.notes}</div>}{order.rejectionReason && <div className="form-error" style={{ fontSize: 12 }}><strong>Rejection reason:</strong> {order.rejectionReason}</div>}                <div className="total-row" style={{ borderTop: '1px solid var(--line)', paddingTop: 12 }}>
+                  <span>Total</span>
+                  <strong>{money(order.totalPaise)}</strong>
+                </div>
+                <div className="order-actions" style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 10 }}>
+                  <button
+                    type="button"
+                    className="btn secondary small"
+                    onClick={() => printOrderReceipt(order, restaurantName, 'KOT')}
+                    title="Print 80mm Kitchen Order Ticket"
+                  >
+                    🖨️ KOT
+                  </button>
+                  <button
+                    type="button"
+                    className="btn secondary small"
+                    onClick={() => printOrderReceipt(order, restaurantName, 'BILL')}
+                    title="Print Customer Bill Receipt"
+                  >
+                    🧾 Bill
+                  </button>
+                  {action && (
+                    <button
+                      className="btn small"
+                      onClick={() => update.mutate({ order, status: action.status })}
+                      disabled={update.isPending}
+                    >
+                      {action.label}
+                    </button>
+                  )}
+                  {order.status === 'NEW' && (
+                    <button
+                      className="btn danger small"
+                      onClick={() => { setRejectionOrder(order); setRejectionReason(''); setError(''); }}
+                    >
+                      Reject
+                    </button>
+                  )}
+                </div></article>;
     })}</section>}
     {rejectionOrder && <Modal title="Reject this order?" onClose={() => { setRejectionOrder(null); setError(''); }}><p className="muted">Tell the customer why {rejectionOrder.orderNumber} cannot be accepted. This message will appear on their tracking page.</p><div className="field" style={{ margin: '15px 0' }}><label htmlFor="reject-reason">Reason</label><textarea className="textarea" id="reject-reason" autoFocus required minLength={2} maxLength={300} value={rejectionReason} onChange={(event) => setRejectionReason(event.target.value)} placeholder="e.g. One of the items is unavailable" /></div>{error && <div className="form-error" style={{ marginBottom: 12 }}>{error}</div>}<div className="toolbar" style={{ justifyContent: 'end' }}><button className="btn secondary" onClick={() => setRejectionOrder(null)}>Cancel</button><button className="btn danger" onClick={reject} disabled={update.isPending || rejectionReason.trim().length < 2}>{update.isPending ? 'Updating…' : 'Reject order'}</button></div></Modal>}
   </>;
