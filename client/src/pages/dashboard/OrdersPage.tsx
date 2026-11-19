@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, ApiError } from '../../lib/api';
 import { elapsedSince, formatTableLabel, money } from '../../lib/format';
-import { playKitchenChime } from '../../lib/audio';
+import { playKitchenChime, playWaiterCallAlert } from '../../lib/audio';
 import { EmptyState, ErrorPanel, Loading, Modal, StatusPill } from '../../components/ui';
 import { useOrderSocket } from '../../hooks/useOrderSocket';
 import type { OrderRecord, OrderStatus } from '../../types';
@@ -15,6 +15,13 @@ interface ServiceRequestItem {
   notes: string;
   createdAt: string;
 }
+
+const serviceLabels: Record<ServiceRequestItem['type'], { title: string; icon: string }> = {
+  WAITER: { title: 'Call Waiter', icon: '🙋' },
+  BILL: { title: 'Bill Requested', icon: '🧾' },
+  WATER: { title: 'Drinking Water', icon: '💧' },
+  CUTLERY: { title: 'Plates & Cutlery', icon: '🍴' }
+};
 
 const filters: { label: string; value: string }[] = [
   { label: 'All statuses', value: '' }, { label: 'New', value: 'NEW' }, { label: 'Accepted', value: 'ACCEPTED' },
@@ -36,6 +43,7 @@ export default function OrdersPage({ kitchen = false }: { kitchen?: boolean }) {
   const [notice, setNotice] = useState('');
   const [error, setError] = useState('');
   const [soundEnabled, setSoundEnabled] = useState(() => localStorage.getItem('pqr-kitchen-sound') !== 'false');
+  const [activeAlert, setActiveAlert] = useState<ServiceRequestItem | null>(null);
 
   const toggleSound = () => {
     setSoundEnabled((prev) => {
@@ -56,9 +64,28 @@ export default function OrdersPage({ kitchen = false }: { kitchen?: boolean }) {
   }, [soundEnabled]);
 
   const onServiceRequest = useCallback((req: unknown) => {
-    const data = req as { tableLabel?: string; type?: string };
-    setNotice(`Table ${data.tableLabel ?? ''} requested assistance!`);
-    if (soundEnabled) playKitchenChime();
+    const data = req as ServiceRequestItem;
+    const label = formatTableLabel(data.tableLabel ?? 'Table');
+    setNotice(`${label} requested assistance!`);
+
+    if (soundEnabled) {
+      if (data.type === 'WAITER' || data.type === 'BILL') {
+        playWaiterCallAlert();
+      } else {
+        playKitchenChime();
+      }
+    }
+
+    if (data.type === 'WAITER' || data.type === 'BILL') {
+      setActiveAlert(data);
+    }
+
+    if ('Notification' in window && Notification.permission === 'granted') {
+      new Notification(`🔔 ${label}: ${serviceLabels[data.type]?.title ?? 'Assistance'}`, {
+        body: data.notes ? `Note: ${data.notes}` : 'Immediate staff attention requested.'
+      });
+    }
+
     window.setTimeout(() => setNotice(''), 6000);
   }, [soundEnabled]);
 
@@ -69,7 +96,10 @@ export default function OrdersPage({ kitchen = false }: { kitchen?: boolean }) {
 
   const resolveRequest = useMutation({
     mutationFn: (id: string) => api.patch(`/restaurant/service-requests/${id}/resolve`, {}),
-    onSuccess: async () => { await queryClient.invalidateQueries({ queryKey: ['service-requests'] }); }
+    onSuccess: async (_, id) => {
+      if (activeAlert?.id === id) setActiveAlert(null);
+      await queryClient.invalidateQueries({ queryKey: ['service-requests'] });
+    }
   });
 
   const update = useMutation({
@@ -95,9 +125,9 @@ export default function OrdersPage({ kitchen = false }: { kitchen?: boolean }) {
           type="button"
           className={`btn small ${soundEnabled ? 'secondary' : 'ghost'}`}
           onClick={toggleSound}
-          title={soundEnabled ? 'Click to mute order chime' : 'Click to enable order chime'}
+          title={soundEnabled ? 'Click to mute chimes' : 'Click to enable chimes'}
         >
-          {soundEnabled ? '🔔 Chime on' : '🔕 Muted'}
+          {soundEnabled ? '🔔 Sound on' : '🔕 Muted'}
         </button>
         <select className="select" aria-label="Filter orders by status" value={filter} onChange={(event) => setFilter(event.target.value)}>
           {filters.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
@@ -105,6 +135,74 @@ export default function OrdersPage({ kitchen = false }: { kitchen?: boolean }) {
         <button className="btn secondary small" onClick={() => void query.refetch()}>Refresh</button>
       </div>
     </div>
+
+    {/* High-priority full-screen modal alert for Waiter Call and Bill Request */}
+    {activeAlert && (
+      <div className="modal-backdrop" role="presentation" style={{ zIndex: 1100 }}>
+        <section
+          className="modal surface"
+          role="alertdialog"
+          aria-modal="true"
+          aria-label="Waiter Call Alert"
+          style={{
+            width: 'min(440px, 94%)',
+            border: '2px solid #ea580c',
+            boxShadow: '0 20px 45px rgba(234, 88, 12, 0.28)'
+          }}
+        >
+          <div style={{ textAlign: 'center', padding: '10px 0 16px' }}>
+            <div
+              style={{
+                width: 68,
+                height: 68,
+                borderRadius: '50%',
+                background: '#ffedd5',
+                color: '#c2410c',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 34,
+                margin: '0 auto 12px'
+              }}
+            >
+              {serviceLabels[activeAlert.type]?.icon || '🔔'}
+            </div>
+            <span className="eyebrow" style={{ color: '#c2410c', letterSpacing: '0.15em', fontWeight: 800 }}>
+              GUEST ASSISTANCE ALERT
+            </span>
+            <h2 style={{ fontSize: 30, margin: '6px 0 4px', color: '#1c1917', fontWeight: 800 }}>
+              {formatTableLabel(activeAlert.tableLabel)}
+            </h2>
+            <p style={{ margin: 0, fontSize: 17, fontWeight: 700, color: '#9a3412' }}>
+              {serviceLabels[activeAlert.type]?.title}
+            </p>
+            {activeAlert.notes && (
+              <div style={{ marginTop: 14, padding: '9px 13px', background: '#fef3c7', borderRadius: 8, fontSize: 13, color: '#78350f', textAlign: 'left' }}>
+                <strong>Guest note:</strong> {activeAlert.notes}
+              </div>
+            )}
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: 10 }}>
+            <button
+              type="button"
+              className="btn secondary"
+              onClick={() => setActiveAlert(null)}
+            >
+              Dismiss
+            </button>
+            <button
+              type="button"
+              className="btn"
+              style={{ background: '#ea580c', borderColor: '#c2410c' }}
+              disabled={resolveRequest.isPending}
+              onClick={() => resolveRequest.mutate(activeAlert.id)}
+            >
+              {resolveRequest.isPending ? 'Marking…' : '✓ Acknowledge'}
+            </button>
+          </div>
+        </section>
+      </div>
+    )}
 
     {serviceRequests.data?.requests && serviceRequests.data.requests.length > 0 && (
       <div className="surface" style={{ padding: '14px 18px', marginBottom: 16, borderLeft: '4px solid #c96d3c', background: '#fff9f5' }}>

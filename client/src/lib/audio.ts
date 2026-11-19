@@ -1,4 +1,4 @@
-// Pure Web Audio API chime - zero external asset dependencies, 100% reliable
+// Pure Web Audio API chimes - zero external asset dependencies, 100% reliable across browsers
 let audioCtx: AudioContext | null = null;
 
 function getAudioContext(): AudioContext | null {
@@ -15,6 +15,10 @@ function getAudioContext(): AudioContext | null {
   return audioCtx;
 }
 
+/**
+ * Clean, pleasant two-tone order chime for new food orders.
+ * Notes: E6 (1318Hz) -> G#6 (1661Hz)
+ */
 export function playKitchenChime(): void {
   try {
     const ctx = getAudioContext();
@@ -46,5 +50,56 @@ export function playKitchenChime(): void {
     osc2.stop(now + 0.85);
   } catch (error) {
     console.warn('AudioContext chime blocked by browser gesture policy:', error);
+  }
+}
+
+/**
+ * Strong, attention-grabbing dual-bell chime specifically for Waiter Call & Urgent Assistance.
+ * Triple pulsing ring (880Hz / 1760Hz bell harmonics with acoustic sustain)
+ * Designed to cut through noisy restaurant dining rooms and kitchens.
+ */
+export function playWaiterCallAlert(): void {
+  try {
+    const ctx = getAudioContext();
+    if (!ctx) return;
+    const now = ctx.currentTime;
+
+    // 3 distinct high-intensity service bell strikes: at t=0s, t=0.22s, and t=0.45s
+    const pulses = [0, 0.22, 0.45];
+
+    pulses.forEach((offset, index) => {
+      const strikeTime = now + offset;
+      
+      // Fundamental bell tone (A5 = 880Hz, last one rings higher at C6 = 1046Hz)
+      const fundFreq = index === 2 ? 1046.50 : 880;
+      const oscPrimary = ctx.createOscillator();
+      const gainPrimary = ctx.createGain();
+      oscPrimary.type = 'triangle'; // triangle gives richer bell harmonics than sine
+      oscPrimary.frequency.setValueAtTime(fundFreq, strikeTime);
+      
+      // Initial sharp attack for crisp clink
+      gainPrimary.gain.setValueAtTime(0.65, strikeTime);
+      gainPrimary.gain.exponentialRampToValueAtTime(0.0001, strikeTime + 0.55);
+      
+      oscPrimary.connect(gainPrimary);
+      gainPrimary.connect(ctx.destination);
+      oscPrimary.start(strikeTime);
+      oscPrimary.stop(strikeTime + 0.55);
+
+      // Overtone / high harmonic shimmer (E6 = 1318Hz or high bell ping)
+      const oscHarmonic = ctx.createOscillator();
+      const gainHarmonic = ctx.createGain();
+      oscHarmonic.type = 'sine';
+      oscHarmonic.frequency.setValueAtTime(fundFreq * 2.2, strikeTime);
+      gainHarmonic.gain.setValueAtTime(0.4, strikeTime);
+      gainHarmonic.gain.exponentialRampToValueAtTime(0.0001, strikeTime + 0.4);
+
+      oscHarmonic.connect(gainHarmonic);
+      gainHarmonic.connect(ctx.destination);
+      oscHarmonic.start(strikeTime);
+      oscHarmonic.stop(strikeTime + 0.4);
+    });
+  } catch (error) {
+    console.warn('AudioContext waiter alert blocked by browser gesture policy:', error);
   }
 }
