@@ -210,7 +210,10 @@ export default function CheckoutPage() {
       <div style={{ marginTop: 18 }}>
         <div className="total-row"><span>Subtotal ({cart.reduce((sum, line) => sum + line.quantity, 0)} items)</span><strong>{money(subtotal)}</strong></div>
         <div className="total-row"><span>Payment</span><span>Pay at table or counter</span></div>
-        <div className="total-row grand"><span>Total</span><span>{money(subtotal)}</span></div>
+        <div className="total-row grand"><span>Total (Incl. Taxes)</span><span>{money(subtotal)}</span></div>
+        <div style={{ fontSize: 11, color: 'var(--muted)', textAlign: 'right', marginTop: 4 }}>
+          ✓ All item prices are inclusive of applicable GST
+        </div>
       </div>
     </section>
 

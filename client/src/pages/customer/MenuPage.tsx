@@ -344,6 +344,12 @@ export default function CustomerMenuPage() {
         ))
       )}
 
+      {/* GST Inclusive Notice Footer */}
+      <footer style={{ textAlign: 'center', padding: '24px 12px 100px', color: 'var(--muted)', fontSize: 12 }}>
+        <p style={{ margin: 0, fontWeight: 500 }}>✓ All menu prices are inclusive of applicable taxes (GST).</p>
+        <p style={{ margin: '4px 0 0', opacity: 0.8 }}>Itemized tax invoice breakdown provided on your bill.</p>
+      </footer>
+
       {/* Item Customization Modal (Portion Sizes & Extras) */}
       {customizingItem && (
         <Modal
@@ -439,6 +445,9 @@ export default function CustomerMenuPage() {
 
           {/* Bottom Add Action */}
           <div style={{ borderTop: '1px solid var(--line)', paddingTop: 14, marginTop: 10 }}>
+            <div style={{ fontSize: 11, color: 'var(--muted)', textAlign: 'center', marginBottom: 8 }}>
+              Inclusive of all taxes (GST)
+            </div>
             <button
               type="button"
               className="btn full"

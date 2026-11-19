@@ -16,6 +16,8 @@ interface SettingsForm {
   address: string;
   contactPhone: string;
   contactEmail: string;
+  gstin: string;
+  gstPercentage: number;
 }
 
 const colorPresets = [
@@ -48,7 +50,9 @@ export default function SettingsPage() {
     welcomeTagline: overrides.welcomeTagline ?? restaurant?.welcomeTagline ?? '',
     address: overrides.address ?? restaurant?.address ?? '',
     contactPhone: overrides.contactPhone ?? restaurant?.contactPhone ?? '',
-    contactEmail: overrides.contactEmail ?? restaurant?.contactEmail ?? ''
+    contactEmail: overrides.contactEmail ?? restaurant?.contactEmail ?? '',
+    gstin: overrides.gstin ?? restaurant?.gstin ?? '',
+    gstPercentage: overrides.gstPercentage ?? restaurant?.gstPercentage ?? 5
   };
 
   const handleLogoChange = (file: File | null) => {
@@ -291,6 +295,48 @@ export default function SettingsPage() {
 
       <div className="field"><label htmlFor="restaurant-address">Address</label><input className="input" id="restaurant-address" maxLength={300} disabled={!canEdit} value={form.address} onChange={(event) => setOverrides((current) => ({ ...current, address: event.target.value }))} /></div>
       <div className="toolbar"><div className="field" style={{ flex: 1 }}><label htmlFor="restaurant-phone">Contact phone</label><input className="input" id="restaurant-phone" type="tel" disabled={!canEdit} value={form.contactPhone} onChange={(event) => setOverrides((current) => ({ ...current, contactPhone: event.target.value }))} /></div><div className="field" style={{ flex: 1 }}><label htmlFor="restaurant-email">Contact email</label><input className="input" id="restaurant-email" type="email" disabled={!canEdit} value={form.contactEmail} onChange={(event) => setOverrides((current) => ({ ...current, contactEmail: event.target.value }))} /></div></div>
+
+      {/* GST & Tax Compliance Section */}
+      <div style={{ padding: 18, background: '#f8fafc', borderRadius: 14, border: '1px solid var(--line)', margin: '18px 0' }}>
+        <div>
+          <strong style={{ fontSize: 15, display: 'flex', alignItems: 'center', gap: 6 }}>
+            🧾 GST & Tax Settings (Prices are Inclusive of GST)
+          </strong>
+          <p className="muted" style={{ margin: '4px 0 14px', fontSize: 13 }}>
+            Customer menu prices always include tax. These settings calculate the legal CGST/SGST tax breakdown printed on the final guest bill.
+          </p>
+        </div>
+        <div className="toolbar">
+          <div className="field" style={{ flex: 2 }}>
+            <label htmlFor="restaurant-gstin">Restaurant GSTIN <span className="muted">(Optional, 15 characters)</span></label>
+            <input
+              className="input"
+              id="restaurant-gstin"
+              maxLength={15}
+              disabled={!canEdit}
+              placeholder="e.g. 07AAAAA0000A1Z5"
+              style={{ textTransform: 'uppercase' }}
+              value={form.gstin}
+              onChange={(e) => setOverrides((current) => ({ ...current, gstin: e.target.value.toUpperCase() }))}
+            />
+          </div>
+          <div className="field" style={{ flex: 1 }}>
+            <label htmlFor="restaurant-gst-rate">GST Rate (%)</label>
+            <select
+              className="select"
+              id="restaurant-gst-rate"
+              disabled={!canEdit}
+              value={form.gstPercentage}
+              onChange={(e) => setOverrides((current) => ({ ...current, gstPercentage: Number(e.target.value) }))}
+            >
+              <option value={0}>0% (Exempt / No GST)</option>
+              <option value={5}>5% (Standard Restaurant Rate)</option>
+              <option value={12}>12% (Composite / Food Delivery)</option>
+              <option value={18}>18% (Hotel Outlets / AC Dining)</option>
+            </select>
+          </div>
+        </div>
+      </div>
       <div className="notice">Table QR codes use the public app URL configured by the restaurant operator.</div>
       {error && <div className="form-error" role="alert">{error}</div>}{message && <div className="notice success" role="status">{message}</div>}
       {canEdit ? <button className="btn" disabled={save.isPending}>{save.isPending && <span className="btn-spinner" aria-hidden="true" />}{save.isPending ? 'Saving…' : 'Save settings'}</button> : <div className="notice">Only the restaurant owner can change these settings.</div>}

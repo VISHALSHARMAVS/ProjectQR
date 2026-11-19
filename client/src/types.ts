@@ -10,6 +10,8 @@ export interface RestaurantInfo {
   address?: string;
   contactPhone?: string;
   contactEmail?: string;
+  gstin?: string;
+  gstPercentage?: number;
   active?: boolean;
 }
 

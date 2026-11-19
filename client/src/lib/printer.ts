@@ -1,7 +1,13 @@
 import { formatTableLabel, money } from '../lib/format';
 import type { OrderRecord } from '../types';
 
-export function printOrderReceipt(order: OrderRecord, restaurantName = 'Restaurant', type: 'KOT' | 'BILL' = 'KOT') {
+export function printOrderReceipt(
+  order: OrderRecord,
+  restaurantName = 'Restaurant',
+  type: 'KOT' | 'BILL' = 'KOT',
+  gstin?: string,
+  gstPercentage = 5
+) {
   const iframe = document.createElement('iframe');
   iframe.style.position = 'fixed';
   iframe.style.right = '0';
@@ -20,6 +26,14 @@ export function printOrderReceipt(order: OrderRecord, restaurantName = 'Restaura
   });
 
   const isKot = type === 'KOT';
+
+  const taxablePaise = gstPercentage > 0
+    ? Math.round((order.totalPaise * 100) / (100 + gstPercentage))
+    : order.totalPaise;
+  const gstPaise = order.totalPaise - taxablePaise;
+  const cgstPaise = Math.round(gstPaise / 2);
+  const sgstPaise = gstPaise - cgstPaise;
+  const halfRate = (gstPercentage / 2).toFixed(1).replace(/\.0$/, '');
 
   const itemsHtml = order.items.map((item) => `
     <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 6px; font-size: 13px; line-height: 1.3;">
@@ -71,8 +85,13 @@ export function printOrderReceipt(order: OrderRecord, restaurantName = 'Restaura
           <div style="font-size: 18px; font-weight: 900; text-transform: uppercase;">
             ${restaurantName}
           </div>
+          ${!isKot && gstin ? `
+            <div style="font-size: 11px; font-weight: bold; margin-top: 2px; letter-spacing: 0.5px;">
+              GSTIN: ${gstin}
+            </div>
+          ` : ''}
           <div style="font-size: 14px; font-weight: bold; margin-top: 2px; letter-spacing: 1px;">
-            --- ${isKot ? 'KITCHEN ORDER TICKET (KOT)' : 'GUEST BILL RECEIPT'} ---
+            --- ${isKot ? 'KITCHEN ORDER TICKET (KOT)' : 'TAX INVOICE / GUEST BILL'} ---
           </div>
         </div>
 
@@ -106,9 +125,27 @@ export function printOrderReceipt(order: OrderRecord, restaurantName = 'Restaura
         <div class="divider-double"></div>
 
         ${!isKot ? `
+          ${gstPercentage > 0 ? `
+            <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 3px;">
+              <span>Net Taxable Subtotal:</span>
+              <span>${money(taxablePaise)}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 3px;">
+              <span>CGST (${halfRate}%):</span>
+              <span>${money(cgstPaise)}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 3px;">
+              <span>SGST (${halfRate}%):</span>
+              <span>${money(sgstPaise)}</span>
+            </div>
+            <div class="divider"></div>
+          ` : ''}
           <div style="display: flex; justify-content: space-between; font-size: 15px; font-weight: 900;">
-            <span>TOTAL:</span>
+            <span>TOTAL AMOUNT:</span>
             <span>${money(order.totalPaise)}</span>
+          </div>
+          <div style="font-size: 10px; color: #555; text-align: right; margin-top: 2px;">
+            (Prices are inclusive of all taxes)
           </div>
           <div class="divider"></div>
           <div class="center" style="font-size: 11px; margin-top: 8px;">

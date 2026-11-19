@@ -39,7 +39,10 @@ const next: Partial<Record<OrderStatus, { status: OrderStatus; label: string }>>
 export default function OrdersPage({ kitchen = false }: { kitchen?: boolean }) {
   const queryClient = useQueryClient();
   const staff = useStaff();
-  const restaurantName = staff.data?.restaurant?.name || 'Restaurant';
+  const restaurant = staff.data?.restaurant;
+  const restaurantName = restaurant?.name || 'Restaurant';
+  const gstin = restaurant?.gstin;
+  const gstPercentage = restaurant?.gstPercentage ?? 5;
   const [filter, setFilter] = useState(kitchen ? 'NEW' : '');
   const [now, setNow] = useState(0);
   const [rejectionOrder, setRejectionOrder] = useState<OrderRecord | null>(null);
@@ -276,8 +279,8 @@ export default function OrdersPage({ kitchen = false }: { kitchen?: boolean }) {
                   <button
                     type="button"
                     className="btn secondary small"
-                    onClick={() => printOrderReceipt(order, restaurantName, 'BILL')}
-                    title="Print Customer Bill Receipt"
+                    onClick={() => printOrderReceipt(order, restaurantName, 'BILL', gstin, gstPercentage)}
+                    title="Print Customer Bill Receipt (with GST Breakdown)"
                   >
                     🧾 Bill
                   </button>

@@ -23,7 +23,7 @@ export const publicRouter = Router();
 publicRouter.get('/tables/:token', async (req, res) => {
   const table = await DiningTable.findOne({ qrToken: req.params.token, active: true }).select('restaurantId label active');
   if (!table) throw new AppError(404, 'INVALID_QR', 'This table QR code is invalid or no longer active.');
-  const restaurant = await Restaurant.findOne({ _id: table.restaurantId, active: true }).select('name slug description logoUrl brandColor bannerUrl welcomeTagline');
+  const restaurant = await Restaurant.findOne({ _id: table.restaurantId, active: true }).select('name slug description logoUrl brandColor bannerUrl welcomeTagline gstin gstPercentage');
   if (!restaurant) throw new AppError(404, 'RESTAURANT_UNAVAILABLE', 'This restaurant is not currently accepting orders.');
   res.json({ restaurant, table: { id: table.id, label: table.label } });
 });
