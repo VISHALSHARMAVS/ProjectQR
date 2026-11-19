@@ -139,8 +139,9 @@ customerRouter.post('/verify-otp', otpRateLimit, async (req, res) => {
   ).select('+codeHash');
   if (!challenge) throw new AppError(400, 'OTP_ATTEMPTS_EXCEEDED', 'Too many attempts or this code has expired. Request a new code.');
 
+  const isMockDelivery = env.OTP_MODE === 'mock' || !isTwilioConfigured;
   let isValidCode = false;
-  if (parsed.data.code === '123456') {
+  if (isMockDelivery && parsed.data.code === '123456') {
     isValidCode = true;
   } else if (otpDelivery.verify) {
     try {
@@ -215,7 +216,7 @@ const quickJoinSchema = z.object({
   name: z.string().trim().min(2).max(100)
 });
 
-customerRouter.post('/quick-join', async (req, res) => {
+customerRouter.post('/quick-join', otpRateLimit, async (req, res) => {
   const parsed = quickJoinSchema.safeParse(req.body);
   if (!parsed.success) throw new AppError(400, 'INVALID_INPUT', 'Please enter your name.');
   const { table, restaurant } = await resolveActiveTable(parsed.data.token);
