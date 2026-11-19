@@ -13,6 +13,7 @@ import MenuPage from './pages/dashboard/MenuPage';
 import CategoriesPage from './pages/dashboard/CategoriesPage';
 import TablesPage from './pages/dashboard/TablesPage';
 import OrdersPage from './pages/dashboard/OrdersPage';
+import DayClosePage from './pages/dashboard/DayClosePage';
 import SettingsPage from './pages/dashboard/SettingsPage';
 
 function NotFoundPage() {
@@ -40,6 +41,7 @@ export default function App() {
         <Route path="tables" element={<ManagementOnly><TablesPage /></ManagementOnly>} />
         <Route path="orders" element={<OrdersPage />} />
         <Route path="kitchen" element={<OrdersPage kitchen />} />
+        <Route path="day-close" element={<ManagementOnly><DayClosePage /></ManagementOnly>} />
         <Route path="settings" element={<ManagementOnly><SettingsPage /></ManagementOnly>} />
       </Route>
     </Route>

@@ -13,6 +13,7 @@ const links = [
   { to: '/dashboard/tables', label: 'Tables & QR', icon: '⌗' },
   { to: '/dashboard/orders', label: 'Orders', icon: '▣' },
   { to: '/dashboard/kitchen', label: 'Kitchen', icon: '◷' },
+  { to: '/dashboard/day-close', label: 'Day Close / Register', icon: '📋' },
   { to: '/dashboard/settings', label: 'Settings', icon: '⚙' }
 ];
 

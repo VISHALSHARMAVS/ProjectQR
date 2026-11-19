@@ -47,7 +47,10 @@ export default function OverviewPage() {
           <h1>Welcome back.</h1>
           <p className="muted" style={{ margin: '7px 0 0', fontSize: 13 }}>Here is how your restaurant and menu are performing.</p>
         </div>
-        <Link className="btn" to="/dashboard/kitchen">Open kitchen <span aria-hidden="true">→</span></Link>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <Link className="btn secondary" to="/dashboard/day-close">📋 Day Close Report</Link>
+          <Link className="btn" to="/dashboard/kitchen">Open kitchen <span aria-hidden="true">→</span></Link>
+        </div>
       </div>
 
       <section className="stat-grid">

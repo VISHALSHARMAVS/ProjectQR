@@ -38,11 +38,19 @@ const orderSchema = new Schema({
   statusHistory: { type: [statusEventSchema], default: () => [{ status: 'NEW', at: new Date() }] },
   subtotalPaise: { type: Number, required: true, min: 0 },
   totalPaise: { type: Number, required: true, min: 0 },
+  paymentStatus: { type: String, enum: ['UNPAID', 'PAID'], default: 'UNPAID', index: true },
+  paymentMethod: { type: String, enum: ['CASH', 'UPI', 'CARD', 'OTHER'], default: null },
+  discountPaise: { type: Number, min: 0, default: 0 },
+  discountReason: { type: String, trim: true, maxlength: 100, default: '' },
+  finalPaidPaise: { type: Number, min: 0, default: 0 },
+  settledAt: { type: Date, default: null },
+  settledBy: { type: Schema.Types.ObjectId, ref: 'User', default: null },
   notes: { type: String, trim: true, maxlength: 500, default: '' },
   rejectionReason: { type: String, trim: true, maxlength: 300, default: '' }
 }, { timestamps: true });
 orderSchema.index({ restaurantId: 1, createdAt: -1 });
 orderSchema.index({ restaurantId: 1, status: 1, createdAt: 1 });
+orderSchema.index({ restaurantId: 1, paymentStatus: 1, settledAt: -1 });
 orderSchema.index({ restaurantId: 1, orderNumber: 1 }, { unique: true });
 orderSchema.index({ customerSessionId: 1, idempotencyKey: 1 }, { unique: true });
 
@@ -56,5 +64,29 @@ export interface OrderItemSnapshot {
   notes: string;
   subtotalPaise: number;
 }
-export interface OrderDoc { _id: Types.ObjectId; restaurantId: Types.ObjectId; tableId: Types.ObjectId; customerId: Types.ObjectId; customerSessionId: Types.ObjectId; idempotencyKey: string; orderNumber: string; items: OrderItemSnapshot[]; status: OrderStatus; statusHistory: { status: OrderStatus; at: Date; note: string }[]; subtotalPaise: number; totalPaise: number; notes: string; rejectionReason: string; createdAt: Date; updatedAt: Date }
+export interface OrderDoc {
+  _id: Types.ObjectId;
+  restaurantId: Types.ObjectId;
+  tableId: Types.ObjectId;
+  customerId: Types.ObjectId;
+  customerSessionId: Types.ObjectId;
+  idempotencyKey: string;
+  orderNumber: string;
+  items: OrderItemSnapshot[];
+  status: OrderStatus;
+  statusHistory: { status: OrderStatus; at: Date; note: string }[];
+  subtotalPaise: number;
+  totalPaise: number;
+  paymentStatus: 'UNPAID' | 'PAID';
+  paymentMethod?: 'CASH' | 'UPI' | 'CARD' | 'OTHER' | null;
+  discountPaise?: number;
+  discountReason?: string;
+  finalPaidPaise?: number;
+  settledAt?: Date | null;
+  settledBy?: Types.ObjectId | null;
+  notes: string;
+  rejectionReason: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
 export const Order = model('Order', orderSchema);

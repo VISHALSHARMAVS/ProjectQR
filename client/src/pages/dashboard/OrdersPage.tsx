@@ -47,6 +47,13 @@ export default function OrdersPage({ kitchen = false }: { kitchen?: boolean }) {
   const [now, setNow] = useState(0);
   const [rejectionOrder, setRejectionOrder] = useState<OrderRecord | null>(null);
   const [rejectionReason, setRejectionReason] = useState('');
+  const [settlingOrder, setSettlingOrder] = useState<OrderRecord | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState<'CASH' | 'UPI' | 'CARD' | 'OTHER'>('CASH');
+  const [discountType, setDiscountType] = useState<'FLAT' | 'PERCENT'>('FLAT');
+  const [discountInput, setDiscountInput] = useState('0');
+  const [discountReason, setDiscountReason] = useState('');
+  const [printOnSettle, setPrintOnSettle] = useState(true);
+  const [settleError, setSettleError] = useState('');
   const [notice, setNotice] = useState('');
   const [error, setError] = useState('');
   const [soundEnabled, setSoundEnabled] = useState(() => localStorage.getItem('pqr-kitchen-sound') !== 'false');
@@ -114,6 +121,38 @@ export default function OrdersPage({ kitchen = false }: { kitchen?: boolean }) {
     onSuccess: async () => { setError(''); setRejectionOrder(null); setRejectionReason(''); await queryClient.invalidateQueries({ queryKey: ['staff-orders'] }); await queryClient.invalidateQueries({ queryKey: ['dashboard'] }); },
     onError: (cause: Error) => setError(cause instanceof ApiError ? cause.message : 'The order status could not be changed.')
   });
+
+  const settleMutation = useMutation({
+    mutationFn: ({
+      orderId,
+      paymentMethod,
+      discountPaise,
+      discountReason
+    }: {
+      orderId: string;
+      paymentMethod: 'CASH' | 'UPI' | 'CARD' | 'OTHER';
+      discountPaise: number;
+      discountReason: string;
+    }) =>
+      api.patch<{ order: OrderRecord }>(`/restaurant/orders/${orderId}/settle`, {
+        paymentMethod,
+        discountPaise,
+        discountReason
+      }),
+    onSuccess: async (data) => {
+      setSettleError('');
+      if (printOnSettle) {
+        printOrderReceipt(data.order, restaurantName, 'BILL', gstin, gstPercentage);
+      }
+      setSettlingOrder(null);
+      setNotice(`Order ${data.order.orderNumber} successfully settled.`);
+      await queryClient.invalidateQueries({ queryKey: ['staff-orders'] });
+      await queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      window.setTimeout(() => setNotice(''), 4000);
+    },
+    onError: (cause: Error) => setSettleError(cause instanceof ApiError ? cause.message : 'Could not settle this order.')
+  });
+
   const reject = (): void => { if (rejectionOrder) update.mutate({ order: rejectionOrder, status: 'REJECTED', reason: rejectionReason }); };
   if (query.isLoading) return <Loading label="Loading orders…" />;
   if (query.error || !query.data) return <ErrorPanel message={query.error instanceof ApiError ? query.error.message : 'Orders could not be loaded.'} retry={() => void query.refetch()} />;
@@ -243,7 +282,7 @@ export default function OrdersPage({ kitchen = false }: { kitchen?: boolean }) {
     {error && !rejectionOrder && <div className="form-error" style={{ marginBottom: 14 }} role="alert">{error}</div>}
     {orders.length === 0 ? <section className="surface"><EmptyState title={filter === 'NEW' ? 'No new orders' : 'No orders in this view'} description="New customer orders will appear here as soon as they are placed." /></section> : <section className="order-grid">{orders.map((order) => {
       const action = next[order.status];
-      return <article className="order-card surface" key={order.id}><header><div><h3>{order.orderNumber}</h3><span className="muted" style={{ display: 'block', marginTop: 4, fontSize: 12 }}>{formatTableLabel(order.table.label)} · {new Date(order.createdAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</span></div><StatusPill status={order.status} /></header><div style={{ marginTop: 12 }}><span className="pill gray">{elapsedSince(order.createdAt, now)}</span></div>                <ul className="order-items">
+      return <article className="order-card surface" key={order.id}><header><div><h3>{order.orderNumber}</h3><span className="muted" style={{ display: 'block', marginTop: 4, fontSize: 12 }}>{formatTableLabel(order.table.label)} · {new Date(order.createdAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</span></div><div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>{order.paymentStatus === 'PAID' ? <span className="pill" style={{ background: '#dcfce7', color: '#15803d', fontWeight: 700, fontSize: 11, padding: '2px 8px' }}>✓ PAID ({order.paymentMethod})</span> : order.status !== 'REJECTED' ? <span className="pill" style={{ background: '#fef3c7', color: '#b45309', fontWeight: 700, fontSize: 11, padding: '2px 8px' }}>UNPAID</span> : null}<StatusPill status={order.status} /></div></header><div style={{ marginTop: 12 }}><span className="pill gray">{elapsedSince(order.createdAt, now)}</span></div>                <ul className="order-items">
                   {order.items.map((item, idx) => (
                     <li key={idx}>
                       <span>
@@ -264,8 +303,15 @@ export default function OrdersPage({ kitchen = false }: { kitchen?: boolean }) {
                     </li>
                   ))}
                 </ul>{order.notes && <div className="notice" style={{ fontSize: 12 }}><strong>Order note:</strong> {order.notes}</div>}{order.rejectionReason && <div className="form-error" style={{ fontSize: 12 }}><strong>Rejection reason:</strong> {order.rejectionReason}</div>}                <div className="total-row" style={{ borderTop: '1px solid var(--line)', paddingTop: 12 }}>
-                  <span>Total</span>
-                  <strong>{money(order.totalPaise)}</strong>
+                  <div>
+                    <span>Total</span>
+                    {order.discountPaise && order.discountPaise > 0 ? (
+                      <small style={{ color: '#b91c1c', display: 'block', fontSize: 11 }}>
+                        Discount: -{money(order.discountPaise)} ({order.discountReason || 'Discount'})
+                      </small>
+                    ) : null}
+                  </div>
+                  <strong>{money(order.paymentStatus === 'PAID' ? (order.finalPaidPaise ?? order.totalPaise) : order.totalPaise)}</strong>
                 </div>
                 <div className="order-actions" style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 10 }}>
                   <button
@@ -284,6 +330,24 @@ export default function OrdersPage({ kitchen = false }: { kitchen?: boolean }) {
                   >
                     🧾 Bill
                   </button>
+                  {!kitchen && order.status !== 'REJECTED' && order.paymentStatus !== 'PAID' && (
+                    <button
+                      type="button"
+                      className="btn small"
+                      style={{ background: '#16a34a', borderColor: '#16a34a', color: 'white' }}
+                      onClick={() => {
+                        setSettlingOrder(order);
+                        setPaymentMethod('CASH');
+                        setDiscountType('FLAT');
+                        setDiscountInput('0');
+                        setDiscountReason('');
+                        setSettleError('');
+                      }}
+                      title="Settle bill & record tender (Cash/UPI/Card)"
+                    >
+                      💳 Settle
+                    </button>
+                  )}
                   {action && (
                     <button
                       className="btn small"
@@ -304,5 +368,129 @@ export default function OrdersPage({ kitchen = false }: { kitchen?: boolean }) {
                 </div></article>;
     })}</section>}
     {rejectionOrder && <Modal title="Reject this order?" onClose={() => { setRejectionOrder(null); setError(''); }}><p className="muted">Tell the customer why {rejectionOrder.orderNumber} cannot be accepted. This message will appear on their tracking page.</p><div className="field" style={{ margin: '15px 0' }}><label htmlFor="reject-reason">Reason</label><textarea className="textarea" id="reject-reason" autoFocus required minLength={2} maxLength={300} value={rejectionReason} onChange={(event) => setRejectionReason(event.target.value)} placeholder="e.g. One of the items is unavailable" /></div>{error && <div className="form-error" style={{ marginBottom: 12 }}>{error}</div>}<div className="toolbar" style={{ justifyContent: 'end' }}><button className="btn secondary" onClick={() => setRejectionOrder(null)}>Cancel</button><button className="btn danger" onClick={reject} disabled={update.isPending || rejectionReason.trim().length < 2}>{update.isPending ? 'Updating…' : 'Reject order'}</button></div></Modal>}
+    {settlingOrder && (
+      <Modal
+        title={`Settle Order ${settlingOrder.orderNumber}`}
+        onClose={() => { setSettlingOrder(null); setSettleError(''); }}
+        width={480}
+      >
+        <div style={{ fontSize: 13, marginBottom: 14, color: 'var(--ink)' }}>
+          <strong>{formatTableLabel(settlingOrder.table.label)}</strong> · Gross Total: <strong>{money(settlingOrder.totalPaise)}</strong>
+        </div>
+
+        {/* Discount Section */}
+        <div style={{ padding: 12, background: '#f8fafc', borderRadius: 10, border: '1px solid var(--line)', marginBottom: 14 }}>
+          <label style={{ fontSize: 12, fontWeight: 700, display: 'block', marginBottom: 6 }}>
+            Discount / Courtesy (Optional)
+          </label>
+          <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+            <button
+              type="button"
+              className={`btn small ${discountType === 'FLAT' ? '' : 'secondary'}`}
+              onClick={() => setDiscountType('FLAT')}
+            >
+              Flat (₹)
+            </button>
+            <button
+              type="button"
+              className={`btn small ${discountType === 'PERCENT' ? '' : 'secondary'}`}
+              onClick={() => setDiscountType('PERCENT')}
+            >
+              Percentage (%)
+            </button>
+            <input
+              className="input"
+              type="number"
+              min="0"
+              max={discountType === 'PERCENT' ? 100 : settlingOrder.totalPaise / 100}
+              value={discountInput}
+              onChange={(e) => setDiscountInput(e.target.value)}
+              placeholder={discountType === 'PERCENT' ? 'e.g. 10%' : 'e.g. ₹50'}
+              style={{ width: 110 }}
+            />
+          </div>
+          <input
+            className="input"
+            maxLength={80}
+            value={discountReason}
+            onChange={(e) => setDiscountReason(e.target.value)}
+            placeholder="Reason (e.g. Owner courtesy / Staff discount)"
+            style={{ fontSize: 12 }}
+          />
+        </div>
+
+        {/* Net Payable Display */}
+        {(() => {
+          const val = Number(discountInput) || 0;
+          const discountPaise = discountType === 'PERCENT'
+            ? Math.round((settlingOrder.totalPaise * Math.min(100, Math.max(0, val))) / 100)
+            : Math.min(settlingOrder.totalPaise, Math.round(val * 100));
+          const netPayablePaise = Math.max(0, settlingOrder.totalPaise - discountPaise);
+
+          return (
+            <>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: '#f0fdf4', borderRadius: 10, border: '1px solid #bbf7d0', marginBottom: 16 }}>
+                <span style={{ fontSize: 14, fontWeight: 600, color: '#166534' }}>Net Amount to Collect:</span>
+                <strong style={{ fontSize: 20, color: '#15803d' }}>{money(netPayablePaise)}</strong>
+              </div>
+
+              {/* Payment Method / Tender Selection */}
+              <div className="field" style={{ marginBottom: 16 }}>
+                <label style={{ fontWeight: 700, marginBottom: 8, display: 'block' }}>Choose Payment Mode (Tender)</label>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8 }}>
+                  {[
+                    { id: 'CASH', label: '💵 Cash in Drawer' },
+                    { id: 'UPI', label: '📱 UPI / QR Code' },
+                    { id: 'CARD', label: '💳 Credit / Debit Card' },
+                    { id: 'OTHER', label: '✨ Other / Complimentary' }
+                  ].map((method) => (
+                    <button
+                      type="button"
+                      key={method.id}
+                      className={`btn ${paymentMethod === method.id ? '' : 'secondary'}`}
+                      style={{ textAlign: 'left', padding: '12px 10px', fontSize: 13 }}
+                      onClick={() => setPaymentMethod(method.id as 'CASH' | 'UPI' | 'CARD' | 'OTHER')}
+                    >
+                      {method.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, marginBottom: 14, cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={printOnSettle}
+                  onChange={(e) => setPrintOnSettle(e.target.checked)}
+                />
+                <span>Print paid bill receipt immediately on 80mm thermal roll</span>
+              </label>
+
+              {settleError && <div className="form-error" style={{ marginBottom: 12 }}>{settleError}</div>}
+
+              <div className="toolbar" style={{ justifyContent: 'end' }}>
+                <button className="btn secondary" onClick={() => { setSettlingOrder(null); setSettleError(''); }}>
+                  Cancel
+                </button>
+                <button
+                  className="btn"
+                  disabled={settleMutation.isPending}
+                  onClick={() => {
+                    settleMutation.mutate({
+                      orderId: settlingOrder.id,
+                      paymentMethod,
+                      discountPaise,
+                      discountReason
+                    });
+                  }}
+                >
+                  {settleMutation.isPending ? 'Settling…' : `Confirm Payment · ${money(netPayablePaise)}`}
+                </button>
+              </div>
+            </>
+          );
+        })()}
+      </Modal>
+    )}
   </>;
 }

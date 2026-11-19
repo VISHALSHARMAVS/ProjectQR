@@ -87,6 +87,151 @@ restaurantRouter.get('/dashboard', async (req, res) => {
   });
 });
 
+restaurantRouter.get('/day-close', async (req, res) => {
+  const restaurantId = req.staff!.restaurantId;
+  const restaurant = await Restaurant.findById(restaurantId).select('name gstin gstPercentage');
+  if (!restaurant) throw new AppError(404, 'NOT_FOUND', 'Restaurant not found.');
+
+  const dateParam = typeof req.query.date === 'string' ? req.query.date : '';
+  let targetDate = new Date();
+  if (dateParam && /^\d{4}-\d{2}-\d{2}$/.test(dateParam)) {
+    const [y, m, d] = dateParam.split('-').map(Number);
+    targetDate = new Date(Date.UTC(y!, m! - 1, d!));
+  }
+
+  const startOfDay = new Date(Date.UTC(targetDate.getUTCFullYear(), targetDate.getUTCMonth(), targetDate.getUTCDate(), 0, 0, 0, 0));
+  const endOfDay = new Date(Date.UTC(targetDate.getUTCFullYear(), targetDate.getUTCMonth(), targetDate.getUTCDate(), 23, 59, 59, 999));
+
+  const orders = await Order.find({
+    restaurantId,
+    $or: [
+      { settledAt: { $gte: startOfDay, $lte: endOfDay } },
+      { settledAt: null, createdAt: { $gte: startOfDay, $lte: endOfDay } }
+    ]
+  }).sort({ createdAt: -1 }) as unknown as OrderDoc[];
+
+  const tableLabels = new Map(
+    (await DiningTable.find({ _id: { $in: orders.map((o) => o.tableId) }, restaurantId }).select('_id label').lean())
+      .map((t) => [String(t._id), t.label])
+  );
+
+  let grossSalesPaise = 0;
+  let totalDiscountsPaise = 0;
+  let netSalesPaise = 0;
+  let paidOrders = 0;
+  let unpaidOrders = 0;
+  let rejectedOrders = 0;
+  let totalItemsSold = 0;
+
+  const tenders = {
+    cashPaise: 0,
+    upiPaise: 0,
+    cardPaise: 0,
+    otherPaise: 0,
+    unpaidPaise: 0
+  };
+
+  const settledOrdersList: Array<{
+    id: string;
+    orderNumber: string;
+    tableLabel: string;
+    totalPaise: number;
+    discountPaise: number;
+    finalPaidPaise: number;
+    paymentStatus: string;
+    paymentMethod: string | null;
+    settledAt: string | null;
+    createdAt: string;
+  }> = [];
+
+  for (const o of orders) {
+    if (o.status === 'REJECTED') {
+      rejectedOrders += 1;
+      continue;
+    }
+
+    const itemsCount = o.items.reduce((acc, it) => acc + it.quantity, 0);
+    totalItemsSold += itemsCount;
+
+    if (o.paymentStatus === 'PAID') {
+      paidOrders += 1;
+      grossSalesPaise += o.totalPaise;
+      const discount = o.discountPaise || 0;
+      totalDiscountsPaise += discount;
+      const paid = o.finalPaidPaise ?? Math.max(0, o.totalPaise - discount);
+      netSalesPaise += paid;
+
+      const method = o.paymentMethod || 'OTHER';
+      if (method === 'CASH') tenders.cashPaise += paid;
+      else if (method === 'UPI') tenders.upiPaise += paid;
+      else if (method === 'CARD') tenders.cardPaise += paid;
+      else tenders.otherPaise += paid;
+
+      settledOrdersList.push({
+        id: String(o._id),
+        orderNumber: o.orderNumber,
+        tableLabel: tableLabels.get(String(o.tableId)) ?? 'Table',
+        totalPaise: o.totalPaise,
+        discountPaise: discount,
+        finalPaidPaise: paid,
+        paymentStatus: 'PAID',
+        paymentMethod: o.paymentMethod ?? 'OTHER',
+        settledAt: o.settledAt ? o.settledAt.toISOString() : o.updatedAt.toISOString(),
+        createdAt: o.createdAt.toISOString()
+      });
+    } else {
+      unpaidOrders += 1;
+      tenders.unpaidPaise += o.totalPaise;
+      settledOrdersList.push({
+        id: String(o._id),
+        orderNumber: o.orderNumber,
+        tableLabel: tableLabels.get(String(o.tableId)) ?? 'Table',
+        totalPaise: o.totalPaise,
+        discountPaise: 0,
+        finalPaidPaise: 0,
+        paymentStatus: 'UNPAID',
+        paymentMethod: null,
+        settledAt: null,
+        createdAt: o.createdAt.toISOString()
+      });
+    }
+  }
+
+  const gstPercentage = restaurant.gstPercentage ?? 5;
+  const taxableAmountPaise = gstPercentage > 0
+    ? Math.round((netSalesPaise * 100) / (100 + gstPercentage))
+    : netSalesPaise;
+  const totalGstPaise = netSalesPaise - taxableAmountPaise;
+  const cgstPaise = Math.round(totalGstPaise / 2);
+  const sgstPaise = totalGstPaise - cgstPaise;
+  const averageOrderValuePaise = paidOrders > 0 ? Math.round(netSalesPaise / paidOrders) : 0;
+
+  res.json({
+    report: {
+      date: startOfDay.toISOString().slice(0, 10),
+      restaurantName: restaurant.name,
+      gstin: restaurant.gstin || '',
+      gstPercentage,
+      grossSalesPaise,
+      totalDiscountsPaise,
+      netSalesPaise,
+      taxableAmountPaise,
+      cgstPaise,
+      sgstPaise,
+      tenders,
+      orderCounts: {
+        totalOrders: paidOrders + unpaidOrders,
+        paidOrders,
+        unpaidOrders,
+        rejectedOrders,
+        totalItemsSold,
+        averageOrderValuePaise
+      },
+      settledOrders: settledOrdersList
+    }
+  });
+});
+
 const settingsSchema = z.object({
   name: z.string().trim().min(2).max(120).optional(),
   description: z.string().trim().max(500).optional(),

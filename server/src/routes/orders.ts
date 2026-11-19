@@ -67,6 +67,12 @@ function serializeOrder(order: OrderDoc, tableLabel: string) {
     statusHistory: order.statusHistory,
     subtotalPaise: order.subtotalPaise,
     totalPaise: order.totalPaise,
+    paymentStatus: order.paymentStatus ?? 'UNPAID',
+    paymentMethod: order.paymentMethod ?? null,
+    discountPaise: order.discountPaise ?? 0,
+    discountReason: order.discountReason ?? '',
+    finalPaidPaise: order.finalPaidPaise ?? (order.paymentStatus === 'PAID' ? order.totalPaise : 0),
+    settledAt: order.settledAt ?? null,
     notes: order.notes,
     rejectionReason: order.rejectionReason,
     createdAt: order.createdAt,
@@ -217,6 +223,79 @@ restaurantOrders.patch('/:id/status', async (req, res) => {
   orderSocket?.to(`restaurant:${req.staff!.restaurantId}`).emit('order:status', event);
   if (customerSession) orderSocket?.to(`customer:${customerSession._id}`).emit('order:status', event);
   orderSocket?.to(`table:${updated.tableId}`).emit('order:status', event);
+  res.json({ order: response });
+});
+
+const settleSchema = z.object({
+  paymentMethod: z.enum(['CASH', 'UPI', 'CARD', 'OTHER']),
+  discountPaise: z.number().int().min(0).default(0),
+  discountReason: z.string().trim().max(100).default('')
+});
+
+restaurantOrders.patch('/:id/settle', async (req, res) => {
+  if (!objectIdSchema.safeParse(req.params.id).success) throw new AppError(400, 'INVALID_ID', 'Invalid order identifier.');
+  const parsed = settleSchema.safeParse(req.body);
+  if (!parsed.success) throw new AppError(400, 'INVALID_INPUT', parsed.error.issues[0]?.message ?? 'Invalid settlement details.');
+
+  const current = await Order.findOne(tenantFilter(req.staff!.restaurantId, { _id: req.params.id })) as unknown as OrderDoc | null;
+  if (!current) throw new AppError(404, 'NOT_FOUND', 'Order not found.');
+  if (current.status === 'REJECTED') throw new AppError(400, 'INVALID_STATE', 'Cannot settle a rejected order.');
+  if (parsed.data.discountPaise > current.totalPaise) throw new AppError(400, 'INVALID_DISCOUNT', 'Discount cannot exceed order total.');
+
+  const finalPaidPaise = Math.max(0, current.totalPaise - parsed.data.discountPaise);
+  const now = new Date();
+
+  const updatedStatus = current.status === 'DELIVERED' ? current.status : 'DELIVERED';
+  const statusHistoryEntry = updatedStatus !== current.status
+    ? [{ status: updatedStatus, at: now, note: `Settled via ${parsed.data.paymentMethod}` }]
+    : [];
+
+  const updated = await Order.findOneAndUpdate(
+    tenantFilter(req.staff!.restaurantId, { _id: current._id }),
+    {
+      $set: {
+        paymentStatus: 'PAID',
+        paymentMethod: parsed.data.paymentMethod,
+        discountPaise: parsed.data.discountPaise,
+        discountReason: parsed.data.discountReason,
+        finalPaidPaise,
+        settledAt: now,
+        settledBy: req.staff!.id,
+        status: updatedStatus
+      },
+      ...(statusHistoryEntry.length > 0 ? { $push: { statusHistory: { $each: statusHistoryEntry } } } : {})
+    },
+    { returnDocument: 'after' }
+  ) as unknown as OrderDoc | null;
+
+  if (!updated) throw new AppError(409, 'ORDER_CHANGED', 'This order could not be updated.');
+
+  const [table, customerSession] = await Promise.all([
+    DiningTable.findOne({ _id: updated.tableId, restaurantId: updated.restaurantId }).select('label'),
+    CustomerSession.findById(updated.customerSessionId).select('_id')
+  ]);
+  const response = serializeOrder(updated, table?.label ?? 'Table');
+
+  orderSocket?.to(`restaurant:${req.staff!.restaurantId}`).emit('order:settled', response);
+  orderSocket?.to(`restaurant:${req.staff!.restaurantId}`).emit('order:status', {
+    id: response.id,
+    orderNumber: response.orderNumber,
+    status: response.status,
+    updatedAt: response.updatedAt
+  });
+  if (customerSession) orderSocket?.to(`customer:${customerSession._id}`).emit('order:status', {
+    id: response.id,
+    orderNumber: response.orderNumber,
+    status: response.status,
+    updatedAt: response.updatedAt
+  });
+  orderSocket?.to(`table:${updated.tableId}`).emit('order:status', {
+    id: response.id,
+    orderNumber: response.orderNumber,
+    status: response.status,
+    updatedAt: response.updatedAt
+  });
+
   res.json({ order: response });
 });
 

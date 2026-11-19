@@ -120,10 +120,56 @@ export interface OrderRecord {
   statusHistory: { status: OrderStatus; at: string; note: string }[];
   subtotalPaise: number;
   totalPaise: number;
+  paymentStatus?: 'UNPAID' | 'PAID';
+  paymentMethod?: 'CASH' | 'UPI' | 'CARD' | 'OTHER' | null;
+  discountPaise?: number;
+  discountReason?: string;
+  finalPaidPaise?: number;
+  settledAt?: string | null;
   notes: string;
   rejectionReason: string;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface DayCloseReport {
+  date: string;
+  restaurantName: string;
+  gstin?: string;
+  gstPercentage: number;
+  grossSalesPaise: number;
+  totalDiscountsPaise: number;
+  netSalesPaise: number;
+  taxableAmountPaise: number;
+  cgstPaise: number;
+  sgstPaise: number;
+  tenders: {
+    cashPaise: number;
+    upiPaise: number;
+    cardPaise: number;
+    otherPaise: number;
+    unpaidPaise: number;
+  };
+  orderCounts: {
+    totalOrders: number;
+    paidOrders: number;
+    unpaidOrders: number;
+    rejectedOrders: number;
+    totalItemsSold: number;
+    averageOrderValuePaise: number;
+  };
+  settledOrders: {
+    id: string;
+    orderNumber: string;
+    tableLabel: string;
+    totalPaise: number;
+    discountPaise: number;
+    finalPaidPaise: number;
+    paymentStatus: string;
+    paymentMethod: 'CASH' | 'UPI' | 'CARD' | 'OTHER' | null;
+    settledAt: string | null;
+    createdAt: string;
+  }[];
 }
 
 export interface CustomerHistory {

@@ -212,6 +212,27 @@ describe('restaurant-to-kitchen ordering workflow', () => {
     const customerStatus = await customer.get(`/api/customer/orders/${order.id}`).query({ token: tokenA }).expect(200);
     expect(customerStatus.body.order.status).toBe('DELIVERED');
 
+    // Cross-tenant settlement check: ownerB cannot settle ownerA's order
+    await ownerB.patch(`/api/restaurant/orders/${order.id}/settle`).send({ paymentMethod: 'CASH', discountPaise: 0 }).expect(404);
+
+    // Settle order with discount and tender recording
+    const settledRes = await ownerA.patch(`/api/restaurant/orders/${order.id}/settle`).send({
+      paymentMethod: 'UPI',
+      discountPaise: 400,
+      discountReason: 'Happy Hour Discount'
+    }).expect(200);
+    expect(settledRes.body.order.paymentStatus).toBe('PAID');
+    expect(settledRes.body.order.paymentMethod).toBe('UPI');
+    expect(settledRes.body.order.discountPaise).toBe(400);
+    expect(settledRes.body.order.finalPaidPaise).toBe(2500);
+
+    // Day-Close Z-Report Audit verification
+    const dayCloseRes = await ownerA.get('/api/restaurant/day-close').expect(200);
+    expect(dayCloseRes.body.report.netSalesPaise).toBe(2500);
+    expect(dayCloseRes.body.report.totalDiscountsPaise).toBe(400);
+    expect(dayCloseRes.body.report.tenders.upiPaise).toBe(2500);
+    expect(dayCloseRes.body.report.orderCounts.paidOrders).toBe(1);
+
     const rejectedBody = { ...baseOrder, idempotencyKey: 'order-key-00000002', items: [{ ...baseOrder.items[0], expectedUnitPricePaise: 9999 }] };
     const rejectedOrder = (await customer.post('/api/customer/orders').send(rejectedBody).expect(201)).body.order as { id: string };
     await ownerA.patch(`/api/restaurant/orders/${rejectedOrder.id}/status`).send({ status: 'REJECTED', rejectionReason: 'The kitchen is closing.' }).expect(200);
