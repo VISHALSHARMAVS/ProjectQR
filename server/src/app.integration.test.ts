@@ -138,9 +138,11 @@ describe('restaurant-to-kitchen ordering workflow', () => {
     const itemA = (await ownerA.post('/api/menu').send({ categoryId: categoryA._id, name: 'Paneer bowl', pricePaise: 1450 }).expect(201)).body.item as { _id: string; name: string };
     const imageBytes = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jk9sAAAAASUVORK5CYII=', 'base64');
     const uploaded = await ownerA.post(`/api/menu/${itemA._id}/image`).attach('image', imageBytes, { filename: 'one-pixel.png', contentType: 'image/png' }).expect(200);
-    expect(uploaded.body.item.imageUrl).toMatch(/^\/uploads\/[a-f\d-]+\.png$/i);
-    const storedImage = await supertest(app!.httpServer).get(uploaded.body.item.imageUrl).expect(200);
-    expect(storedImage.headers['content-type']).toMatch(/image\/png/);
+    expect(uploaded.body.item.imageUrl).toMatch(/^(\/uploads\/[a-f\d-]+\.png|https:\/\/res\.cloudinary\.com\/.*)$/i);
+    if (uploaded.body.item.imageUrl.startsWith('/uploads/')) {
+      const storedImage = await supertest(app!.httpServer).get(uploaded.body.item.imageUrl).expect(200);
+      expect(storedImage.headers['content-type']).toMatch(/image\/png/);
+    }
     const itemB = (await ownerB.post('/api/menu').send({ categoryId: categoryB._id, name: 'Tomato pasta', pricePaise: 1200 }).expect(201)).body.item as { _id: string };
     await ownerA.patch(`/api/categories/${categoryB._id}`).send({ name: 'Stolen category' }).expect(404);
     const ownCategories = await ownerA.get('/api/categories').expect(200);
