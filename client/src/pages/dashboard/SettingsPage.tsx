@@ -18,6 +18,7 @@ interface SettingsForm {
   contactEmail: string;
   gstin: string;
   gstPercentage: number;
+  requireCustomerOtp: boolean;
 }
 
 const colorPresets = [
@@ -52,7 +53,8 @@ export default function SettingsPage() {
     contactPhone: overrides.contactPhone ?? restaurant?.contactPhone ?? '',
     contactEmail: overrides.contactEmail ?? restaurant?.contactEmail ?? '',
     gstin: overrides.gstin ?? restaurant?.gstin ?? '',
-    gstPercentage: overrides.gstPercentage ?? restaurant?.gstPercentage ?? 5
+    gstPercentage: overrides.gstPercentage ?? restaurant?.gstPercentage ?? 5,
+    requireCustomerOtp: overrides.requireCustomerOtp ?? restaurant?.requireCustomerOtp ?? false
   };
 
   const handleLogoChange = (file: File | null) => {
@@ -293,6 +295,75 @@ export default function SettingsPage() {
         </div>
       </div>
 
+      {/* Customer Verification Mode (Zero-SMS Guest vs Strict OTP) */}
+      <div style={{ padding: 18, background: '#f8fafc', borderRadius: 14, border: '1px solid var(--line)', margin: '18px 0' }}>
+        <div>
+          <strong style={{ fontSize: 15, display: 'flex', alignItems: 'center', gap: 6 }}>
+            🛡️ Customer Dine-In Ordering Mode
+          </strong>
+          <p className="muted" style={{ margin: '4px 0 14px', fontSize: 13 }}>
+            Choose how diners access the digital menu when scanning the table QR code.
+          </p>
+        </div>
+        <div style={{ display: 'grid', gap: 10 }}>
+          <label
+            style={{
+              display: 'flex',
+              alignItems: 'start',
+              gap: 12,
+              padding: 12,
+              borderRadius: 10,
+              border: !form.requireCustomerOtp ? '2px solid var(--green)' : '1px solid var(--line)',
+              background: !form.requireCustomerOtp ? 'var(--soft-green)' : 'white',
+              cursor: canEdit ? 'pointer' : 'default'
+            }}
+          >
+            <input
+              type="radio"
+              name="requireCustomerOtp"
+              disabled={!canEdit}
+              checked={!form.requireCustomerOtp}
+              onChange={() => setOverrides((current) => ({ ...current, requireCustomerOtp: false }))}
+              style={{ marginTop: 3 }}
+            />
+            <div>
+              <strong style={{ display: 'block', fontSize: 14 }}>⚡ Fast Guest Ordering (Recommended · Zero SMS Cost)</strong>
+              <span className="muted" style={{ fontSize: 12 }}>
+                Customers enter their name and start ordering immediately. No OTP SMS sent, no network delays, highest order conversion.
+              </span>
+            </div>
+          </label>
+
+          <label
+            style={{
+              display: 'flex',
+              alignItems: 'start',
+              gap: 12,
+              padding: 12,
+              borderRadius: 10,
+              border: form.requireCustomerOtp ? '2px solid var(--green)' : '1px solid var(--line)',
+              background: form.requireCustomerOtp ? 'var(--soft-green)' : 'white',
+              cursor: canEdit ? 'pointer' : 'default'
+            }}
+          >
+            <input
+              type="radio"
+              name="requireCustomerOtp"
+              disabled={!canEdit}
+              checked={Boolean(form.requireCustomerOtp)}
+              onChange={() => setOverrides((current) => ({ ...current, requireCustomerOtp: true }))}
+              style={{ marginTop: 3 }}
+            />
+            <div>
+              <strong style={{ display: 'block', fontSize: 14 }}>📱 Strict Mobile Phone OTP Verification</strong>
+              <span className="muted" style={{ fontSize: 12 }}>
+                Customers must submit their mobile number and verify a 6-digit SMS OTP code before placing orders. Best for high-risk prank prevention.
+              </span>
+            </div>
+          </label>
+        </div>
+      </div>
+
       <div className="field"><label htmlFor="restaurant-address">Address</label><input className="input" id="restaurant-address" maxLength={300} disabled={!canEdit} value={form.address} onChange={(event) => setOverrides((current) => ({ ...current, address: event.target.value }))} /></div>
       <div className="toolbar"><div className="field" style={{ flex: 1 }}><label htmlFor="restaurant-phone">Contact phone</label><input className="input" id="restaurant-phone" type="tel" disabled={!canEdit} value={form.contactPhone} onChange={(event) => setOverrides((current) => ({ ...current, contactPhone: event.target.value }))} /></div><div className="field" style={{ flex: 1 }}><label htmlFor="restaurant-email">Contact email</label><input className="input" id="restaurant-email" type="email" disabled={!canEdit} value={form.contactEmail} onChange={(event) => setOverrides((current) => ({ ...current, contactEmail: event.target.value }))} /></div></div>
 
@@ -337,6 +408,7 @@ export default function SettingsPage() {
           </div>
         </div>
       </div>
+
       <div className="notice">Table QR codes use the public app URL configured by the restaurant operator.</div>
       {error && <div className="form-error" role="alert">{error}</div>}{message && <div className="notice success" role="status">{message}</div>}
       {canEdit ? <button className="btn" disabled={save.isPending}>{save.isPending && <span className="btn-spinner" aria-hidden="true" />}{save.isPending ? 'Saving…' : 'Save settings'}</button> : <div className="notice">Only the restaurant owner can change these settings.</div>}

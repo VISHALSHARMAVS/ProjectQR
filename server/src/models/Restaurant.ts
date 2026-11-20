@@ -13,6 +13,7 @@ const restaurantSchema = new Schema({
   contactEmail: { type: String, trim: true, lowercase: true, default: '' },
   gstin: { type: String, trim: true, uppercase: true, default: '' },
   gstPercentage: { type: Number, min: 0, max: 28, default: 5 },
+  requireCustomerOtp: { type: Boolean, default: false },
   active: { type: Boolean, default: true }
 }, { timestamps: true });
 
@@ -27,6 +28,7 @@ export interface RestaurantDoc {
   welcomeTagline?: string;
   gstin?: string;
   gstPercentage?: number;
+  requireCustomerOtp?: boolean;
   active: boolean;
 }
 export const Restaurant = model('Restaurant', restaurantSchema);

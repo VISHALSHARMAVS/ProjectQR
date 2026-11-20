@@ -22,7 +22,6 @@ export default function VerifyPage() {
   const [code, setCode] = useState('');
   const [mockOtp, setMockOtp] = useState('');
   const [error, setError] = useState('');
-  const [joinMode, setJoinMode] = useState<'quick' | 'phone'>('quick');
 
   const quickJoinMutation = useMutation({
     mutationFn: () => api.post<VerifiedSession>('/customer/quick-join', { token, name: name.trim() }),
@@ -51,6 +50,7 @@ export default function VerifyPage() {
   if (tableQuery.isLoading) return <div className="customer-wrap"><Loading label="Loading restaurant…" /></div>;
   if (tableQuery.error || !tableQuery.data) return <main className="customer-wrap customer-page"><div className="form-error" style={{ marginTop: 32 }}>This table link is unavailable. Ask a team member for help.</div><Link className="btn secondary" style={{ marginTop: 13 }} to="/">Back to home</Link></main>;
   const { restaurant, table } = tableQuery.data;
+  const isStrictOtp = Boolean(restaurant.requireCustomerOtp);
   const requested = requestMutation.isSuccess;
   const brandStyle = restaurant.brandColor ? ({
     '--green': restaurant.brandColor,
@@ -69,27 +69,18 @@ export default function VerifyPage() {
     <section className="customer-intro">
       <span className="eyebrow">Welcome</span>
       <h2>Who’s joining<br />us today?</h2>
-      <p>Enter your name to browse the menu and order together with everyone at {formatTableLabel(table.label)}.</p>
+      <p>
+        {isStrictOtp
+          ? `Enter your mobile number to verify your session at ${formatTableLabel(table.label)}.`
+          : `Enter your name to browse the menu and order together with everyone at ${formatTableLabel(table.label)}.`}
+      </p>
     </section>
 
-    <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
-      <button
-        type="button"
-        className={`btn small ${joinMode === 'quick' ? '' : 'secondary'}`}
-        onClick={() => { setJoinMode('quick'); setError(''); }}
-        style={{ flex: 1 }}
-      >
-        ⚡ Quick Join (Name Only)
-      </button>
-      <button
-        type="button"
-        className={`btn small ${joinMode === 'phone' ? '' : 'secondary'}`}
-        onClick={() => { setJoinMode('phone'); setError(''); }}
-        style={{ flex: 1 }}
-      >
-        📱 Verify Phone
-      </button>
-    </div>
+    {isStrictOtp && (
+      <div className="notice" style={{ marginBottom: 16 }}>
+        📱 Phone verification required by {restaurant.name} before placing orders.
+      </div>
+    )}
 
     <section className="customer-card surface">
       {sessionQuery.error instanceof ApiError && sessionQuery.error.code === 'CUSTOMER_SESSION_TABLE_MISMATCH' && (
@@ -98,7 +89,7 @@ export default function VerifyPage() {
         </div>
       )}
 
-      {joinMode === 'quick' ? (
+      {!isStrictOtp ? (
         <form
           className="form-grid"
           onSubmit={(e) => {

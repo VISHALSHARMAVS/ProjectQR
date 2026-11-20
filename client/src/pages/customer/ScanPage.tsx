@@ -54,7 +54,11 @@ export default function ScanPage() {
         <span className="pill">Dine in</span>
       </div>
       <Link className="btn full" to={`/order/${encodeURIComponent(token)}/verify`}>Continue to the menu <span aria-hidden="true">→</span></Link>
-      <p className="muted" style={{ margin: '12px 0 0', fontSize: 11, textAlign: 'center' }}>We’ll ask you to verify a phone number before ordering.</p>
+      <p className="muted" style={{ margin: '12px 0 0', fontSize: 11, textAlign: 'center' }}>
+        {restaurant.requireCustomerOtp
+          ? 'We’ll ask you to verify a phone number before ordering.'
+          : 'Instant dine-in ordering · No app or OTP required.'}
+      </p>
     </section>
   </main>;
 }

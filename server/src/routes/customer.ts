@@ -23,7 +23,7 @@ export const publicRouter = Router();
 publicRouter.get('/tables/:token', async (req, res) => {
   const table = await DiningTable.findOne({ qrToken: req.params.token, active: true }).select('restaurantId label active');
   if (!table) throw new AppError(404, 'INVALID_QR', 'This table QR code is invalid or no longer active.');
-  const restaurant = await Restaurant.findOne({ _id: table.restaurantId, active: true }).select('name slug description logoUrl brandColor bannerUrl welcomeTagline gstin gstPercentage');
+  const restaurant = await Restaurant.findOne({ _id: table.restaurantId, active: true }).select('name slug description logoUrl brandColor bannerUrl welcomeTagline gstin gstPercentage requireCustomerOtp');
   if (!restaurant) throw new AppError(404, 'RESTAURANT_UNAVAILABLE', 'This restaurant is not currently accepting orders.');
   res.json({ restaurant, table: { id: table.id, label: table.label } });
 });
@@ -221,6 +221,10 @@ customerRouter.post('/quick-join', otpRateLimit, async (req, res) => {
   const parsed = quickJoinSchema.safeParse(req.body);
   if (!parsed.success) throw new AppError(400, 'INVALID_INPUT', 'Please enter your name.');
   const { table, restaurant } = await resolveActiveTable(parsed.data.token);
+
+  if (restaurant.requireCustomerOtp) {
+    throw new AppError(403, 'OTP_REQUIRED', 'This restaurant requires phone number verification via OTP.');
+  }
 
   const guestPhone = `guest-${table._id.toString().slice(-6)}-${randomBytes(4).toString('hex')}`;
   const customer = await Customer.create({
