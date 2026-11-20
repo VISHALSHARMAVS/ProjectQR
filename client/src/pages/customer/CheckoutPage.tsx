@@ -1,4 +1,4 @@
-import { useState, type CSSProperties } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
 import { api, ApiError } from '../../lib/api';
@@ -11,6 +11,51 @@ import type { MenuItem, OrderStatus, RestaurantInfo, TableCartLine } from '../..
 interface CustomerSession { sessionId: string; customer: { name: string }; restaurant: RestaurantInfo; table: { label: string } }
 interface MenuResponse { items: MenuItem[] }
 interface CreatedOrder { order: { id: string; status: OrderStatus } }
+
+function CartItemNoteInput({
+  id,
+  initialNotes,
+  onSave
+}: {
+  id: string;
+  initialNotes: string;
+  onSave: (notes: string) => void;
+}) {
+  const [value, setValue] = useState(initialNotes);
+  const timerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    setValue(initialNotes);
+  }, [initialNotes]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const nextVal = e.target.value;
+    setValue(nextVal);
+    if (timerRef.current) window.clearTimeout(timerRef.current);
+    timerRef.current = window.setTimeout(() => {
+      onSave(nextVal);
+    }, 450);
+  };
+
+  const handleBlur = () => {
+    if (timerRef.current) window.clearTimeout(timerRef.current);
+    if (value !== initialNotes) {
+      onSave(value);
+    }
+  };
+
+  return (
+    <input
+      className="input"
+      id={id}
+      maxLength={250}
+      value={value}
+      onChange={handleChange}
+      onBlur={handleBlur}
+      placeholder="e.g. Extra spicy / No onions"
+    />
+  );
+}
 
 export default function CheckoutPage() {
   const { token = '' } = useParams();
@@ -187,13 +232,10 @@ export default function CheckoutPage() {
               </div>
               <div className="field" style={{ marginTop: 10 }}>
                 <label htmlFor={`note-${line.menuItemId}`}>Note for the kitchen <span className="muted">(optional)</span></label>
-                <input
-                  className="input"
+                <CartItemNoteInput
                   id={`note-${line.menuItemId}`}
-                  maxLength={250}
-                  value={line.notes || ''}
-                  onChange={(event) => updateItem.mutate({ menuItemId: line.menuItemId, quantity: line.quantity, notes: event.target.value })}
-                  placeholder="e.g. Extra spicy / No onions"
+                  initialNotes={line.notes || ''}
+                  onSave={(notes) => updateItem.mutate({ menuItemId: line.menuItemId, quantity: line.quantity, notes })}
                 />
               </div>
             </div>

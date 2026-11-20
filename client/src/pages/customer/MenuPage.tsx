@@ -46,6 +46,7 @@ export default function CustomerMenuPage() {
   const cart = tableCartQuery.data?.items ?? [];
   const [activeCategory, setActiveCategory] = useState('');
   const [dietaryFilter, setDietaryFilter] = useState<'ALL' | DietaryType>('ALL');
+  const [searchQuery, setSearchQuery] = useState('');
   const [assistanceOpen, setAssistanceOpen] = useState(false);
 
   // Customization Modal State (for Variants and Add-ons)
@@ -120,9 +121,15 @@ export default function CustomerMenuPage() {
   const categories = menu.data.categories;
   const items = menu.data.items;
 
+  const queryClean = searchQuery.trim().toLowerCase();
   const filteredItems = items.filter((item) => {
-    if (dietaryFilter === 'ALL') return true;
-    return item.dietary === dietaryFilter;
+    if (dietaryFilter !== 'ALL' && item.dietary !== dietaryFilter) return false;
+    if (queryClean) {
+      const matchName = item.name.toLowerCase().includes(queryClean);
+      const matchDesc = item.description?.toLowerCase().includes(queryClean);
+      return matchName || matchDesc;
+    }
+    return true;
   });
 
   const availableCategories = categories.filter((category) => {
@@ -149,30 +156,59 @@ export default function CustomerMenuPage() {
   return (
     <main className={`customer-wrap customer-page ${cart.length > 0 ? 'cart-active' : ''}`} style={brandStyle}>
       <header className="customer-header">
-        <div className="restaurant-logo">
-          {restaurant.logoUrl ? <img src={restaurant.logoUrl} alt="" /> : restaurant.name.slice(0, 1).toUpperCase()}
+        <div className="customer-header-brand">
+          <div className="restaurant-logo">
+            {restaurant.logoUrl ? <img src={restaurant.logoUrl} alt="" /> : restaurant.name.slice(0, 1).toUpperCase()}
+          </div>
+          <div style={{ minWidth: 0 }}>
+            <h1 style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{restaurant.name}</h1>
+            <p>{formatTableLabel(table.label)} · Hi, {session.data.customer.name}</p>
+          </div>
         </div>
-        <div style={{ flex: 1 }}>
-          <h1>{restaurant.name}</h1>
-          <p>{formatTableLabel(table.label)} · Hi, {session.data.customer.name}</p>
+        <div className="customer-header-actions">
+          <button
+            type="button"
+            className="btn secondary small"
+            onClick={() => setAssistanceOpen(true)}
+            title="Request water, cutlery, bill or call a waiter"
+          >
+            🔔 Help
+          </button>
+          <Link className="btn secondary small" to={`/order/${encodeURIComponent(token)}/tracking`}>
+            Orders
+          </Link>
+          <button className="btn ghost small" onClick={() => endVisit.mutate()} disabled={endVisit.isPending} title="End dining visit">
+            {endVisit.isPending ? '…' : 'End'}
+          </button>
         </div>
-        <button
-          type="button"
-          className="btn secondary small"
-          onClick={() => setAssistanceOpen(true)}
-          title="Request water, cutlery, bill or call a waiter"
-        >
-          🔔 Help
-        </button>
-        <Link className="btn secondary small" to={`/order/${encodeURIComponent(token)}/tracking`}>Orders</Link>
-        <button className="btn ghost small" onClick={() => endVisit.mutate()} disabled={endVisit.isPending}>
-          {endVisit.isPending ? 'Ending…' : 'End visit'}
-        </button>
       </header>
 
       <div style={{ paddingTop: 20 }}>
         <span className="eyebrow">Made fresh for you</span>
-        <h1 style={{ margin: '5px 0 14px', fontSize: 31, letterSpacing: '-.05em' }}>The menu</h1>
+        <h1 style={{ margin: '5px 0 10px', fontSize: 31, letterSpacing: '-.05em' }}>The menu</h1>
+
+        {/* Instant Search Bar */}
+        <div className="menu-search-wrap">
+          <span className="menu-search-icon" aria-hidden="true">🔍</span>
+          <input
+            type="search"
+            className="menu-search-input"
+            placeholder="Search dishes, drinks, ingredients…"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            aria-label="Search menu"
+          />
+          {searchQuery && (
+            <button
+              type="button"
+              className="menu-search-clear"
+              onClick={() => setSearchQuery('')}
+              aria-label="Clear search"
+            >
+              ✕
+            </button>
+          )}
+        </div>
 
         {/* Dietary Filters */}
         <div className="dietary-filter-bar" aria-label="Filter by dietary preference">
@@ -286,8 +322,12 @@ export default function CustomerMenuPage() {
       </div>
 
       {availableCategories.length === 0 ? (
-        <div className="surface">
-          <EmptyState title="No items match this filter" description="Try selecting 'All Items' or choose another category." />
+        <div className="surface" style={{ marginTop: 14 }}>
+          <EmptyState
+            title={searchQuery ? `No dishes found for “${searchQuery}”` : "No items match this filter"}
+            description={searchQuery ? "Try checking your spelling or clear the search to browse all items." : "Try selecting 'All Items' or choose another category."}
+            action={searchQuery ? <button className="btn small" onClick={() => setSearchQuery('')}>Clear search</button> : undefined}
+          />
         </div>
       ) : (
         availableCategories.map((category) => (

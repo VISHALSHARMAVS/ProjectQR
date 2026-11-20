@@ -8,7 +8,7 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   --ink: #22251f;
-  --muted: #575c52;
+  --muted: #4b5563;
   --line: #e5e5dc;
   --paper: #fffefa;
   --green: #315b43;
@@ -69,7 +69,9 @@ img { max-width: 100%; }
 
 /* Customer flow */
 .customer-page { min-height: 100vh; padding-bottom: 32px; }
-.customer-header { display: flex; align-items: center; gap: 13px; padding: 18px 0; border-bottom: 1px solid var(--line); }
+.customer-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 14px 0; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.customer-header-brand { display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1 1 180px; }
+.customer-header-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
 .restaurant-logo { width: 44px; height: 44px; flex: 0 0 auto; display: grid; place-items: center; overflow: hidden; border-radius: 13px; color: var(--green); background: var(--soft-green); font-size: 16px; font-weight: 750; }
 .restaurant-logo img { width: 100%; height: 100%; object-fit: cover; }
 .customer-header h1 { margin: 0; font-size: 16px; letter-spacing: -.02em; }
@@ -90,6 +92,14 @@ img { max-width: 100%; }
 .dietary-badge.non-veg .dietary-symbol { width: 7px; height: 7px; border-radius: 50%; background-color: #b91c1c; }
 .dietary-badge.egg { border-color: #d97706; }
 .dietary-badge.egg .dietary-symbol { width: 7px; height: 7px; border-radius: 50%; background-color: #d97706; }
+
+/* Menu Live Search */
+.menu-search-wrap { position: relative; margin: 12px 0 16px; display: flex; align-items: center; }
+.menu-search-icon { position: absolute; left: 14px; font-size: 15px; color: var(--muted); pointer-events: none; }
+.menu-search-input { width: 100%; padding-left: 40px; padding-right: 38px; height: 44px; border-radius: 999px; background: white; border: 1.5px solid var(--line); font-size: 14px; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02); transition: all .15s ease; }
+.menu-search-input:focus { border-color: var(--green); outline: none; box-shadow: 0 0 0 3px var(--soft-green); }
+.menu-search-clear { position: absolute; right: 12px; width: 22px; height: 22px; display: grid; place-items: center; border-radius: 50%; border: none; background: #e2e8f0; color: #475569; font-size: 11px; cursor: pointer; }
+.menu-search-clear:hover { background: #cbd5e1; }
 
 .dietary-filter-bar { display: flex; gap: 7px; overflow-x: auto; padding: 0 0 14px; scrollbar-width: none; }
 .dietary-filter-bar::-webkit-scrollbar { display: none; }
@@ -237,7 +247,13 @@ img { max-width: 100%; }
 .toolbar .input, .toolbar .select { width: auto; min-width: 180px; }
 .two-column { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(270px, .75fr); gap: 18px; }
 .order-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 14px; }
-.order-card { padding: 17px; }
+.order-card { padding: 17px; transition: border-color .2s ease, background-color .2s ease; }
+.order-card.urgency-warning { border-color: #f59e0b; background: #fffdf5; }
+.order-card.urgency-critical { border-color: #ef4444; background: #fff8f8; box-shadow: 0 0 0 1px #ef4444; }
+.order-urgency-tag { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 750; padding: 2px 8px; border-radius: 999px; }
+.order-urgency-tag.normal { background: #f1f5f9; color: #475569; }
+.order-urgency-tag.warning { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+.order-urgency-tag.critical { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
 .order-card header { display: flex; justify-content: space-between; gap: 12px; }
 .order-card h3 { margin: 0; font-size: 15px; }
 .order-items { display: grid; gap: 10px; margin: 17px 0; padding: 0; list-style: none; }

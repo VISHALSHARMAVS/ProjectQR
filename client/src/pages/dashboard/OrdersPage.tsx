@@ -282,7 +282,62 @@ export default function OrdersPage({ kitchen = false }: { kitchen?: boolean }) {
     {error && !rejectionOrder && <div className="form-error" style={{ marginBottom: 14 }} role="alert">{error}</div>}
     {orders.length === 0 ? <section className="surface"><EmptyState title={filter === 'NEW' ? 'No new orders' : 'No orders in this view'} description="New customer orders will appear here as soon as they are placed." /></section> : <section className="order-grid">{orders.map((order) => {
       const action = next[order.status];
-      return <article className="order-card surface" key={order.id}><header><div><h3>{order.orderNumber}</h3><span className="muted" style={{ display: 'block', marginTop: 4, fontSize: 12 }}>{formatTableLabel(order.table.label)} · {new Date(order.createdAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</span></div><div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>{order.paymentStatus === 'PAID' ? <span className="pill" style={{ background: '#dcfce7', color: '#15803d', fontWeight: 700, fontSize: 11, padding: '2px 8px' }}>✓ PAID ({order.paymentMethod})</span> : order.status !== 'REJECTED' ? <span className="pill" style={{ background: '#fef3c7', color: '#b45309', fontWeight: 700, fontSize: 11, padding: '2px 8px' }}>UNPAID</span> : null}<StatusPill status={order.status} /></div></header><div style={{ marginTop: 12 }}><span className="pill gray">{elapsedSince(order.createdAt, now)}</span></div>                <ul className="order-items">
+      const isActiveStatus = ['NEW', 'ACCEPTED', 'PREPARING'].includes(order.status);
+      const currentTime = now || Date.now();
+      const elapsedMinutes = Math.floor((currentTime - new Date(order.createdAt).getTime()) / 60_000);
+
+      let urgencyClass = '';
+      let urgencyBadge = null;
+      if (isActiveStatus) {
+        if (elapsedMinutes >= 20) {
+          urgencyClass = 'urgency-critical';
+          urgencyBadge = (
+            <span className="order-urgency-tag critical">
+              🔥 {elapsedMinutes}m - Critical
+            </span>
+          );
+        } else if (elapsedMinutes >= 10) {
+          urgencyClass = 'urgency-warning';
+          urgencyBadge = (
+            <span className="order-urgency-tag warning">
+              ⚠️ {elapsedMinutes}m - Delayed
+            </span>
+          );
+        } else {
+          urgencyBadge = (
+            <span className="order-urgency-tag normal">
+              ⏱️ {elapsedMinutes}m
+            </span>
+          );
+        }
+      }
+
+      return (
+        <article className={`order-card surface ${urgencyClass}`} key={order.id}>
+          <header>
+            <div>
+              <h3>{order.orderNumber}</h3>
+              <span className="muted" style={{ display: 'block', marginTop: 4, fontSize: 12 }}>
+                {formatTableLabel(order.table.label)} · {new Date(order.createdAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
+              </span>
+            </div>
+            <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+              {order.paymentStatus === 'PAID' ? (
+                <span className="pill" style={{ background: '#dcfce7', color: '#15803d', fontWeight: 700, fontSize: 11, padding: '2px 8px' }}>
+                  ✓ PAID ({order.paymentMethod})
+                </span>
+              ) : order.status !== 'REJECTED' ? (
+                <span className="pill" style={{ background: '#fef3c7', color: '#b45309', fontWeight: 700, fontSize: 11, padding: '2px 8px' }}>
+                  UNPAID
+                </span>
+              ) : null}
+              <StatusPill status={order.status} />
+            </div>
+          </header>
+          <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span className="pill gray">{elapsedSince(order.createdAt, now)}</span>
+            {urgencyBadge}
+          </div>                <ul className="order-items">
                   {order.items.map((item, idx) => (
                     <li key={idx}>
                       <span>
@@ -365,8 +420,10 @@ export default function OrdersPage({ kitchen = false }: { kitchen?: boolean }) {
                       Reject
                     </button>
                   )}
-                </div></article>;
-    })}</section>}
+                </div>
+              </article>
+            );
+          })}</section>}
     {rejectionOrder && <Modal title="Reject this order?" onClose={() => { setRejectionOrder(null); setError(''); }}><p className="muted">Tell the customer why {rejectionOrder.orderNumber} cannot be accepted. This message will appear on their tracking page.</p><div className="field" style={{ margin: '15px 0' }}><label htmlFor="reject-reason">Reason</label><textarea className="textarea" id="reject-reason" autoFocus required minLength={2} maxLength={300} value={rejectionReason} onChange={(event) => setRejectionReason(event.target.value)} placeholder="e.g. One of the items is unavailable" /></div>{error && <div className="form-error" style={{ marginBottom: 12 }}>{error}</div>}<div className="toolbar" style={{ justifyContent: 'end' }}><button className="btn secondary" onClick={() => setRejectionOrder(null)}>Cancel</button><button className="btn danger" onClick={reject} disabled={update.isPending || rejectionReason.trim().length < 2}>{update.isPending ? 'Updating…' : 'Reject order'}</button></div></Modal>}
     {settlingOrder && (
       <Modal
