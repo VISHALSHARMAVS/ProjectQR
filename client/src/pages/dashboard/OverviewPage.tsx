@@ -63,6 +63,41 @@ export default function OverviewPage() {
         ))}
       </section>
 
+      {/* Quick Setup & Management Hub */}
+      <div className="heading-row" style={{ marginTop: 28, marginBottom: 10 }}>
+        <div>
+          <span className="eyebrow">Quick navigation</span>
+          <h2>⚡ Restaurant Management</h2>
+        </div>
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 10 }}>
+        <Link to="/dashboard/menu" className="surface" style={{ padding: '14px 12px', borderRadius: 12, textDecoration: 'none', color: 'inherit', border: '1px solid var(--line)', display: 'block' }}>
+          <div style={{ fontSize: 24, marginBottom: 4 }}>🍽️</div>
+          <strong style={{ fontSize: 13, display: 'block' }}>Menu Items</strong>
+          <span className="muted" style={{ fontSize: 11 }}>{metrics.menuItems} dishes</span>
+        </Link>
+        <Link to="/dashboard/categories" className="surface" style={{ padding: '14px 12px', borderRadius: 12, textDecoration: 'none', color: 'inherit', border: '1px solid var(--line)', display: 'block' }}>
+          <div style={{ fontSize: 24, marginBottom: 4 }}>📂</div>
+          <strong style={{ fontSize: 13, display: 'block' }}>Categories</strong>
+          <span className="muted" style={{ fontSize: 11 }}>Manage sections</span>
+        </Link>
+        <Link to="/dashboard/tables" className="surface" style={{ padding: '14px 12px', borderRadius: 12, textDecoration: 'none', color: 'inherit', border: '1px solid var(--line)', display: 'block' }}>
+          <div style={{ fontSize: 24, marginBottom: 4 }}>🪑</div>
+          <strong style={{ fontSize: 13, display: 'block' }}>Tables & QR</strong>
+          <span className="muted" style={{ fontSize: 11 }}>{metrics.activeTables} tables</span>
+        </Link>
+        <Link to="/dashboard/floor-map" className="surface" style={{ padding: '14px 12px', borderRadius: 12, textDecoration: 'none', color: 'inherit', border: '1px solid var(--line)', display: 'block' }}>
+          <div style={{ fontSize: 24, marginBottom: 4 }}>🗺️</div>
+          <strong style={{ fontSize: 13, display: 'block' }}>Floor Map</strong>
+          <span className="muted" style={{ fontSize: 11 }}>Live table grid</span>
+        </Link>
+        <Link to="/dashboard/day-close" className="surface" style={{ padding: '14px 12px', borderRadius: 12, textDecoration: 'none', color: 'inherit', border: '1px solid var(--line)', display: 'block' }}>
+          <div style={{ fontSize: 24, marginBottom: 4 }}>📋</div>
+          <strong style={{ fontSize: 13, display: 'block' }}>Day Close</strong>
+          <span className="muted" style={{ fontSize: 11 }}>Z-Report register</span>
+        </Link>
+      </div>
+
       {/* Top Best-Selling Items */}
       <div className="heading-row" style={{ marginTop: 34 }}>
         <div>

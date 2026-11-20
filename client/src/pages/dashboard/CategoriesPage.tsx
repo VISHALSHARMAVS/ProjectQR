@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Link } from 'react-router-dom';
 import { api, ApiError } from '../../lib/api';
 import { EmptyState, ErrorPanel, Loading, Modal } from '../../components/ui';
 import type { Category } from '../../types';
@@ -37,7 +38,23 @@ export default function CategoriesPage() {
   if (query.error || !query.data) return <ErrorPanel message="Categories could not be loaded." retry={() => void query.refetch()} />;
   const categories = query.data.categories;
   return <>
-    <div className="heading-row"><div><span className="eyebrow">Organize your menu</span><h1>Categories</h1><p className="muted" style={{ margin: '6px 0 0', fontSize: 13 }}>Group menu items so guests can find what they want.</p></div><button className="btn" onClick={() => open()}>Add category</button></div>
+    <div className="heading-row">
+      <div>
+        <span className="eyebrow">Organize your menu</span>
+        <h1>Categories</h1>
+        <p className="muted" style={{ margin: '6px 0 0', fontSize: 13 }}>
+          Group menu items so guests can find what they want.
+        </p>
+      </div>
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        <Link className="btn secondary" to="/dashboard/menu">
+          🍽️ Menu Items
+        </Link>
+        <button className="btn" onClick={() => open()}>
+          ➕ Add category
+        </button>
+      </div>
+    </div>
     <section className="surface table-wrap">{categories.length === 0 ? <EmptyState title="No categories yet" description="Start with a few sections such as Small plates, Mains and Drinks." action={<button className="btn small" onClick={() => open()}>Create a category</button>} /> : <table className="data-table"><thead><tr><th>Name</th><th>Description</th><th>Order</th><th>Status</th><th /></tr></thead><tbody>{categories.map((category) => <tr key={category._id}><td><strong>{category.name}</strong></td><td>{category.description || '—'}</td><td>{category.displayOrder}</td><td><span className={`pill ${category.active ? '' : 'gray'}`}>{category.active ? 'Active' : 'Hidden'}</span></td><td><div className="toolbar"><button className="btn secondary small" onClick={() => open(category)}>Edit</button><button className="btn ghost small" onClick={() => setDeleting(category)}>Delete</button></div></td></tr>)}</tbody></table>}</section>
     {modalOpen && <Modal title={editing ? 'Edit category' : 'Add category'} onClose={() => { if (!save.isPending) { setModalOpen(false); setError(''); } }}><form className="form-grid" onSubmit={(event) => { event.preventDefault(); save.mutate(); }}><div className="field"><label htmlFor="category-name">Name</label><input className="input" id="category-name" required maxLength={80} value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} /></div><div className="field"><label htmlFor="category-description">Description</label><textarea className="textarea" id="category-description" maxLength={300} value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} /></div><div className="field"><label htmlFor="category-order">Display order</label><input className="input" id="category-order" type="number" min="0" value={form.displayOrder} onChange={(event) => setForm({ ...form, displayOrder: event.target.value })} /></div><label style={{ display: 'flex', alignItems: 'center', gap: 9, fontSize: 13 }}><input type="checkbox" checked={form.active} onChange={(event) => setForm({ ...form, active: event.target.checked })} /> Show category to customers</label>{error && <div className="form-error">{error}</div>}<button className="btn full" disabled={save.isPending}>{save.isPending ? 'Saving…' : 'Save category'}</button></form></Modal>}
     {deleting && <Modal title="Delete category?" onClose={() => { setDeleting(null); setError(''); }}><p className="muted">Delete “{deleting.name}”? Categories with menu items must be emptied first.</p>{error && <div className="form-error" style={{ marginBottom: 12 }}>{error}</div>}<div className="toolbar" style={{ justifyContent: 'end' }}><button className="btn secondary" onClick={() => { setDeleting(null); setError(''); }}>Cancel</button><button className="btn danger" onClick={() => remove.mutate(deleting)} disabled={remove.isPending}>{remove.isPending ? 'Deleting…' : 'Delete category'}</button></div></Modal>}

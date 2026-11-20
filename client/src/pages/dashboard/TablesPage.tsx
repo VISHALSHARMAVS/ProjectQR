@@ -48,8 +48,49 @@ export default function TablesPage() {
   };
   const qrFilename = qr ? `${qr.restaurantName.replace(/[^a-z0-9]+/gi, '-').toLowerCase()}-table-${qr.tableLabel.replace(/[^a-z0-9]+/gi, '-').toLowerCase()}-qr.png` : 'table-qr.png';
   return <>
-    <div className="heading-row"><div><span className="eyebrow">Your floor</span><h1>Tables & QR codes</h1><p className="muted" style={{ margin: '6px 0 0', fontSize: 13 }}>Every table has its own secure ordering link.</p></div></div>
-    <form className="surface toolbar" style={{ padding: 16, marginBottom: 15 }} onSubmit={(event) => { event.preventDefault(); setError(''); create.mutate(); }}><div className="field" style={{ flex: 1, minWidth: 180 }}><label htmlFor="table-label">Table number or label</label><input className="input" id="table-label" required maxLength={40} value={label} onChange={(event) => setLabel(event.target.value)} placeholder="Patio 1" /></div><button className="btn" style={{ alignSelf: 'end' }} disabled={create.isPending}>{create.isPending ? 'Adding…' : 'Add table'}</button></form>
+    <div className="heading-row"><div><span className="eyebrow">Your floor</span><h1>Tables & QR codes</h1><p className="muted" style={{ margin: '6px 0 0', fontSize: 13 }}>Every table has its own unique, dynamic QR ordering code.</p></div></div>
+    {/* Dedicated Add Table Form Box */}
+    <form
+      className="surface"
+      style={{
+        padding: 18,
+        marginBottom: 20,
+        borderRadius: 14,
+        border: '1.5px solid var(--line)'
+      }}
+      onSubmit={(event) => {
+        event.preventDefault();
+        setError('');
+        if (label.trim()) create.mutate();
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+        <span style={{ fontSize: 18 }}>🪑</span>
+        <strong style={{ fontSize: 15 }}>Add New Dining Table</strong>
+      </div>
+      <p className="muted" style={{ margin: '0 0 12px', fontSize: 12 }}>
+        Enter a table number (e.g. 1, 2) or section name (e.g. Patio 4, Bar 2, Rooftop 6). Once added, its QR code is generated instantly.
+      </p>
+      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+        <input
+          className="input"
+          id="table-label"
+          required
+          maxLength={40}
+          value={label}
+          onChange={(event) => setLabel(event.target.value)}
+          placeholder="e.g. Table 1, T-5, Patio 2"
+          style={{ flex: '1 1 200px' }}
+        />
+        <button
+          className="btn"
+          disabled={create.isPending || !label.trim()}
+          style={{ whiteSpace: 'nowrap' }}
+        >
+          {create.isPending ? 'Adding…' : '➕ Add Table'}
+        </button>
+      </div>
+    </form>
     {error && !editing && !deactivating && <div className="form-error" style={{ marginBottom: 13 }}>{error}</div>}
     <section className="surface table-wrap">{query.data.tables.length === 0 ? <EmptyState title="No tables yet" description="Add your first table, then download its QR code to place on the table." /> : <table className="data-table"><thead><tr><th>Table</th><th>Status</th><th>QR link</th><th /></tr></thead><tbody>{query.data.tables.map((table) => <tr key={table.id ?? table._id}><td><strong>{table.label}</strong></td><td><span className={`pill ${table.active ? '' : 'gray'}`}>{table.active ? 'Active' : 'Inactive'}</span></td><td><button className="btn secondary small" onClick={() => void getQr(table)} disabled={qrLoading}>View / download</button></td><td><div className="toolbar"><button className="btn secondary small" onClick={() => { setEditing(table); setEditLabel(table.label); setError(''); }}>Edit</button>{table.active ? <button className="btn ghost small" onClick={() => { setDeactivating(table); setError(''); }}>Deactivate</button> : <button className="btn ghost small" onClick={() => setActive.mutate({ table, active: true })}>Activate</button>}</div></td></tr>)}</tbody></table>}</section>
     {editing && <Modal title="Edit table" onClose={() => { setEditing(null); setError(''); }}><form className="form-grid" onSubmit={(event) => { event.preventDefault(); save.mutate(); }}><div className="field"><label htmlFor="edit-table-label">Table number or label</label><input className="input" id="edit-table-label" required maxLength={40} value={editLabel} onChange={(event) => setEditLabel(event.target.value)} /></div>{error && <div className="form-error">{error}</div>}<button className="btn full" disabled={save.isPending}>{save.isPending ? 'Saving…' : 'Save table'}</button></form></Modal>}

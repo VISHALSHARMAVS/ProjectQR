@@ -184,10 +184,17 @@ export default function MenuPage() {
       <div className="heading-row">
         <div>
           <span className="eyebrow">What guests can order</span>
-          <h1>Menu</h1>
+          <h1>Menu items</h1>
           <p className="muted" style={{ margin: '6px 0 0', fontSize: 13 }}>Manage names, portions, add-ons, photos and availability.</p>
         </div>
-        <button className="btn" onClick={() => openEdit()} disabled={!activeCategories.length}>Add menu item</button>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <Link className="btn secondary" to="/dashboard/categories">
+            📂 Categories
+          </Link>
+          <button className="btn" onClick={() => openEdit()} disabled={!activeCategories.length}>
+            ➕ Add menu item
+          </button>
+        </div>
       </div>
 
       {!activeCategories.length && (

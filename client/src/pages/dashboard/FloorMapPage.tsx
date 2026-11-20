@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { EmptyState, ErrorPanel, Loading, Modal, StatusPill } from '../../components/ui';
 import { useOrderSocket } from '../../hooks/useOrderSocket';
 import { api } from '../../lib/api';
@@ -131,6 +132,9 @@ export default function FloorMapPage() {
           </p>
         </div>
         <div className="toolbar">
+          <Link className="btn small" to="/dashboard/tables">
+            ➕ Add Table & QR
+          </Link>
           <button className="btn secondary small" onClick={() => void query.refetch()}>
             ↻ Refresh
           </button>
