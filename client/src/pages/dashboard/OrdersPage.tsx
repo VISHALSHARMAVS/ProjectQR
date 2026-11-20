@@ -188,11 +188,33 @@ export default function OrdersPage({ kitchen = false }: { kitchen?: boolean }) {
         >
           {soundEnabled ? '🔔 Sound on' : '🔕 Muted'}
         </button>
-        <select className="select" aria-label="Filter orders by status" value={filter} onChange={(event) => setFilter(event.target.value)}>
-          {filters.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-        </select>
-        <button className="btn secondary small" onClick={() => void query.refetch()}>Refresh</button>
+        <button className="btn secondary small" onClick={() => void query.refetch()}>
+          ↻ Refresh
+        </button>
       </div>
+    </div>
+
+    {/* 1-Tap Segmented Status Tabs with Dynamic Order Counts */}
+    <div className="orders-filter-bar">
+      {filters.map((option) => {
+        const isActive = filter === option.value;
+        const count = option.value === ''
+          ? orders.length
+          : orders.filter((o) => o.status === option.value).length;
+        const isNew = option.value === 'NEW' && count > 0;
+
+        return (
+          <button
+            key={option.value}
+            type="button"
+            className={`orders-filter-chip ${isActive ? 'active' : ''} ${isNew ? 'has-new' : ''}`}
+            onClick={() => setFilter(option.value)}
+          >
+            <span>{option.label}</span>
+            <span className="orders-count-badge">{count}</span>
+          </button>
+        );
+      })}
     </div>
 
     {/* High-priority full-screen modal alert for Waiter Call and Bill Request */}

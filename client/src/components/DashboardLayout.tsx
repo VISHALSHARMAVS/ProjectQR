@@ -5,17 +5,106 @@ import { useStaff } from '../hooks/useStaff';
 import { api } from '../lib/api';
 import { Loading } from './ui';
 
-const links = [
-  { to: '/dashboard/overview', label: 'Overview', icon: '📊' },
-  { to: '/dashboard/menu', label: 'Menu Items', icon: '🍽️' },
-  { to: '/dashboard/categories', label: 'Categories', icon: '📂' },
-  { to: '/dashboard/tables', label: 'Tables & QR', icon: '🪑' },
-  { to: '/dashboard/floor-map', label: 'Floor Map', icon: '🗺️' },
-  { to: '/dashboard/orders', label: 'Live Orders', icon: '🔔' },
-  { to: '/dashboard/kitchen', label: 'Kitchen KDS', icon: '🍳' },
-  { to: '/dashboard/day-close', label: 'Day Close / Register', icon: '📋' },
-  { to: '/dashboard/settings', label: 'Settings', icon: '⚙️' }
+function OverviewIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect width="7" height="9" x="3" y="3" rx="1" /><rect width="7" height="5" x="14" y="3" rx="1" /><rect width="7" height="9" x="14" y="12" rx="1" /><rect width="7" height="5" x="3" y="16" rx="1" />
+    </svg>
+  );
+}
+
+function OrdersIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" /><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
+    </svg>
+  );
+}
+
+function KitchenIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M6 13.87A4 4 0 0 1 7.41 6a5.11 5.11 0 0 1 1.05-1.54 5 5 0 0 1 7.08 0A5.11 5.11 0 0 1 16.59 6 4 4 0 0 1 18 13.87V21H6Z" /><line x1="6" x2="18" y1="17" y2="17" />
+    </svg>
+  );
+}
+
+function FloorMapIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect width="18" height="18" x="3" y="3" rx="2" /><path d="M3 9h18" /><path d="M9 21V9" />
+    </svg>
+  );
+}
+
+function MenuIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2" /><path d="M7 2v20" /><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7" />
+    </svg>
+  );
+}
+
+function CategoriesIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z" />
+    </svg>
+  );
+}
+
+function TablesIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect width="5" height="5" x="3" y="3" rx="1" /><rect width="5" height="5" x="16" y="3" rx="1" /><rect width="5" height="5" x="3" y="16" rx="1" /><path d="M21 16h-3a2 2 0 0 0-2 2v3" /><path d="M21 21v.01" /><path d="M12 7v3a2 2 0 0 1-2 2H7" /><path d="M3 12h.01" /><path d="M12 3h.01" /><path d="M12 16v.01" /><path d="M16 12h1" /><path d="M21 12v.01" /><path d="M12 21v-1" />
+    </svg>
+  );
+}
+
+function DayCloseIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z" /><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8" /><path d="M12 6v12" />
+    </svg>
+  );
+}
+
+function SettingsIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+    </svg>
+  );
+}
+
+const navSections = [
+  {
+    title: 'Operations',
+    items: [
+      { to: '/dashboard/orders', label: 'Live Orders', icon: <OrdersIcon /> },
+      { to: '/dashboard/kitchen', label: 'Kitchen KDS', icon: <KitchenIcon /> },
+      { to: '/dashboard/floor-map', label: 'Floor Map', icon: <FloorMapIcon /> }
+    ]
+  },
+  {
+    title: 'Catalog & Tables',
+    items: [
+      { to: '/dashboard/menu', label: 'Menu Items', icon: <MenuIcon /> },
+      { to: '/dashboard/categories', label: 'Categories', icon: <CategoriesIcon /> },
+      { to: '/dashboard/tables', label: 'Tables & QR', icon: <TablesIcon /> }
+    ]
+  },
+  {
+    title: 'Reports & Admin',
+    items: [
+      { to: '/dashboard/overview', label: 'Overview', icon: <OverviewIcon /> },
+      { to: '/dashboard/day-close', label: 'Day Close / Register', icon: <DayCloseIcon /> },
+      { to: '/dashboard/settings', label: 'Settings', icon: <SettingsIcon /> }
+    ]
+  }
 ];
+
+const links = navSections.flatMap((s) => s.items);
 
 export function ProtectedDashboard() {
   const staff = useStaff();
@@ -98,8 +187,22 @@ export default function DashboardLayout() {
           )}
           <span className="brand-name">{name}</span>
         </Link>
-        <div className="sidebar-label">Workspace</div>
-        <nav className="nav-list" aria-label="Restaurant navigation">{visibleLinks.map(itemLink)}</nav>
+        <nav className="nav-list" aria-label="Restaurant navigation">
+          {staff.data?.user.role === 'kitchen' ? (
+            <div style={{ display: 'grid', gap: 3 }}>
+              {visibleLinks.map(itemLink)}
+            </div>
+          ) : (
+            navSections.map((section) => (
+              <div key={section.title} style={{ marginBottom: 6 }}>
+                <div className="sidebar-section-title">{section.title}</div>
+                <div style={{ display: 'grid', gap: 3 }}>
+                  {section.items.map(itemLink)}
+                </div>
+              </div>
+            ))
+          )}
+        </nav>
         <div className="sidebar-bottom">
           <div className="sidebar-label">Signed in as</div>
           <div style={{ padding: '0 10px 8px', fontSize: 12, lineHeight: 1.5 }}>

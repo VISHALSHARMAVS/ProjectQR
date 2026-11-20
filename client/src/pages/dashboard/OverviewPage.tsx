@@ -32,12 +32,6 @@ export default function OverviewPage() {
     return <ErrorPanel message={query.error instanceof ApiError ? query.error.message : 'Dashboard data could not be loaded.'} retry={() => void query.refetch()} />;
   }
   const { metrics, topSellers, recentlyCompleted } = query.data;
-  const stats = [
-    ['Total revenue', money(metrics.totalSalesPaise || 0), `${metrics.totalOrdersCount || 0} orders processed`],
-    ['New orders', metrics.newOrders, 'Waiting for kitchen acceptance'],
-    ['In preparation', metrics.preparingOrders, 'Accepted or cooking right now'],
-    ['Active tables', metrics.activeTables, 'Ready to accept customer orders']
-  ];
 
   return (
     <>
@@ -54,47 +48,75 @@ export default function OverviewPage() {
       </div>
 
       <section className="stat-grid">
-        {stats.map(([label, value, caption]) => (
-          <article className="stat-card surface" key={String(label)}>
-            <div className="eyebrow">{label}</div>
-            <div className="stat-value">{value}</div>
-            <div className="stat-caption">{caption}</div>
-          </article>
-        ))}
+        <article className="stat-card">
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span className="eyebrow" style={{ color: '#15803d' }}>Total Revenue</span>
+            <span style={{ fontSize: 16, background: '#dcfce7', width: 32, height: 32, borderRadius: 8, display: 'grid', placeItems: 'center' }}>💰</span>
+          </div>
+          <div className="stat-value">{money(metrics.totalSalesPaise || 0)}</div>
+          <div className="stat-caption">{metrics.totalOrdersCount || 0} orders processed</div>
+        </article>
+
+        <article className="stat-card">
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span className="eyebrow" style={{ color: metrics.newOrders > 0 ? '#b45309' : 'var(--muted)' }}>New Orders</span>
+            <span style={{ fontSize: 16, background: metrics.newOrders > 0 ? '#fef3c7' : '#f1f5f9', width: 32, height: 32, borderRadius: 8, display: 'grid', placeItems: 'center' }}>🔥</span>
+          </div>
+          <div className="stat-value" style={{ color: metrics.newOrders > 0 ? '#b45309' : 'inherit' }}>{metrics.newOrders}</div>
+          <div className="stat-caption">Waiting for kitchen acceptance</div>
+        </article>
+
+        <article className="stat-card">
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span className="eyebrow" style={{ color: '#2563eb' }}>In Kitchen</span>
+            <span style={{ fontSize: 16, background: '#dbeafe', width: 32, height: 32, borderRadius: 8, display: 'grid', placeItems: 'center' }}>🍳</span>
+          </div>
+          <div className="stat-value">{metrics.preparingOrders}</div>
+          <div className="stat-caption">Accepted or cooking right now</div>
+        </article>
+
+        <article className="stat-card">
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span className="eyebrow" style={{ color: '#7c3aed' }}>Active Tables</span>
+            <span style={{ fontSize: 16, background: '#ede9fe', width: 32, height: 32, borderRadius: 8, display: 'grid', placeItems: 'center' }}>🪑</span>
+          </div>
+          <div className="stat-value">{metrics.activeTables}</div>
+          <div className="stat-caption">Ready for guest dining</div>
+        </article>
       </section>
 
       {/* Quick Setup & Management Hub */}
-      <div className="heading-row" style={{ marginTop: 28, marginBottom: 10 }}>
+      <div className="heading-row" style={{ marginTop: 28, marginBottom: 12 }}>
         <div>
           <span className="eyebrow">Quick navigation</span>
-          <h2>⚡ Restaurant Management</h2>
+          <h2>⚡ Restaurant Operations Hub</h2>
         </div>
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 10 }}>
-        <Link to="/dashboard/menu" className="surface" style={{ padding: '14px 12px', borderRadius: 12, textDecoration: 'none', color: 'inherit', border: '1px solid var(--line)', display: 'block' }}>
-          <div style={{ fontSize: 24, marginBottom: 4 }}>🍽️</div>
-          <strong style={{ fontSize: 13, display: 'block' }}>Menu Items</strong>
-          <span className="muted" style={{ fontSize: 11 }}>{metrics.menuItems} dishes</span>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12 }}>
+        <Link to="/dashboard/orders" className="surface" style={{ padding: '16px 14px', borderRadius: 14, textDecoration: 'none', color: 'inherit', border: '1px solid #e2e8f0', background: '#ffffff', display: 'block', transition: 'all 0.15s' }}>
+          <div style={{ fontSize: 22, marginBottom: 8, color: '#ea580c' }}>🔔</div>
+          <strong style={{ fontSize: 14, display: 'block' }}>Live Orders</strong>
+          <span className="muted" style={{ fontSize: 12 }}>Kitchen queue & tickets</span>
         </Link>
-        <Link to="/dashboard/categories" className="surface" style={{ padding: '14px 12px', borderRadius: 12, textDecoration: 'none', color: 'inherit', border: '1px solid var(--line)', display: 'block' }}>
-          <div style={{ fontSize: 24, marginBottom: 4 }}>📂</div>
-          <strong style={{ fontSize: 13, display: 'block' }}>Categories</strong>
-          <span className="muted" style={{ fontSize: 11 }}>Manage sections</span>
+        <Link to="/dashboard/floor-map" className="surface" style={{ padding: '16px 14px', borderRadius: 14, textDecoration: 'none', color: 'inherit', border: '1px solid #e2e8f0', background: '#ffffff', display: 'block', transition: 'all 0.15s' }}>
+          <div style={{ fontSize: 22, marginBottom: 8, color: '#1b4d3e' }}>🗺️</div>
+          <strong style={{ fontSize: 14, display: 'block' }}>Floor Map</strong>
+          <span className="muted" style={{ fontSize: 12 }}>Real-time table states</span>
         </Link>
-        <Link to="/dashboard/tables" className="surface" style={{ padding: '14px 12px', borderRadius: 12, textDecoration: 'none', color: 'inherit', border: '1px solid var(--line)', display: 'block' }}>
-          <div style={{ fontSize: 24, marginBottom: 4 }}>🪑</div>
-          <strong style={{ fontSize: 13, display: 'block' }}>Tables & QR</strong>
-          <span className="muted" style={{ fontSize: 11 }}>{metrics.activeTables} tables</span>
+        <Link to="/dashboard/menu" className="surface" style={{ padding: '16px 14px', borderRadius: 14, textDecoration: 'none', color: 'inherit', border: '1px solid #e2e8f0', background: '#ffffff', display: 'block', transition: 'all 0.15s' }}>
+          <div style={{ fontSize: 22, marginBottom: 8, color: '#0284c7' }}>🍽️</div>
+          <strong style={{ fontSize: 14, display: 'block' }}>Menu Items</strong>
+          <span className="muted" style={{ fontSize: 12 }}>{metrics.menuItems} dishes active</span>
         </Link>
-        <Link to="/dashboard/floor-map" className="surface" style={{ padding: '14px 12px', borderRadius: 12, textDecoration: 'none', color: 'inherit', border: '1px solid var(--line)', display: 'block' }}>
-          <div style={{ fontSize: 24, marginBottom: 4 }}>🗺️</div>
-          <strong style={{ fontSize: 13, display: 'block' }}>Floor Map</strong>
-          <span className="muted" style={{ fontSize: 11 }}>Live table grid</span>
+        <Link to="/dashboard/tables" className="surface" style={{ padding: '16px 14px', borderRadius: 14, textDecoration: 'none', color: 'inherit', border: '1px solid #e2e8f0', background: '#ffffff', display: 'block', transition: 'all 0.15s' }}>
+          <div style={{ fontSize: 22, marginBottom: 8, color: '#7c3aed' }}>🪑</div>
+          <strong style={{ fontSize: 14, display: 'block' }}>Tables & QR</strong>
+          <span className="muted" style={{ fontSize: 12 }}>{metrics.activeTables} tables configured</span>
         </Link>
-        <Link to="/dashboard/day-close" className="surface" style={{ padding: '14px 12px', borderRadius: 12, textDecoration: 'none', color: 'inherit', border: '1px solid var(--line)', display: 'block' }}>
-          <div style={{ fontSize: 24, marginBottom: 4 }}>📋</div>
-          <strong style={{ fontSize: 13, display: 'block' }}>Day Close</strong>
-          <span className="muted" style={{ fontSize: 11 }}>Z-Report register</span>
+        <Link to="/dashboard/day-close" className="surface" style={{ padding: '16px 14px', borderRadius: 14, textDecoration: 'none', color: 'inherit', border: '1px solid #e2e8f0', background: '#ffffff', display: 'block', transition: 'all 0.15s' }}>
+          <div style={{ fontSize: 22, marginBottom: 8, color: '#16a34a' }}>📋</div>
+          <strong style={{ fontSize: 14, display: 'block' }}>Day Close</strong>
+          <span className="muted" style={{ fontSize: 12 }}>Z-Report register ledger</span>
         </Link>
       </div>
 
