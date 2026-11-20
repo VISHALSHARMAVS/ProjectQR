@@ -104,12 +104,33 @@ export default function CheckoutPage() {
   });
 
   const current = new Map((menu.data?.items ?? []).map((item) => [item._id, item]));
-  const stale = cart.flatMap<{ line: TableCartLine; reason: 'price' | 'unavailable' }>((line) => {
+  const stale = cart.flatMap<{ line: TableCartLine; reason: 'price' | 'unavailable'; latestPricePaise?: number }>((line) => {
     const item = current.get(line.menuItemId);
     if (!item || !item.available) return [{ line, reason: 'unavailable' as const }];
-    if (item.pricePaise !== line.unitPricePaise) return [{ line, reason: 'price' as const }];
+
+    let currentBasePrice = item.pricePaise;
+    if (line.selectedVariant) {
+      const matchVariant = item.variants?.find((v) => v.name === line.selectedVariant?.name);
+      if (!matchVariant) return [{ line, reason: 'unavailable' as const }];
+      currentBasePrice = matchVariant.pricePaise;
+    }
+
+    let currentAddonsTotal = 0;
+    if (line.selectedAddons && line.selectedAddons.length > 0) {
+      for (const addon of line.selectedAddons) {
+        const matchAddon = item.addons?.find((a) => a.name === addon.name);
+        if (!matchAddon) return [{ line, reason: 'unavailable' as const }];
+        currentAddonsTotal += matchAddon.pricePaise;
+      }
+    }
+
+    const expectedUnitPrice = currentBasePrice + currentAddonsTotal;
+    if (expectedUnitPrice !== line.unitPricePaise) {
+      return [{ line, reason: 'price' as const, latestPricePaise: expectedUnitPrice }];
+    }
     return [];
   });
+  const totalItemCount = cart.reduce((sum, line) => sum + line.quantity, 0);
   const subtotal = cart.reduce((sum, line) => sum + line.quantity * line.unitPricePaise, 0);
 
   const mutation = useMutation({
@@ -151,13 +172,25 @@ export default function CheckoutPage() {
 
   return <main className="customer-wrap customer-page" style={brandStyle}>
     <header className="customer-header">
-      <div className="restaurant-logo">{restaurant.logoUrl ? <img src={restaurant.logoUrl} alt="" /> : restaurant.name.slice(0, 1).toUpperCase()}</div>
-      <div>
-        <h1>{restaurant.name}</h1>
-        <p>{formatTableLabel(table.label)} · Guest: {customer.name}</p>
+      <div className="customer-header-brand">
+        <Link
+          to={`/order/${encodeURIComponent(token)}/menu`}
+          className="btn secondary small"
+          style={{ padding: '6px 12px', fontSize: 12, fontWeight: 650, flexShrink: 0 }}
+          title="Back to menu"
+        >
+          ← Menu
+        </Link>
+        <div className="restaurant-logo">
+          {restaurant.logoUrl ? <img src={restaurant.logoUrl} alt="" /> : restaurant.name.slice(0, 1).toUpperCase()}
+        </div>
+        <div style={{ minWidth: 0 }}>
+          <h1 style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{restaurant.name}</h1>
+          <p>{formatTableLabel(table.label)} · Guest: {customer.name}</p>
+        </div>
       </div>
     </header>
-    <div style={{ paddingTop: 27 }}>
+    <div style={{ paddingTop: 22 }}>
       <span className="eyebrow">Table order</span>
       <h1 style={{ margin: '4px 0 17px', fontSize: 31, letterSpacing: '-.05em' }}>Review table order</h1>
     </div>
@@ -172,9 +205,9 @@ export default function CheckoutPage() {
           <article className="cart-line" key={line.menuItemId}>
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 7, flexWrap: 'wrap' }}>
-                <h3>{line.name}</h3>
+                <h3 style={{ fontSize: 15, fontWeight: 700, margin: 0 }}>{line.name}</h3>
                 {line.selectedVariant && (
-                  <span className="pill" style={{ fontSize: 11, background: 'var(--soft-green)', color: 'var(--green-dark)' }}>
+                  <span className="pill" style={{ fontSize: 11, background: 'var(--soft-green)', color: 'var(--green-dark)', fontWeight: 650 }}>
                     {line.selectedVariant.name}
                   </span>
                 )}
@@ -184,41 +217,62 @@ export default function CheckoutPage() {
                   </span>
                 )}
               </div>
-              {line.selectedAddons && line.selectedAddons.length > 0 && (
-                <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 2 }}>
-                  Extras: {line.selectedAddons.map((a) => `${a.name} (+${money(a.pricePaise)})`).join(', ')}
+
+              {/* Transparent Calculation Breakdown */}
+              <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 4 }}>
+                {line.selectedVariant ? (
+                  <span>{line.selectedVariant.name} ({money(line.selectedVariant.pricePaise)})</span>
+                ) : (
+                  <span>Base: {money(current.get(line.menuItemId)?.pricePaise ?? line.unitPricePaise)}</span>
+                )}
+                {line.selectedAddons && line.selectedAddons.length > 0 && (
+                  <span style={{ marginLeft: 4 }}>
+                    + Extras: {line.selectedAddons.map((a) => `${a.name} (+${money(a.pricePaise)})`).join(', ')}
+                  </span>
+                )}
+                <span style={{ fontWeight: 700, color: 'var(--ink)', marginLeft: 6 }}>
+                  = {money(line.unitPricePaise)} each
+                </span>
+              </div>
+
+              {/* Quantity selector and safely separated Remove button */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginTop: 12 }}>
+                <div className="qty-control">
+                  <button
+                    type="button"
+                    aria-label={`Remove one ${line.name}`}
+                    onClick={() => updateItem.mutate({
+                      menuItemId: line.menuItemId,
+                      quantity: line.quantity - 1,
+                      selectedVariant: line.selectedVariant,
+                      selectedAddons: line.selectedAddons,
+                      notes: line.notes
+                    })}
+                    disabled={updateItem.isPending}
+                  >
+                    −
+                  </button>
+                  <strong style={{ minWidth: 22, textAlign: 'center', fontSize: 14 }}>{line.quantity}</strong>
+                  <button
+                    type="button"
+                    aria-label={`Add one ${line.name}`}
+                    onClick={() => updateItem.mutate({
+                      menuItemId: line.menuItemId,
+                      quantity: line.quantity + 1,
+                      selectedVariant: line.selectedVariant,
+                      selectedAddons: line.selectedAddons,
+                      notes: line.notes
+                    })}
+                    disabled={updateItem.isPending}
+                  >
+                    +
+                  </button>
                 </div>
-              )}
-              <div className="muted" style={{ marginTop: 5, fontSize: 12 }}>{money(line.unitPricePaise)} each</div>
-              <div className="qty-control" style={{ marginTop: 10 }}>
+
                 <button
-                  aria-label={`Remove one ${line.name}`}
-                  onClick={() => updateItem.mutate({
-                    menuItemId: line.menuItemId,
-                    quantity: line.quantity - 1,
-                    selectedVariant: line.selectedVariant,
-                    selectedAddons: line.selectedAddons
-                  })}
-                  disabled={updateItem.isPending}
-                >
-                  −
-                </button>
-                <strong>{line.quantity}</strong>
-                <button
-                  aria-label={`Add one ${line.name}`}
-                  onClick={() => updateItem.mutate({
-                    menuItemId: line.menuItemId,
-                    quantity: line.quantity + 1,
-                    selectedVariant: line.selectedVariant,
-                    selectedAddons: line.selectedAddons
-                  })}
-                  disabled={updateItem.isPending}
-                >
-                  +
-                </button>
-                <button
+                  type="button"
                   className="btn ghost small"
-                  style={{ marginLeft: 5 }}
+                  style={{ color: '#b91c1c', fontSize: 12, padding: '4px 10px', display: 'inline-flex', alignItems: 'center', gap: 4 }}
                   onClick={() => updateItem.mutate({
                     menuItemId: line.menuItemId,
                     quantity: 0,
@@ -226,31 +280,57 @@ export default function CheckoutPage() {
                     selectedAddons: line.selectedAddons
                   })}
                   disabled={updateItem.isPending}
+                  title="Remove dish from table order"
                 >
-                  Remove
+                  <span aria-hidden="true">🗑️</span>
+                  <span>Remove</span>
                 </button>
               </div>
-              <div className="field" style={{ marginTop: 10 }}>
-                <label htmlFor={`note-${line.menuItemId}`}>Note for the kitchen <span className="muted">(optional)</span></label>
+
+              <div className="field" style={{ marginTop: 12 }}>
+                <label htmlFor={`note-${line.menuItemId}`} style={{ fontSize: 12, fontWeight: 600, color: 'var(--ink)' }}>
+                  🍳 Cooking note for this dish <span className="muted" style={{ fontWeight: 400 }}>(optional)</span>
+                </label>
                 <CartItemNoteInput
                   id={`note-${line.menuItemId}`}
                   initialNotes={line.notes || ''}
-                  onSave={(notes) => updateItem.mutate({ menuItemId: line.menuItemId, quantity: line.quantity, notes })}
+                  onSave={(notes) => updateItem.mutate({
+                    menuItemId: line.menuItemId,
+                    quantity: line.quantity,
+                    selectedVariant: line.selectedVariant,
+                    selectedAddons: line.selectedAddons,
+                    notes
+                  })}
                 />
               </div>
             </div>
-            <span className="line-total">{money(line.quantity * line.unitPricePaise)}</span>
+            <span className="line-total" style={{ fontSize: 15, fontWeight: 750, color: 'var(--ink)' }}>
+              {money(line.quantity * line.unitPricePaise)}
+            </span>
           </article>
         ))}
       </div>
 
-      <div className="field" style={{ marginTop: 19 }}>
-        <label htmlFor="order-notes">Table order instructions <span className="muted">(optional)</span></label>
-        <textarea className="textarea" id="order-notes" maxLength={500} value={orderNotes} onChange={(event) => setOrderNotes(event.target.value)} placeholder="e.g. Serve starters first / Bring food together" />
+      <div className="field" style={{ marginTop: 20 }}>
+        <label htmlFor="order-notes" style={{ fontWeight: 650 }}>
+          📝 Table dining instructions <span className="muted" style={{ fontWeight: 400 }}>(optional)</span>
+        </label>
+        <textarea
+          className="textarea"
+          id="order-notes"
+          maxLength={500}
+          value={orderNotes}
+          onChange={(event) => setOrderNotes(event.target.value)}
+          placeholder="e.g. Serve starters first / Bring food together / Need extra glasses"
+          rows={2}
+        />
       </div>
 
       <div style={{ marginTop: 18 }}>
-        <div className="total-row"><span>Subtotal ({cart.reduce((sum, line) => sum + line.quantity, 0)} items)</span><strong>{money(subtotal)}</strong></div>
+        <div className="total-row">
+          <span>Subtotal ({totalItemCount} {totalItemCount === 1 ? 'item' : 'items'})</span>
+          <strong>{money(subtotal)}</strong>
+        </div>
         <div className="total-row"><span>Payment</span><span>Pay at table or counter</span></div>
         <div className="total-row grand"><span>Total (Incl. Taxes)</span><span>{money(subtotal)}</span></div>
         <div style={{ fontSize: 11, color: 'var(--muted)', textAlign: 'right', marginTop: 4 }}>
@@ -259,17 +339,67 @@ export default function CheckoutPage() {
       </div>
     </section>
 
-    {stale.length > 0 && <div className="form-error" style={{ marginTop: 14 }}><strong>Review your cart</strong><ul style={{ margin: '7px 0 0', paddingLeft: 18 }}>{stale.map(({ line, reason }) => <li key={line.menuItemId}>{line.name}: {reason === 'price' ? `now ${money(current.get(line.menuItemId)?.pricePaise ?? 0)}` : 'no longer available'}.</li>)}</ul><Link to={`/order/${encodeURIComponent(token)}/menu`} style={{ display: 'inline-block', marginTop: 8, textDecoration: 'underline' }}>Return to the menu</Link></div>}
+    {stale.length > 0 && (
+      <div className="notice" style={{ marginTop: 14, borderColor: '#fca5a5', background: '#fff1f2', color: '#991b1b' }}>
+        <strong>Price or Availability Update</strong>
+        <ul style={{ margin: '7px 0 10px', paddingLeft: 18 }}>
+          {stale.map(({ line, reason, latestPricePaise }) => (
+            <li key={line.menuItemId}>
+              {line.name}: {reason === 'price' ? `updated to ${money(latestPricePaise ?? 0)}` : 'no longer available'}
+            </li>
+          ))}
+        </ul>
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+          <button
+            type="button"
+            className="btn small"
+            style={{ background: '#b91c1c', borderColor: '#b91c1c', color: 'white' }}
+            onClick={() => {
+              void tableCartQuery.refetch();
+              void menu.refetch();
+            }}
+          >
+            Update Cart Prices & Continue
+          </button>
+          <Link to={`/order/${encodeURIComponent(token)}/menu`} className="muted" style={{ fontSize: 12, textDecoration: 'underline' }}>
+            Return to menu
+          </Link>
+        </div>
+      </div>
+    )}
     {message && <div className="form-error" role="alert" style={{ marginTop: 14 }}>{message}</div>}
 
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.4fr', gap: 10, marginTop: 17 }}>
-      <Link className="btn secondary" to={`/order/${encodeURIComponent(token)}/menu`}>Back to menu</Link>
-      <button className="btn" disabled={stale.length > 0 || mutation.isPending || cart.length === 0} onClick={() => { setMessage(''); mutation.mutate(); }}>
+    <div style={{ marginTop: 22 }}>
+      <button
+        type="button"
+        className="btn full"
+        style={{
+          minHeight: 50,
+          fontSize: 16,
+          fontWeight: 750,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 10,
+          boxShadow: '0 4px 14px rgba(49, 91, 67, 0.25)'
+        }}
+        disabled={stale.length > 0 || mutation.isPending || cart.length === 0}
+        onClick={() => { setMessage(''); mutation.mutate(); }}
+      >
         {mutation.isPending && <span className="btn-spinner" aria-hidden="true" />}
-        {mutation.isPending ? 'Sending to kitchen…' : `Place table order · ${money(subtotal)}`}
+        {mutation.isPending ? 'Sending order to kitchen…' : `Place Table Order · ${money(subtotal)} →`}
       </button>
+      <div style={{ textAlign: 'center', marginTop: 12 }}>
+        <Link
+          to={`/order/${encodeURIComponent(token)}/menu`}
+          className="muted"
+          style={{ fontSize: 13, textDecoration: 'underline' }}
+        >
+          + Add more items from menu
+        </Link>
+      </div>
     </div>
-    <p className="muted" style={{ fontSize: 11, textAlign: 'center', lineHeight: 1.5 }}>
+    <p className="muted" style={{ fontSize: 11, textAlign: 'center', lineHeight: 1.5, marginTop: 12 }}>
       Once placed, your order is sent directly to the kitchen display board.
     </p>
   </main>;
