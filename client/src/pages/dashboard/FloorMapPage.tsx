@@ -366,8 +366,8 @@ export default function FloorMapPage() {
           {/* Table Clearing / Reset Action */}
           {selectedTable.state !== 'VACANT' && (
             <div style={{ padding: 14, background: selectedTable.state === 'NEEDS_CLEARING' ? '#fef3c7' : '#f8fafc', border: `1.5px solid ${selectedTable.state === 'NEEDS_CLEARING' ? '#fde047' : 'var(--line)'}`, borderRadius: 12, marginBottom: 16 }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-                <div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+                <div style={{ flex: '1 1 180px' }}>
                   <strong style={{ color: selectedTable.state === 'NEEDS_CLEARING' ? '#854d0e' : 'var(--ink)', display: 'block', fontSize: 13 }}>
                     {selectedTable.state === 'NEEDS_CLEARING' ? '🧹 Table Awaiting Cleaning & Cutlery' : 'Reset Table for Next Guests'}
                   </strong>
@@ -391,8 +391,8 @@ export default function FloorMapPage() {
           {/* Pending Assistance Request Action */}
           {selectedTable.pendingRequest && (
             <div style={{ padding: 14, background: '#fff7ed', border: '1.5px solid #fdba74', borderRadius: 12, marginBottom: 16 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
+                <div style={{ flex: '1 1 180px' }}>
                   <strong style={{ color: '#9a3412', display: 'flex', alignItems: 'center', gap: 6 }}>
                     🚨 Guest Request: {selectedTable.pendingRequest.type}
                   </strong>

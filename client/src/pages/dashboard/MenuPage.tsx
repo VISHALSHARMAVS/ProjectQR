@@ -317,7 +317,7 @@ export default function MenuPage() {
 
             <div className="field">
               <label>Food type / Dietary</label>
-              <div style={{ display: 'flex', gap: 16, marginTop: 4 }}>
+              <div style={{ display: 'flex', gap: 12, marginTop: 4, flexWrap: 'wrap' }}>
                 <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 13 }}>
                   <input type="radio" name="item-dietary" checked={form.dietary === 'VEG'} onChange={() => update('dietary', 'VEG')} />
                   <DietaryBadge type="VEG" /> Pure Veg
@@ -345,7 +345,7 @@ export default function MenuPage() {
 
             {/* Portion Sizes / Variants Section */}
             <div style={{ padding: 14, background: '#f8fafc', borderRadius: 12, border: '1px solid var(--line)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, flexWrap: 'wrap', gap: 8 }}>
                 <div>
                   <strong style={{ fontSize: 14 }}>Portion Sizes / Variants</strong>
                   <p className="muted" style={{ margin: '2px 0 0', fontSize: 12 }}>e.g. Half / Full, Regular / Large (Overrides base price)</p>
@@ -353,13 +353,13 @@ export default function MenuPage() {
                 <button type="button" className="btn secondary small" onClick={addVariantRow}>+ Add Size</button>
               </div>
               {form.variants.map((v, idx) => (
-                <div key={idx} style={{ display: 'flex', gap: 8, marginTop: 8, alignItems: 'center' }}>
+                <div key={idx} style={{ display: 'flex', gap: 8, marginTop: 8, alignItems: 'center', flexWrap: 'wrap' }}>
                   <input
                     className="input"
                     placeholder="Size name (e.g. Half)"
                     value={v.name}
                     onChange={(e) => updateVariantRow(idx, 'name', e.target.value)}
-                    style={{ flex: 2 }}
+                    style={{ flex: '2 1 120px' }}
                   />
                   <input
                     className="input"
@@ -368,7 +368,7 @@ export default function MenuPage() {
                     placeholder="Price (₹)"
                     value={v.price}
                     onChange={(e) => updateVariantRow(idx, 'price', e.target.value)}
-                    style={{ flex: 1 }}
+                    style={{ flex: '1 1 80px' }}
                   />
                   <button type="button" className="btn ghost small" onClick={() => removeVariantRow(idx)} style={{ color: 'var(--red)' }}>
                     ✕
@@ -379,7 +379,7 @@ export default function MenuPage() {
 
             {/* Optional Extras / Add-ons Section */}
             <div style={{ padding: 14, background: '#f8fafc', borderRadius: 12, border: '1px solid var(--line)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, flexWrap: 'wrap', gap: 8 }}>
                 <div>
                   <strong style={{ fontSize: 14 }}>Custom Extras / Add-ons</strong>
                   <p className="muted" style={{ margin: '2px 0 0', fontSize: 12 }}>e.g. Extra Cheese (+₹30), Extra Pav (+₹25)</p>
@@ -387,13 +387,13 @@ export default function MenuPage() {
                 <button type="button" className="btn secondary small" onClick={addAddonRow}>+ Add Extra</button>
               </div>
               {form.addons.map((a, idx) => (
-                <div key={idx} style={{ display: 'flex', gap: 8, marginTop: 8, alignItems: 'center' }}>
+                <div key={idx} style={{ display: 'flex', gap: 8, marginTop: 8, alignItems: 'center', flexWrap: 'wrap' }}>
                   <input
                     className="input"
                     placeholder="Extra name (e.g. Extra Cheese)"
                     value={a.name}
                     onChange={(e) => updateAddonRow(idx, 'name', e.target.value)}
-                    style={{ flex: 2 }}
+                    style={{ flex: '2 1 120px' }}
                   />
                   <input
                     className="input"
@@ -402,7 +402,7 @@ export default function MenuPage() {
                     placeholder="Addon (₹)"
                     value={a.price}
                     onChange={(e) => updateAddonRow(idx, 'price', e.target.value)}
-                    style={{ flex: 1 }}
+                    style={{ flex: '1 1 80px' }}
                   />
                   <button type="button" className="btn ghost small" onClick={() => removeAddonRow(idx)} style={{ color: 'var(--red)' }}>
                     ✕
@@ -413,15 +413,15 @@ export default function MenuPage() {
 
             <div className="field">
               <label htmlFor="item-image">Image upload <span className="muted">(Direct upload to Cloudinary)</span></label>
-              <input id="item-image" type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => setImage(event.target.files?.[0] ?? null)} />
+              <input id="item-image" type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => setImage(event.target.files?.[0] ?? null)} style={{ maxWidth: '100%' }} />
             </div>
 
-            <div className="toolbar">
-              <div className="field" style={{ flex: 1 }}>
+            <div className="toolbar" style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+              <div className="field" style={{ flex: '1 1 140px' }}>
                 <label htmlFor="item-prep">Prep time (minutes)</label>
                 <input id="item-prep" className="input" type="number" min="1" max="600" value={form.preparationMinutes} onChange={(event) => update('preparationMinutes', event.target.value)} />
               </div>
-              <div className="field" style={{ flex: 1 }}>
+              <div className="field" style={{ flex: '1 1 140px' }}>
                 <label htmlFor="item-order">Menu position <span className="muted">(1 = top)</span></label>
                 <input id="item-order" className="input" type="number" min="0" value={form.displayOrder} onChange={(event) => update('displayOrder', event.target.value)} />
               </div>

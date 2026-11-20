@@ -497,21 +497,23 @@ export default function OrdersPage({ kitchen = false }: { kitchen?: boolean }) {
           <label style={{ fontSize: 12, fontWeight: 700, display: 'block', marginBottom: 6 }}>
             Discount / Courtesy (Optional)
           </label>
-          <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
-            <button
-              type="button"
-              className={`btn small ${discountType === 'FLAT' ? '' : 'secondary'}`}
-              onClick={() => setDiscountType('FLAT')}
-            >
-              Flat (₹)
-            </button>
-            <button
-              type="button"
-              className={`btn small ${discountType === 'PERCENT' ? '' : 'secondary'}`}
-              onClick={() => setDiscountType('PERCENT')}
-            >
-              Percentage (%)
-            </button>
+          <div style={{ display: 'flex', gap: 8, marginBottom: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+            <div style={{ display: 'flex', gap: 6 }}>
+              <button
+                type="button"
+                className={`btn small ${discountType === 'FLAT' ? '' : 'secondary'}`}
+                onClick={() => setDiscountType('FLAT')}
+              >
+                Flat (₹)
+              </button>
+              <button
+                type="button"
+                className={`btn small ${discountType === 'PERCENT' ? '' : 'secondary'}`}
+                onClick={() => setDiscountType('PERCENT')}
+              >
+                Percentage (%)
+              </button>
+            </div>
             <input
               className="input"
               type="number"
@@ -520,7 +522,7 @@ export default function OrdersPage({ kitchen = false }: { kitchen?: boolean }) {
               value={discountInput}
               onChange={(e) => setDiscountInput(e.target.value)}
               placeholder={discountType === 'PERCENT' ? 'e.g. 10%' : 'e.g. ₹50'}
-              style={{ width: 110 }}
+              style={{ flex: '1 1 100px', minWidth: 90 }}
             />
           </div>
           <input
@@ -551,7 +553,7 @@ export default function OrdersPage({ kitchen = false }: { kitchen?: boolean }) {
               {/* Payment Method / Tender Selection */}
               <div className="field" style={{ marginBottom: 16 }}>
                 <label style={{ fontWeight: 700, marginBottom: 8, display: 'block' }}>Choose Payment Mode (Tender)</label>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 8 }}>
                   {[
                     { id: 'CASH', label: '💵 Cash in Drawer' },
                     { id: 'UPI', label: '📱 UPI / QR Code' },

@@ -132,7 +132,7 @@ export default function SettingsPage() {
         {/* Logo Upload Section */}
         <div className="field" style={{ marginBottom: 18 }}>
           <label htmlFor="restaurant-logo-upload">Restaurant Logo</label>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginTop: 6 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginTop: 6, flexWrap: 'wrap' }}>
             <div style={{
               width: 58,
               height: 58,
@@ -155,14 +155,14 @@ export default function SettingsPage() {
                 <span style={{ fontSize: 24 }}>🍽️</span>
               )}
             </div>
-            <div style={{ flex: 1 }}>
+            <div style={{ flex: '1 1 200px', minWidth: 0 }}>
               <input
                 type="file"
                 id="restaurant-logo-upload"
                 accept="image/jpeg,image/png,image/webp"
                 disabled={!canEdit}
                 onChange={(e) => handleLogoChange(e.target.files?.[0] ?? null)}
-                style={{ fontSize: 13 }}
+                style={{ fontSize: 13, maxWidth: '100%' }}
               />
               <div className="muted" style={{ fontSize: 11, marginTop: 4 }}>
                 Upload directly from your device (PNG, JPG, or WebP up to 5 MB).
@@ -197,14 +197,14 @@ export default function SettingsPage() {
               />
             </div>
           )}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
             <input
               type="file"
               id="restaurant-banner-upload"
               accept="image/jpeg,image/png,image/webp"
               disabled={!canEdit}
               onChange={(e) => handleBannerChange(e.target.files?.[0] ?? null)}
-              style={{ fontSize: 13, flex: 1 }}
+              style={{ fontSize: 13, flex: '1 1 200px', maxWidth: '100%' }}
             />
             {(bannerPreview || form.bannerUrl) && (
               <button
@@ -270,7 +270,7 @@ export default function SettingsPage() {
           </div>
 
           {/* Live Preview Card */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', background: 'white', borderRadius: 10, border: '1px solid var(--line)', marginTop: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', background: 'white', borderRadius: 10, border: '1px solid var(--line)', marginTop: 10, flexWrap: 'wrap' }}>
             <span style={{ fontSize: 12, fontWeight: 600 }}>Theme Preview:</span>
             <button type="button" className="btn small" style={{ pointerEvents: 'none', background: effectiveBrandColor }}>
               Primary Button
@@ -365,7 +365,16 @@ export default function SettingsPage() {
       </div>
 
       <div className="field"><label htmlFor="restaurant-address">Address</label><input className="input" id="restaurant-address" maxLength={300} disabled={!canEdit} value={form.address} onChange={(event) => setOverrides((current) => ({ ...current, address: event.target.value }))} /></div>
-      <div className="toolbar"><div className="field" style={{ flex: 1 }}><label htmlFor="restaurant-phone">Contact phone</label><input className="input" id="restaurant-phone" type="tel" disabled={!canEdit} value={form.contactPhone} onChange={(event) => setOverrides((current) => ({ ...current, contactPhone: event.target.value }))} /></div><div className="field" style={{ flex: 1 }}><label htmlFor="restaurant-email">Contact email</label><input className="input" id="restaurant-email" type="email" disabled={!canEdit} value={form.contactEmail} onChange={(event) => setOverrides((current) => ({ ...current, contactEmail: event.target.value }))} /></div></div>
+      <div className="toolbar" style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+        <div className="field" style={{ flex: '1 1 200px' }}>
+          <label htmlFor="restaurant-phone">Contact phone</label>
+          <input className="input" id="restaurant-phone" type="tel" disabled={!canEdit} value={form.contactPhone} onChange={(event) => setOverrides((current) => ({ ...current, contactPhone: event.target.value }))} />
+        </div>
+        <div className="field" style={{ flex: '1 1 200px' }}>
+          <label htmlFor="restaurant-email">Contact email</label>
+          <input className="input" id="restaurant-email" type="email" disabled={!canEdit} value={form.contactEmail} onChange={(event) => setOverrides((current) => ({ ...current, contactEmail: event.target.value }))} />
+        </div>
+      </div>
 
       {/* GST & Tax Compliance Section */}
       <div style={{ padding: 18, background: '#f8fafc', borderRadius: 14, border: '1px solid var(--line)', margin: '18px 0' }}>
@@ -377,8 +386,8 @@ export default function SettingsPage() {
             Customer menu prices always include tax. These settings calculate the legal CGST/SGST tax breakdown printed on the final guest bill.
           </p>
         </div>
-        <div className="toolbar">
-          <div className="field" style={{ flex: 2 }}>
+        <div className="toolbar" style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+          <div className="field" style={{ flex: '2 1 200px' }}>
             <label htmlFor="restaurant-gstin">Restaurant GSTIN <span className="muted">(Optional, 15 characters)</span></label>
             <input
               className="input"
@@ -391,7 +400,7 @@ export default function SettingsPage() {
               onChange={(e) => setOverrides((current) => ({ ...current, gstin: e.target.value.toUpperCase() }))}
             />
           </div>
-          <div className="field" style={{ flex: 1 }}>
+          <div className="field" style={{ flex: '1 1 160px' }}>
             <label htmlFor="restaurant-gst-rate">GST Rate (%)</label>
             <select
               className="select"

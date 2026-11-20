@@ -217,7 +217,7 @@ export default function DashboardLayout() {
 
       <div className="staff-main">
         <header className="staff-topbar">
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
             <button
               type="button"
               className="mobile-menu-toggle-btn"
@@ -232,9 +232,9 @@ export default function DashboardLayout() {
                 <img src={restaurant.logoUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               </div>
             )}
-            <div>
-              <div className="eyebrow">Restaurant workspace</div>
-              <strong style={{ fontSize: 14 }}>{name}</strong>
+            <div style={{ minWidth: 0, overflow: 'hidden' }}>
+              <div className="eyebrow" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Restaurant workspace</div>
+              <strong style={{ fontSize: 14, display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</strong>
             </div>
           </div>
           <div style={{ position: 'relative' }}>

@@ -47,8 +47,8 @@ export default function DayClosePage() {
             Reconcile physical cash drawer, digital UPI, and card payments against settled orders for the day.
           </p>
         </div>
-        <div className="toolbar" style={{ alignItems: 'center' }}>
-          <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+        <div className="toolbar" style={{ alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+          <div style={{ display: 'flex', gap: 4, alignItems: 'center', flexWrap: 'wrap' }}>
             <button
               type="button"
               className="btn secondary small"
@@ -60,7 +60,7 @@ export default function DayClosePage() {
             <input
               type="date"
               className="input"
-              style={{ width: 145, padding: '6px 8px' }}
+              style={{ width: 130, padding: '6px 8px', fontSize: 13 }}
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
             />
@@ -122,7 +122,7 @@ export default function DayClosePage() {
       </section>
 
       {/* Tax Audit & Operational Stats Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 16, marginTop: 20 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(290px, 100%), 1fr))', gap: 16, marginTop: 20 }}>
         {/* Tax Audit Breakdown */}
         <section className="surface" style={{ padding: 18 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
