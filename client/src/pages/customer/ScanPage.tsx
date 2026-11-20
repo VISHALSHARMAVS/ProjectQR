@@ -6,12 +6,13 @@ import { Loading } from '../../components/ui';
 import { formatTableLabel } from '../../lib/format';
 import type { RestaurantInfo } from '../../types';
 
-interface TableLanding { restaurant: RestaurantInfo; table: { id: string; label: string } }
+interface TableLanding { restaurant: RestaurantInfo; table: { id: string; label: string; hasActiveParty?: boolean } }
 interface VerifiedSession {
   sessionId: string;
   customer: { id: string; name: string };
   restaurant: RestaurantInfo;
-  table: { id: string; label: string };
+  table: { id: string; label: string; pin?: string | null };
+  tab?: { id: string; label: string; isHost: boolean; isSeparateTab: boolean } | null;
   tableMismatch?: {
     currentTable: { id: string; label: string };
     scannedTable: { id: string; label: string; token: string };

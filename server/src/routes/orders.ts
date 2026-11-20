@@ -49,12 +49,16 @@ function makeOrderNumber(): string {
 }
 
 function serializeOrder(order: OrderDoc, tableInfo: { label: string; needsClearing?: boolean } | string) {
-  const label = typeof tableInfo === 'string' ? tableInfo : tableInfo.label;
+  const baseLabel = typeof tableInfo === 'string' ? tableInfo : tableInfo.label;
   const needsClearing = typeof tableInfo === 'string' ? false : Boolean(tableInfo.needsClearing);
+  const isSeparate = Boolean(order.tabId && order.tabId !== 'main');
+  const label = isSeparate ? `${baseLabel} (${order.tabLabel || 'Separate Bill'})` : baseLabel;
   return {
     id: String(order._id),
     orderNumber: order.orderNumber,
     table: { id: String(order.tableId), label, needsClearing },
+    tabId: order.tabId || 'main',
+    tabLabel: order.tabLabel || 'Main Table',
     items: order.items.map((item) => ({
       menuItemId: String(item.menuItemId),
       name: item.name,
@@ -140,8 +144,12 @@ customerOrders.post('/', async (req, res) => {
   });
   if (priceChanges.length) throw new AppError(409, 'PRICE_CHANGED', 'Some prices changed. Review your cart before placing the order.');
   const subtotalPaise = calculateSubtotal(snapshotItems.map((item) => ({ pricePaise: item.unitPricePaise, quantity: item.quantity })));
+  const tabId = req.customer!.tabId || 'main';
+  const tabLabel = req.customer!.tabLabel || 'Main Table';
   const order = new Order({
     restaurantId, tableId, customerId, customerSessionId: sessionId,
+    tabId,
+    tabLabel,
     idempotencyKey: parsed.data.idempotencyKey,
     orderNumber: makeOrderNumber(),
     items: snapshotItems,
@@ -161,20 +169,31 @@ customerOrders.post('/', async (req, res) => {
     return res.status(200).json({ order: serializeOrder(existing as unknown as OrderDoc, { label: table.label, needsClearing: Boolean(table.needsClearing) }) });
   }
   const response = serializeOrder(order as unknown as OrderDoc, { label: table.label, needsClearing: Boolean(table.needsClearing) });
-  await TableCart.findOneAndUpdate({ tableId, restaurantId }, { $set: { items: [] } });
+  await TableCart.findOneAndUpdate({ tableId, tabId, restaurantId }, { $set: { items: [] } });
   orderSocket?.to(`restaurant:${restaurantId}`).emit('order:new', response);
   orderSocket?.to(`customer:${sessionId}`).emit('order:status', { id: order.id, orderNumber: order.orderNumber, status: order.status, updatedAt: order.updatedAt });
-  orderSocket?.to(`table:${tableId}`).emit('table-cart:updated', { items: [] });
-  orderSocket?.to(`table:${tableId}`).emit('order:status', { id: order.id, orderNumber: order.orderNumber, status: order.status, updatedAt: order.updatedAt });
+  if (tabId === 'main') {
+    orderSocket?.to(`table:${tableId}`).emit('table-cart:updated', { items: [] });
+    orderSocket?.to(`table:${tableId}`).emit('order:status', { id: order.id, orderNumber: order.orderNumber, status: order.status, updatedAt: order.updatedAt });
+  } else {
+    orderSocket?.to(`tab:${tableId}:${tabId}`).emit('table-cart:updated', { items: [] });
+  }
   res.status(201).json({ order: response });
 });
 
 customerOrders.get('/', async (req, res) => {
-  const orders = await Order.find({
+  const tabId = req.customer!.tabId || 'main';
+  const filter: Record<string, unknown> = {
     tableId: req.customer!.tableId,
     restaurantId: req.customer!.restaurantId,
     createdAt: { $gt: new Date(Date.now() - 12 * 60 * 60 * 1000) }
-  }).sort({ createdAt: -1 }).limit(30) as unknown as OrderDoc[];
+  };
+  if (tabId === 'main') {
+    filter.$or = [{ tabId: 'main' }, { tabId: { $exists: false } }];
+  } else {
+    filter.tabId = tabId;
+  }
+  const orders = await Order.find(filter).sort({ createdAt: -1 }).limit(30) as unknown as OrderDoc[];
   const tableInfos = await tableInfoMap(orders);
   res.json({ orders: orders.map((order) => serializeOrder(order, tableInfos.get(String(order.tableId)) ?? { label: 'Table', needsClearing: false })) });
 });

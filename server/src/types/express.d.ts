@@ -12,7 +12,15 @@ declare global {
   namespace Express {
     interface Request {
       staff?: { id: Types.ObjectId; restaurantId: Types.ObjectId; name: string; email: string; role: 'owner' | 'staff' | 'kitchen' };
-      customer?: { sessionId: Types.ObjectId; customerId: Types.ObjectId; restaurantId: Types.ObjectId; tableId: Types.ObjectId };
+      customer?: {
+        sessionId: Types.ObjectId;
+        customerId: Types.ObjectId;
+        restaurantId: Types.ObjectId;
+        tableId: Types.ObjectId;
+        tabId?: string;
+        tabLabel?: string;
+        isHost?: boolean;
+      };
     }
   }
 }

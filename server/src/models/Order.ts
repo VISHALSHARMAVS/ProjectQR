@@ -31,6 +31,8 @@ const orderSchema = new Schema({
   tableId: { type: Schema.Types.ObjectId, ref: 'DiningTable', required: true },
   customerId: { type: Schema.Types.ObjectId, ref: 'Customer', required: true },
   customerSessionId: { type: Schema.Types.ObjectId, ref: 'CustomerSession', required: true },
+  tabId: { type: String, default: 'main', index: true },
+  tabLabel: { type: String, default: 'Main Table' },
   idempotencyKey: { type: String, required: true, maxlength: 80 },
   orderNumber: { type: String, required: true },
   items: { type: [orderItemSchema], required: true, validate: (items: unknown[]) => items.length > 0 },
@@ -70,6 +72,8 @@ export interface OrderDoc {
   tableId: Types.ObjectId;
   customerId: Types.ObjectId;
   customerSessionId: Types.ObjectId;
+  tabId?: string;
+  tabLabel?: string;
   idempotencyKey: string;
   orderNumber: string;
   items: OrderItemSnapshot[];

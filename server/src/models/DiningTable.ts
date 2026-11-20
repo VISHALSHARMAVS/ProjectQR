@@ -7,7 +7,9 @@ const tableSchema = new Schema({
   active: { type: Boolean, default: true },
   needsClearing: { type: Boolean, default: false },
   clearedAt: { type: Date, default: null },
-  clearedBy: { type: Schema.Types.ObjectId, ref: 'User', default: null }
+  clearedBy: { type: Schema.Types.ObjectId, ref: 'User', default: null },
+  currentPin: { type: String, trim: true, default: null },
+  currentPinExpiresAt: { type: Date, default: null }
 }, { timestamps: true });
 tableSchema.index({ restaurantId: 1, label: 1 }, { unique: true });
 
@@ -20,5 +22,7 @@ export interface DiningTableDoc {
   needsClearing?: boolean;
   clearedAt?: Date | null;
   clearedBy?: Types.ObjectId | null;
+  currentPin?: string | null;
+  currentPinExpiresAt?: Date | null;
 }
 export const DiningTable = model('DiningTable', tableSchema);

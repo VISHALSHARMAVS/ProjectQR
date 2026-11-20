@@ -44,7 +44,10 @@ export async function requireCustomer(req: Request, _res: Response, next: NextFu
     sessionId: customerSession._id,
     customerId: customerSession.customerId,
     restaurantId: customerSession.restaurantId,
-    tableId: customerSession.tableId
+    tableId: customerSession.tableId,
+    tabId: customerSession.tabId || 'main',
+    tabLabel: customerSession.tabLabel || 'Main Table',
+    isHost: Boolean(customerSession.isHost)
   };
   next();
 }

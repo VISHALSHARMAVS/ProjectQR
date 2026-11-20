@@ -5,15 +5,19 @@ import type { CSSProperties } from 'react';
 import { ApiError, api } from '../../lib/api';
 import { Loading } from '../../components/ui';
 import { formatTableLabel } from '../../lib/format';
-import type { RestaurantInfo } from '../../types';
+import type { CustomerTabInfo, RestaurantInfo } from '../../types';
 
-interface TableLanding { restaurant: RestaurantInfo; table: { id: string; label: string } }
+interface TableLanding {
+  restaurant: RestaurantInfo;
+  table: { id: string; label: string; hasActiveParty?: boolean };
+}
 interface OtpResponse { message: string; expiresInSeconds: number; mockOtp?: string }
 interface VerifiedSession {
   sessionId: string;
   customer: { id: string; name: string };
   restaurant: RestaurantInfo;
-  table: { id: string; label: string };
+  table: { id: string; label: string; pin?: string | null };
+  tab?: CustomerTabInfo;
   expiresAt: string;
   tableMismatch?: {
     currentTable: { id: string; label: string };
@@ -31,10 +35,17 @@ export default function VerifyPage() {
   const [phone, setPhone] = useState('');
   const [code, setCode] = useState('');
   const [mockOtp, setMockOtp] = useState('');
+  const [pin, setPin] = useState('');
+  const [joinMode, setJoinMode] = useState<'join' | 'separate'>('join');
   const [error, setError] = useState('');
 
   const quickJoinMutation = useMutation({
-    mutationFn: () => api.post<VerifiedSession>('/customer/quick-join', { token, name: name.trim() }),
+    mutationFn: () => api.post<VerifiedSession>('/customer/quick-join', {
+      token,
+      name: name.trim(),
+      pin: joinMode === 'join' && tableQuery.data?.table.hasActiveParty ? pin.trim() : undefined,
+      separateTab: joinMode === 'separate' && tableQuery.data?.table.hasActiveParty
+    }),
     onSuccess: (response) => {
       setError('');
       queryClient.setQueryData(['customer-session', token], response);
@@ -44,7 +55,11 @@ export default function VerifyPage() {
   });
 
   const switchTableMutation = useMutation({
-    mutationFn: () => api.post<VerifiedSession>('/customer/switch-table', { token }),
+    mutationFn: () => api.post<VerifiedSession>('/customer/switch-table', {
+      token,
+      pin: joinMode === 'join' && tableQuery.data?.table.hasActiveParty ? pin.trim() : undefined,
+      separateTab: joinMode === 'separate' && tableQuery.data?.table.hasActiveParty
+    }),
     onSuccess: (response) => {
       setError('');
       queryClient.setQueryData(['customer-session', token], response);
@@ -62,7 +77,14 @@ export default function VerifyPage() {
     }
   });
   const verifyMutation = useMutation({
-    mutationFn: () => api.post<VerifiedSession>('/customer/verify-otp', { token, name: name.trim(), phone, code }),
+    mutationFn: () => api.post<VerifiedSession>('/customer/verify-otp', {
+      token,
+      name: name.trim(),
+      phone,
+      code,
+      pin: joinMode === 'join' && tableQuery.data?.table.hasActiveParty ? pin.trim() : undefined,
+      separateTab: joinMode === 'separate' && tableQuery.data?.table.hasActiveParty
+    }),
     onSuccess: (response) => { setError(''); localStorage.removeItem(`projectqr-cart:${token}`); queryClient.setQueryData(['customer-session', token], response); navigate(`/order/${encodeURIComponent(token)}/menu`, { replace: true }); },
     onError: (cause) => setError(cause instanceof ApiError ? cause.message : 'That code could not be verified.')
   });
@@ -77,6 +99,8 @@ export default function VerifyPage() {
     '--green-dark': restaurant.brandColor
   } as CSSProperties) : undefined;
   const isPending = quickJoinMutation.isPending || requestMutation.isPending || verifyMutation.isPending || switchTableMutation.isPending;
+  const requiresPin = Boolean(table.hasActiveParty && joinMode === 'join');
+  const isPinReady = !requiresPin || pin.trim().length === 4;
 
   return <main className="customer-wrap customer-page" style={brandStyle}>
     <header className="customer-header">
@@ -135,7 +159,7 @@ export default function VerifyPage() {
           onSubmit={(e) => {
             e.preventDefault();
             setError('');
-            if (name.trim().length >= 2) quickJoinMutation.mutate();
+            if (name.trim().length >= 2 && isPinReady) quickJoinMutation.mutate();
           }}
         >
           <div className="field">
@@ -153,20 +177,107 @@ export default function VerifyPage() {
               autoFocus
             />
             <span className="muted" style={{ fontSize: 11 }}>
-              Your name will appear next to items you add to the shared table cart.
+              Your name will appear next to items you add to the {joinMode === 'separate' ? 'bill' : 'table cart'}.
             </span>
           </div>
 
-          {error && <div className="form-error" role="alert">{error}</div>}
+          {table.hasActiveParty && (
+            <div style={{ background: '#f9fafb', borderRadius: 12, padding: 12, border: '1px solid #e5e7eb' }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: '#374151', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span>👥</span> Someone is already dining at {formatTableLabel(table.label)}
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 10 }}>
+                <button
+                  type="button"
+                  onClick={() => { setJoinMode('join'); setError(''); }}
+                  style={{
+                    padding: '10px 8px',
+                    borderRadius: 8,
+                    border: joinMode === 'join' ? '2px solid var(--green, #16a34a)' : '1px solid #d1d5db',
+                    background: joinMode === 'join' ? '#f0fdf4' : '#ffffff',
+                    cursor: 'pointer',
+                    textAlign: 'center'
+                  }}
+                >
+                  <div style={{ fontSize: 16 }}>👥</div>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: joinMode === 'join' ? '#166534' : '#374151' }}>Join Party</div>
+                  <div style={{ fontSize: 10, color: '#6b7280' }}>Needs 4-digit PIN</div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setJoinMode('separate'); setError(''); }}
+                  style={{
+                    padding: '10px 8px',
+                    borderRadius: 8,
+                    border: joinMode === 'separate' ? '2px solid var(--green, #16a34a)' : '1px solid #d1d5db',
+                    background: joinMode === 'separate' ? '#f0fdf4' : '#ffffff',
+                    cursor: 'pointer',
+                    textAlign: 'center'
+                  }}
+                >
+                  <div style={{ fontSize: 16 }}>👤</div>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: joinMode === 'separate' ? '#166534' : '#374151' }}>Separate Bill</div>
+                  <div style={{ fontSize: 10, color: '#6b7280' }}>Solo / private tab</div>
+                </button>
+              </div>
+
+              {joinMode === 'join' ? (
+                <div className="field">
+                  <label htmlFor="quick-table-pin" style={{ fontSize: 12, fontWeight: 600 }}>Enter 4-Digit Table PIN</label>
+                  <input
+                    id="quick-table-pin"
+                    className="input"
+                    inputMode="numeric"
+                    pattern="[0-9]{4}"
+                    maxLength={4}
+                    value={pin}
+                    onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                    placeholder="e.g. 4821"
+                    style={{ letterSpacing: 6, fontWeight: 800, fontSize: 18, textAlign: 'center' }}
+                    required
+                  />
+                  <span className="muted" style={{ fontSize: 11, marginTop: 4, display: 'block' }}>
+                    Ask the friend at this table for the PIN on their phone.
+                  </span>
+                </div>
+              ) : (
+                <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 6, padding: '8px 10px', fontSize: 11, color: '#1e40af' }}>
+                  ✓ <strong>Separate Tab:</strong> Your orders and bill will be kept completely separate from other guests at this table.
+                </div>
+              )}
+            </div>
+          )}
+
+          {error && (
+            <div className="form-error" role="alert">
+              <div>{error}</div>
+              {joinMode === 'join' && (
+                <button
+                  type="button"
+                  className="btn ghost small"
+                  style={{ marginTop: 6, textDecoration: 'underline', color: 'inherit', padding: 0 }}
+                  onClick={() => { setJoinMode('separate'); setError(''); }}
+                >
+                  👉 Dining solo? Start a Separate Bill instead
+                </button>
+              )}
+            </div>
+          )}
           {quickJoinMutation.error && !error && (
             <div className="form-error" role="alert">
               {quickJoinMutation.error instanceof ApiError ? quickJoinMutation.error.message : 'Could not join table. Please try again.'}
             </div>
           )}
 
-          <button className="btn full" disabled={isPending || name.trim().length < 2}>
+          <button className="btn full" disabled={isPending || name.trim().length < 2 || !isPinReady}>
             {quickJoinMutation.isPending && <span className="btn-spinner" aria-hidden="true" />}
-            {quickJoinMutation.isPending ? 'Joining Table…' : `Join ${formatTableLabel(table.label)} Menu →`}
+            {quickJoinMutation.isPending
+              ? 'Joining Table…'
+              : table.hasActiveParty
+                ? joinMode === 'join'
+                  ? 'Join Party Cart →'
+                  : 'Start Separate Bill →'
+                : `Join ${formatTableLabel(table.label)} Menu →`}
           </button>
         </form>
       ) : (
@@ -176,7 +287,7 @@ export default function VerifyPage() {
             event.preventDefault();
             setError('');
             if (!requested) requestMutation.mutate();
-            else verifyMutation.mutate();
+            else if (isPinReady) verifyMutation.mutate();
           }}
         >
           <div className="field">
@@ -237,16 +348,105 @@ export default function VerifyPage() {
             <button className="btn ghost small" type="button" onClick={() => requestMutation.mutate()} disabled={requestMutation.isPending}>Send a new code</button>
           </>}
 
-          {error && <div className="form-error" role="alert">{error}</div>}
+          {table.hasActiveParty && (
+            <div style={{ background: '#f9fafb', borderRadius: 12, padding: 12, border: '1px solid #e5e7eb' }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: '#374151', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span>👥</span> Someone is already dining at {formatTableLabel(table.label)}
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 10 }}>
+                <button
+                  type="button"
+                  onClick={() => { setJoinMode('join'); setError(''); }}
+                  style={{
+                    padding: '10px 8px',
+                    borderRadius: 8,
+                    border: joinMode === 'join' ? '2px solid var(--green, #16a34a)' : '1px solid #d1d5db',
+                    background: joinMode === 'join' ? '#f0fdf4' : '#ffffff',
+                    cursor: 'pointer',
+                    textAlign: 'center'
+                  }}
+                >
+                  <div style={{ fontSize: 16 }}>👥</div>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: joinMode === 'join' ? '#166534' : '#374151' }}>Join Party</div>
+                  <div style={{ fontSize: 10, color: '#6b7280' }}>Needs 4-digit PIN</div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setJoinMode('separate'); setError(''); }}
+                  style={{
+                    padding: '10px 8px',
+                    borderRadius: 8,
+                    border: joinMode === 'separate' ? '2px solid var(--green, #16a34a)' : '1px solid #d1d5db',
+                    background: joinMode === 'separate' ? '#f0fdf4' : '#ffffff',
+                    cursor: 'pointer',
+                    textAlign: 'center'
+                  }}
+                >
+                  <div style={{ fontSize: 16 }}>👤</div>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: joinMode === 'separate' ? '#166534' : '#374151' }}>Separate Bill</div>
+                  <div style={{ fontSize: 10, color: '#6b7280' }}>Solo / private tab</div>
+                </button>
+              </div>
+
+              {joinMode === 'join' ? (
+                <div className="field">
+                  <label htmlFor="otp-table-pin" style={{ fontSize: 12, fontWeight: 600 }}>Enter 4-Digit Table PIN</label>
+                  <input
+                    id="otp-table-pin"
+                    className="input"
+                    inputMode="numeric"
+                    pattern="[0-9]{4}"
+                    maxLength={4}
+                    value={pin}
+                    onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                    placeholder="e.g. 4821"
+                    style={{ letterSpacing: 6, fontWeight: 800, fontSize: 18, textAlign: 'center' }}
+                    required
+                  />
+                  <span className="muted" style={{ fontSize: 11, marginTop: 4, display: 'block' }}>
+                    Ask the friend at this table for the PIN on their phone.
+                  </span>
+                </div>
+              ) : (
+                <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 6, padding: '8px 10px', fontSize: 11, color: '#1e40af' }}>
+                  ✓ <strong>Separate Tab:</strong> Your orders and bill will be kept completely separate from other guests at this table.
+                </div>
+              )}
+            </div>
+          )}
+
+          {error && (
+            <div className="form-error" role="alert">
+              <div>{error}</div>
+              {joinMode === 'join' && (
+                <button
+                  type="button"
+                  className="btn ghost small"
+                  style={{ marginTop: 6, textDecoration: 'underline', color: 'inherit', padding: 0 }}
+                  onClick={() => { setJoinMode('separate'); setError(''); }}
+                >
+                  👉 Dining solo? Start a Separate Bill instead
+                </button>
+              )}
+            </div>
+          )}
           {(requestMutation.error || verifyMutation.error) && !error && (
             <div className="form-error" role="alert">
               {(requestMutation.error ?? verifyMutation.error) instanceof ApiError ? (requestMutation.error ?? verifyMutation.error as ApiError).message : 'Something went wrong. Please try again.'}
             </div>
           )}
 
-          <button className="btn full" disabled={isPending}>
+          <button className="btn full" disabled={isPending || (requested && !isPinReady)}>
             {isPending && <span className="btn-spinner" aria-hidden="true" />}
-            {isPending ? 'Please wait…' : requested ? 'Verify and view menu' : 'Send verification code'}
+            {isPending
+              ? 'Please wait…'
+              : requested
+                ? table.hasActiveParty
+                  ? joinMode === 'join'
+                    ? 'Verify & Join Table Cart'
+                    : 'Verify & Start Separate Bill'
+                  : 'Verify and view menu'
+                : 'Send verification code'}
           </button>
         </form>
       )}

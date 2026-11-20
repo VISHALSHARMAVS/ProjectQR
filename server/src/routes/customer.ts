@@ -21,11 +21,17 @@ import { getOrderSocket } from './orders.js';
 
 export const publicRouter = Router();
 publicRouter.get('/tables/:token', async (req, res) => {
-  const table = await DiningTable.findOne({ qrToken: req.params.token, active: true }).select('restaurantId label active');
+  const table = await DiningTable.findOne({ qrToken: req.params.token, active: true }).select('restaurantId label active currentPin currentPinExpiresAt');
   if (!table) throw new AppError(404, 'INVALID_QR', 'This table QR code is invalid or no longer active.');
   const restaurant = await Restaurant.findOne({ _id: table.restaurantId, active: true }).select('name slug description logoUrl brandColor bannerUrl welcomeTagline gstin gstPercentage requireCustomerOtp');
   if (!restaurant) throw new AppError(404, 'RESTAURANT_UNAVAILABLE', 'This restaurant is not currently accepting orders.');
-  res.json({ restaurant, table: { id: table.id, label: table.label } });
+  const now = new Date();
+  const hasActiveParty = Boolean(
+    table.currentPin &&
+    table.currentPinExpiresAt &&
+    new Date(table.currentPinExpiresAt) > now
+  );
+  res.json({ restaurant, table: { id: table.id, label: table.label, hasActiveParty } });
 });
 
 export const customerRouter = Router();
@@ -55,7 +61,14 @@ const quickJoinRateLimit = rateLimit({
   handler: (_req, res) => res.status(429).json({ error: { code: 'RATE_LIMITED', message: 'Too many join attempts from this network. Please wait a moment and try again.' } })
 });
 const requestOtpSchema = z.object({ token: z.string().min(32).max(100), name: z.string().trim().min(2).max(100), phone: phoneSchema });
-const verifyOtpSchema = z.object({ token: z.string().min(32).max(100), name: z.string().trim().min(2).max(100), phone: phoneSchema, code: z.string().regex(/^\d{6}$/, 'Enter the six-digit verification code.') });
+const verifyOtpSchema = z.object({
+  token: z.string().min(32).max(100),
+  name: z.string().trim().min(2).max(100),
+  phone: phoneSchema,
+  code: z.string().regex(/^\d{6}$/, 'Enter the six-digit verification code.'),
+  pin: z.string().trim().optional(),
+  separateTab: z.boolean().optional()
+});
 
 const isTwilioConfigured = (env.OTP_MODE === 'verify' && env.twilioVerifyConfigured) || (env.OTP_MODE === 'sms' && env.twilioSmsConfigured);
 const otpDelivery: OtpDelivery = env.OTP_MODE === 'mock' || !isTwilioConfigured
@@ -93,6 +106,58 @@ async function resolveActiveTable(token: string) {
   const restaurant = await Restaurant.findOne({ _id: table.restaurantId, active: true });
   if (!restaurant) throw new AppError(404, 'RESTAURANT_UNAVAILABLE', 'This restaurant is not currently accepting orders.');
   return { table, restaurant };
+}
+
+async function resolveTableParty(
+  table: import('../models/DiningTable.js').DiningTableDoc,
+  name: string,
+  options?: { pin?: string; separateTab?: boolean }
+): Promise<{ tabId: string; tabLabel: string; isHost: boolean; tablePin: string | null }> {
+  const now = new Date();
+  const hasActiveParty = Boolean(
+    table.currentPin &&
+    table.currentPinExpiresAt &&
+    new Date(table.currentPinExpiresAt) > now
+  );
+
+  let tabId = 'main';
+  let tabLabel = 'Main Table';
+  let isHost = false;
+
+  if (hasActiveParty) {
+    if (options?.separateTab) {
+      tabId = `tab_${randomBytes(4).toString('hex')}`;
+      tabLabel = `Separate Bill (${name})`;
+      isHost = false;
+    } else {
+      const pin = (options?.pin || '').trim();
+      if (!pin || pin !== table.currentPin) {
+        throw new AppError(
+          403,
+          'INVALID_TABLE_PIN',
+          'Incorrect 4-digit Table PIN. Ask your table host for the code shown on their phone, or choose "Start Separate Bill".'
+        );
+      }
+      tabId = 'main';
+      tabLabel = 'Main Table';
+      isHost = false;
+    }
+  } else {
+    const generatedPin = String(randomInt(1000, 10000));
+    table.currentPin = generatedPin;
+    table.currentPinExpiresAt = new Date(now.getTime() + 4 * 60 * 60 * 1000);
+    await (table as unknown as import('mongoose').Document).save();
+    tabId = 'main';
+    tabLabel = 'Main Table';
+    isHost = true;
+  }
+
+  return {
+    tabId,
+    tabLabel,
+    isHost,
+    tablePin: tabId === 'main' ? (table.currentPin ?? null) : null
+  };
 }
 
 customerRouter.post('/request-otp', otpRateLimit, async (req, res) => {
@@ -182,11 +247,24 @@ customerRouter.post('/verify-otp', otpRateLimit, async (req, res) => {
     { $set: { name: challenge.customerName, phone: parsed.data.phone } },
     { upsert: true, returnDocument: 'after', runValidators: true }
   );
+  const party = await resolveTableParty(table, parsed.data.name, {
+    pin: parsed.data.pin,
+    separateTab: parsed.data.separateTab
+  });
+
   if (req.session.customerSessionId) {
     await CustomerSession.updateOne({ _id: req.session.customerSessionId, revokedAt: null }, { $set: { revokedAt: new Date() } });
   }
   const expiresAt = new Date(Date.now() + 4 * 60 * 60 * 1000);
-  const customerSession = await CustomerSession.create({ customerId: customer._id, restaurantId: restaurant._id, tableId: table._id, expiresAt });
+  const customerSession = await CustomerSession.create({
+    customerId: customer._id,
+    restaurantId: restaurant._id,
+    tableId: table._id,
+    tabId: party.tabId,
+    tabLabel: party.tabLabel,
+    isHost: party.isHost,
+    expiresAt
+  });
   await regenerateSession(req);
   req.session.customerSessionId = String(customerSession._id);
   res.json({
@@ -200,7 +278,13 @@ customerRouter.post('/verify-otp', otpRateLimit, async (req, res) => {
       bannerUrl: restaurant.bannerUrl,
       welcomeTagline: restaurant.welcomeTagline
     },
-    table: { id: table.id, label: table.label },
+    table: { id: table.id, label: table.label, pin: party.tablePin },
+    tab: {
+      id: party.tabId,
+      label: party.tabLabel,
+      isHost: party.isHost,
+      isSeparateTab: party.tabId !== 'main'
+    },
     expiresAt
   });
 });
@@ -209,9 +293,12 @@ customerRouter.get('/session', requireCustomer, async (req, res) => {
   const [customer, restaurant, table] = await Promise.all([
     Customer.findById(req.customer!.customerId).select('name'),
     Restaurant.findById(req.customer!.restaurantId).select('name logoUrl brandColor bannerUrl welcomeTagline'),
-    DiningTable.findOne({ _id: req.customer!.tableId, restaurantId: req.customer!.restaurantId }).select('label qrToken')
+    DiningTable.findOne({ _id: req.customer!.tableId, restaurantId: req.customer!.restaurantId }).select('label qrToken currentPin currentPinExpiresAt')
   ]);
   if (!customer || !restaurant || !table) throw new AppError(401, 'CUSTOMER_SESSION_EXPIRED', 'This ordering session is no longer available.');
+
+  const isMainTab = (req.customer!.tabId || 'main') === 'main';
+  const tablePin = isMainTab ? (table.currentPin ?? null) : null;
 
   const requestedToken = typeof req.query.token === 'string' ? req.query.token : undefined;
   if (requestedToken && table.qrToken !== requestedToken) {
@@ -221,7 +308,13 @@ customerRouter.get('/session', requireCustomer, async (req, res) => {
         sessionId: String(req.customer!.sessionId),
         customer: { id: customer.id, name: customer.name },
         restaurant,
-        table: { id: table.id, label: table.label },
+        table: { id: table.id, label: table.label, pin: tablePin },
+        tab: {
+          id: req.customer!.tabId || 'main',
+          label: req.customer!.tabLabel || 'Main Table',
+          isHost: Boolean(req.customer!.isHost),
+          isSeparateTab: !isMainTab
+        },
         tableMismatch: {
           currentTable: { id: table.id, label: table.label },
           scannedTable: { id: scannedTable.id, label: scannedTable.label, token: requestedToken }
@@ -235,13 +328,21 @@ customerRouter.get('/session', requireCustomer, async (req, res) => {
     sessionId: String(req.customer!.sessionId),
     customer: { id: customer.id, name: customer.name },
     restaurant,
-    table: { id: table.id, label: table.label },
+    table: { id: table.id, label: table.label, pin: tablePin },
+    tab: {
+      id: req.customer!.tabId || 'main',
+      label: req.customer!.tabLabel || 'Main Table',
+      isHost: Boolean(req.customer!.isHost),
+      isSeparateTab: !isMainTab
+    },
     tableMismatch: null
   });
 });
 
 const switchTableSchema = z.object({
-  token: z.string().min(32).max(100)
+  token: z.string().min(32).max(100),
+  pin: z.string().trim().optional(),
+  separateTab: z.boolean().optional()
 });
 
 customerRouter.post('/switch-table', requireCustomer, async (req, res) => {
@@ -252,6 +353,12 @@ customerRouter.post('/switch-table', requireCustomer, async (req, res) => {
   if (String(restaurant._id) !== String(req.customer!.restaurantId)) {
     throw new AppError(400, 'RESTAURANT_MISMATCH', 'Cannot switch table across different restaurants.');
   }
+
+  const customer = await Customer.findById(req.customer!.customerId).select('name');
+  const party = await resolveTableParty(table, customer?.name || 'Guest', {
+    pin: parsed.data.pin,
+    separateTab: parsed.data.separateTab
+  });
 
   // Revoke previous table session
   if (req.session.customerSessionId) {
@@ -264,10 +371,12 @@ customerRouter.post('/switch-table', requireCustomer, async (req, res) => {
     customerId: req.customer!.customerId,
     restaurantId: restaurant._id,
     tableId: table._id,
+    tabId: party.tabId,
+    tabLabel: party.tabLabel,
+    isHost: party.isHost,
     expiresAt
   });
 
-  const customer = await Customer.findById(req.customer!.customerId).select('name');
   await regenerateSession(req);
   req.session.customerSessionId = String(customerSession._id);
 
@@ -282,7 +391,13 @@ customerRouter.post('/switch-table', requireCustomer, async (req, res) => {
       bannerUrl: restaurant.bannerUrl,
       welcomeTagline: restaurant.welcomeTagline
     },
-    table: { id: table.id, label: table.label },
+    table: { id: table.id, label: table.label, pin: party.tablePin },
+    tab: {
+      id: party.tabId,
+      label: party.tabLabel,
+      isHost: party.isHost,
+      isSeparateTab: party.tabId !== 'main'
+    },
     expiresAt
   });
 });
@@ -381,7 +496,9 @@ customerRouter.post('/logout', requireCustomer, async (req, res, next) => {
 
 const quickJoinSchema = z.object({
   token: z.string().min(32).max(100),
-  name: z.string().trim().min(2).max(100)
+  name: z.string().trim().min(2).max(100),
+  pin: z.string().trim().optional(),
+  separateTab: z.boolean().optional()
 });
 
 customerRouter.post('/quick-join', quickJoinRateLimit, async (req, res) => {
@@ -392,6 +509,11 @@ customerRouter.post('/quick-join', quickJoinRateLimit, async (req, res) => {
   if (restaurant.requireCustomerOtp) {
     throw new AppError(403, 'OTP_REQUIRED', 'This restaurant requires phone number verification via OTP.');
   }
+
+  const party = await resolveTableParty(table, parsed.data.name, {
+    pin: parsed.data.pin,
+    separateTab: parsed.data.separateTab
+  });
 
   const guestPhone = `guest-${table._id.toString().slice(-6)}-${randomBytes(4).toString('hex')}`;
   const customer = await Customer.create({
@@ -407,6 +529,9 @@ customerRouter.post('/quick-join', quickJoinRateLimit, async (req, res) => {
     customerId: customer._id,
     restaurantId: restaurant._id,
     tableId: table._id,
+    tabId: party.tabId,
+    tabLabel: party.tabLabel,
+    isHost: party.isHost,
     expiresAt
   });
   await regenerateSession(req);
@@ -422,7 +547,13 @@ customerRouter.post('/quick-join', quickJoinRateLimit, async (req, res) => {
       bannerUrl: restaurant.bannerUrl,
       welcomeTagline: restaurant.welcomeTagline
     },
-    table: { id: table.id, label: table.label },
+    table: { id: table.id, label: table.label, pin: party.tablePin },
+    tab: {
+      id: party.tabId,
+      label: party.tabLabel,
+      isHost: party.isHost,
+      isSeparateTab: party.tabId !== 'main'
+    },
     expiresAt
   });
 });
@@ -437,7 +568,8 @@ const cartItemSchema = z.object({
 });
 
 customerRouter.get('/cart', requireCustomer, requireCustomerQr, async (req, res) => {
-  const cart = await TableCart.findOne({ tableId: req.customer!.tableId, restaurantId: req.customer!.restaurantId }).lean();
+  const tabId = req.customer!.tabId || 'main';
+  const cart = await TableCart.findOne({ tableId: req.customer!.tableId, tabId, restaurantId: req.customer!.restaurantId }).lean();
   res.json({
     items: (cart?.items || []).map((item) => ({
       menuItemId: String(item.menuItemId),
@@ -462,11 +594,13 @@ customerRouter.post('/cart/items', requireCustomer, requireCustomerQr, async (re
   ]);
   if (!menuItem) throw new AppError(409, 'ITEM_UNAVAILABLE', 'This menu item is currently unavailable.');
 
-  let cart = await TableCart.findOne({ tableId: req.customer!.tableId, restaurantId: req.customer!.restaurantId });
+  const tabId = req.customer!.tabId || 'main';
+  let cart = await TableCart.findOne({ tableId: req.customer!.tableId, tabId, restaurantId: req.customer!.restaurantId });
   if (!cart) {
     cart = new TableCart({
       restaurantId: req.customer!.restaurantId,
       tableId: req.customer!.tableId,
+      tabId,
       items: []
     });
   }
@@ -521,15 +655,26 @@ customerRouter.post('/cart/items', requireCustomer, requireCustomerQr, async (re
   }));
 
   const io = getOrderSocket();
-  io?.to(`table:${req.customer!.tableId}`).emit('table-cart:updated', { items: serializedItems });
+  if (tabId === 'main') {
+    io?.to(`table:${req.customer!.tableId}`).emit('table-cart:updated', { items: serializedItems });
+  } else {
+    io?.to(`tab:${req.customer!.tableId}:${tabId}`).emit('table-cart:updated', { items: serializedItems });
+    io?.to(`customer:${req.customer!.sessionId}`).emit('table-cart:updated', { items: serializedItems });
+  }
 
   res.json({ items: serializedItems });
 });
 
 customerRouter.delete('/cart', requireCustomer, requireCustomerQr, async (req, res) => {
-  await TableCart.findOneAndUpdate({ tableId: req.customer!.tableId, restaurantId: req.customer!.restaurantId }, { $set: { items: [] } });
+  const tabId = req.customer!.tabId || 'main';
+  await TableCart.findOneAndUpdate({ tableId: req.customer!.tableId, tabId, restaurantId: req.customer!.restaurantId }, { $set: { items: [] } });
   const io = getOrderSocket();
-  io?.to(`table:${req.customer!.tableId}`).emit('table-cart:updated', { items: [] });
+  if (tabId === 'main') {
+    io?.to(`table:${req.customer!.tableId}`).emit('table-cart:updated', { items: [] });
+  } else {
+    io?.to(`tab:${req.customer!.tableId}:${tabId}`).emit('table-cart:updated', { items: [] });
+    io?.to(`customer:${req.customer!.sessionId}`).emit('table-cart:updated', { items: [] });
+  }
   res.json({ items: [] });
 });
 

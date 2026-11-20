@@ -8,7 +8,14 @@ import { EmptyState, Loading } from '../../components/ui';
 import { useOrderSocket } from '../../hooks/useOrderSocket';
 import type { MenuItem, OrderStatus, RestaurantInfo, TableCartLine } from '../../types';
 
-interface CustomerSession { sessionId: string; customer: { name: string }; restaurant: RestaurantInfo; table: { label: string } }
+interface CustomerSession {
+  sessionId: string;
+  customer: { name: string };
+  restaurant: RestaurantInfo;
+  table: { label: string; pin?: string | null };
+  tab?: { id: string; label: string; isHost: boolean; isSeparateTab: boolean } | null;
+  tableMismatch?: unknown;
+}
 interface MenuResponse { items: MenuItem[] }
 interface CreatedOrder { order: { id: string; status: OrderStatus } }
 

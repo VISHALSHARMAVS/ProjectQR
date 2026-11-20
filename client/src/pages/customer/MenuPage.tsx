@@ -12,7 +12,8 @@ interface CustomerSession {
   sessionId: string;
   customer: { id: string; name: string };
   restaurant: RestaurantInfo;
-  table: { id: string; label: string };
+  table: { id: string; label: string; pin?: string | null };
+  tab?: { id: string; label: string; isHost: boolean; isSeparateTab: boolean } | null;
   tableMismatch?: {
     currentTable: { id: string; label: string };
     scannedTable: { id: string; label: string; token: string };
@@ -194,7 +195,48 @@ export default function CustomerMenuPage() {
           </div>
           <div style={{ minWidth: 0 }}>
             <h1 style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{restaurant.name}</h1>
-            <p>{formatTableLabel(table.label)} · Hi, {session.data.customer.name}</p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', marginTop: 2 }}>
+              <span style={{ fontSize: 13, color: 'var(--muted)' }}>
+                {formatTableLabel(table.label)} · Hi, {session.data.customer.name}
+              </span>
+              {table.pin && (
+                <span
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 3,
+                    background: '#f0fdf4',
+                    color: '#166534',
+                    border: '1px solid #86efac',
+                    padding: '2px 8px',
+                    borderRadius: 6,
+                    fontSize: 11,
+                    fontWeight: 700
+                  }}
+                  title="Share this PIN with friends at your table so they can join your shared cart"
+                >
+                  🔒 PIN: <span style={{ letterSpacing: 1 }}>{table.pin}</span>
+                </span>
+              )}
+              {session.data.tab?.isSeparateTab && (
+                <span
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 3,
+                    background: '#eff6ff',
+                    color: '#1e40af',
+                    border: '1px solid #93c5fd',
+                    padding: '2px 8px',
+                    borderRadius: 6,
+                    fontSize: 11,
+                    fontWeight: 700
+                  }}
+                >
+                  👤 Solo Tab
+                </span>
+              )}
+            </div>
           </div>
         </div>
         <div className="customer-header-actions">
@@ -218,6 +260,26 @@ export default function CustomerMenuPage() {
       <div style={{ paddingTop: 20 }}>
         <span className="eyebrow">Made fresh for you</span>
         <h1 style={{ margin: '5px 0 10px', fontSize: 31, letterSpacing: '-.05em' }}>The menu</h1>
+
+        {table.pin && session.data?.tab?.isHost && (
+          <div style={{
+            margin: '0 0 16px',
+            padding: '10px 14px',
+            background: '#f0fdf4',
+            border: '1.5px solid #86efac',
+            borderRadius: 10,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            fontSize: 12,
+            color: '#14532d',
+            lineHeight: 1.4
+          }}>
+            <span>
+              👥 <strong>Friends dining with you?</strong> Tell them Table PIN <strong>{table.pin}</strong> when they scan the table QR code so they can join your shared cart.
+            </span>
+          </div>
+        )}
 
         {/* Instant Search Bar */}
         <div className="menu-search-wrap">

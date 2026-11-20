@@ -64,7 +64,15 @@ export interface TableRecord {
   id?: string;
   label: string;
   active: boolean;
+  pin?: string | null;
   createdAt?: string;
+}
+
+export interface CustomerTabInfo {
+  id: string;
+  label: string;
+  isHost: boolean;
+  isSeparateTab: boolean;
 }
 
 export type TableLiveState = 'VACANT' | 'NEEDS_CLEARING' | 'SEATED' | 'PREPARING' | 'READY' | 'HELP_NEEDED' | 'BILL_REQUESTED';

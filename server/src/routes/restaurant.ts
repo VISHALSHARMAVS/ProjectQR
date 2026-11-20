@@ -453,10 +453,12 @@ tablesRouter.post('/:id/vacate', async (req, res) => {
   const table = await DiningTable.findOne(tenantFilter(req.staff!.restaurantId, { _id: req.params.id }));
   if (!table) throw new AppError(404, 'NOT_FOUND', 'Table not found.');
 
-  // 1. Mark table clean and ready
+  // 1. Mark table clean and ready, reset Table PIN defense
   table.needsClearing = false;
   table.clearedAt = new Date();
   table.clearedBy = req.staff!.id as unknown as import('mongoose').Types.ObjectId;
+  table.currentPin = null;
+  table.currentPinExpiresAt = null;
   await table.save();
 
   // 2. Revoke all active customer sessions for this table
@@ -465,8 +467,8 @@ tablesRouter.post('/:id/vacate', async (req, res) => {
     { $set: { revokedAt: new Date() } }
   );
 
-  // 3. Clear the shared table cart
-  await TableCart.deleteOne({ tableId: table._id });
+  // 3. Clear all shared table carts and separate tabs
+  await TableCart.deleteMany({ tableId: table._id });
 
   // 4. Resolve any outstanding service requests for this table
   await ServiceRequest.updateMany(
