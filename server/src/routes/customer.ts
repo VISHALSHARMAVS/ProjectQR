@@ -197,10 +197,87 @@ customerRouter.get('/session', requireCustomer, requireCustomerQr, async (req, r
   res.json({ sessionId: String(req.customer!.sessionId), customer: { id: customer.id, name: customer.name }, restaurant, table: { id: table.id, label: table.label } });
 });
 
+interface RestaurantMenuHighlights {
+  todaysWinner: { menuItemId: string; name: string; quantityToday: number } | null;
+  bestsellerItemIds: string[];
+  cachedUntil: number;
+}
+
+const menuHighlightsCache = new Map<string, RestaurantMenuHighlights>();
+
+async function getMenuHighlights(restaurantId: string): Promise<{
+  todaysWinner: { menuItemId: string; name: string; quantityToday: number } | null;
+  bestsellerItemIds: string[];
+}> {
+  const now = Date.now();
+  const cached = menuHighlightsCache.get(restaurantId);
+  if (cached && cached.cachedUntil > now) {
+    return {
+      todaysWinner: cached.todaysWinner,
+      bestsellerItemIds: cached.bestsellerItemIds
+    };
+  }
+
+  const startOfToday = new Date();
+  startOfToday.setHours(0, 0, 0, 0);
+
+  const [todaysWinnerAgg, pastMonthTopAgg] = await Promise.all([
+    Order.aggregate([
+      { $match: { restaurantId, status: { $ne: 'REJECTED' }, createdAt: { $gte: startOfToday } } },
+      { $unwind: '$items' },
+      { $group: { _id: '$items.menuItemId', name: { $first: '$items.name' }, count: { $sum: '$items.quantity' } } },
+      { $sort: { count: -1 } },
+      { $limit: 1 }
+    ]),
+    Order.aggregate([
+      {
+        $match: {
+          restaurantId,
+          status: { $ne: 'REJECTED' },
+          createdAt: { $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) }
+        }
+      },
+      { $unwind: '$items' },
+      { $group: { _id: '$items.menuItemId', count: { $sum: '$items.quantity' } } },
+      { $sort: { count: -1 } },
+      { $limit: 8 }
+    ])
+  ]);
+
+  let todaysWinner: { menuItemId: string; name: string; quantityToday: number } | null = null;
+  if (todaysWinnerAgg.length > 0 && todaysWinnerAgg[0].count >= 3) {
+    todaysWinner = {
+      menuItemId: String(todaysWinnerAgg[0]._id),
+      name: todaysWinnerAgg[0].name,
+      quantityToday: todaysWinnerAgg[0].count
+    };
+  }
+
+  const bestsellerItemIds = pastMonthTopAgg
+    .filter((entry) => entry.count >= 2)
+    .map((entry) => String(entry._id));
+
+  const result: RestaurantMenuHighlights = {
+    todaysWinner,
+    bestsellerItemIds,
+    cachedUntil: now + 5 * 60 * 1000
+  };
+
+  menuHighlightsCache.set(restaurantId, result);
+  return { todaysWinner, bestsellerItemIds };
+}
+
 customerRouter.get('/menu', requireCustomer, requireCustomerQr, async (req, res) => {
-  const categories = await Category.find({ restaurantId: req.customer!.restaurantId, active: true }).sort({ displayOrder: 1, name: 1 }).lean();
-  const items = await MenuItem.find({ restaurantId: req.customer!.restaurantId, categoryId: { $in: categories.map((category) => category._id) } }).sort({ displayOrder: 1, name: 1 }).lean();
-  res.json({ categories, items });
+  const restaurantId = req.customer!.restaurantId;
+  const categories = await Category.find({ restaurantId, active: true }).sort({ displayOrder: 1, name: 1 }).lean();
+  const items = await MenuItem.find({ restaurantId, categoryId: { $in: categories.map((category) => category._id) } }).sort({ displayOrder: 1, name: 1 }).lean();
+  const highlights = await getMenuHighlights(String(restaurantId));
+  res.json({
+    categories,
+    items,
+    todaysWinner: highlights.todaysWinner,
+    bestsellerItemIds: highlights.bestsellerItemIds
+  });
 });
 
 customerRouter.post('/logout', requireCustomer, async (req, res, next) => {

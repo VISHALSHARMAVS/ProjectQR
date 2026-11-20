@@ -9,7 +9,12 @@ import { useOrderSocket } from '../../hooks/useOrderSocket';
 import type { Category, CustomerHistory, DietaryType, MenuItem, MenuItemAddon, MenuItemVariant, RestaurantInfo, TableCartLine } from '../../types';
 
 interface CustomerSession { sessionId: string; customer: { id: string; name: string }; restaurant: RestaurantInfo; table: { id: string; label: string } }
-interface CustomerMenu { categories: Category[]; items: MenuItem[] }
+interface CustomerMenu {
+  categories: Category[];
+  items: MenuItem[];
+  todaysWinner?: { menuItemId: string; name: string; quantityToday: number } | null;
+  bestsellerItemIds?: string[];
+}
 
 export default function CustomerMenuPage() {
   const { token = '' } = useParams();
@@ -97,8 +102,22 @@ export default function CustomerMenuPage() {
     if ((item.variants && item.variants.length > 0) || (item.addons && item.addons.length > 0)) {
       openCustomizer(item);
     } else {
-      updateItemMutation.mutate({ item, quantity: 1 });
+      const currentQty = quantityById.get(item._id) || 0;
+      updateItemMutation.mutate({ item, quantity: currentQty + 1 });
     }
+  };
+
+  const handleDecreaseItem = (item: MenuItem) => {
+    const matchingLines = cart.filter((l) => l.menuItemId === item._id);
+    if (matchingLines.length === 0) return;
+    const lastLine = matchingLines[matchingLines.length - 1];
+    updateItemMutation.mutate({
+      item,
+      quantity: lastLine.quantity - 1,
+      variant: lastLine.selectedVariant,
+      addons: lastLine.selectedAddons,
+      notes: lastLine.notes
+    });
   };
 
   const quantityById = useMemo(() => {
@@ -120,6 +139,9 @@ export default function CustomerMenuPage() {
   const { restaurant, table } = session.data;
   const categories = menu.data.categories;
   const items = menu.data.items;
+  const todaysWinner = menu.data.todaysWinner;
+  const bestsellerItemIds = menu.data.bestsellerItemIds ?? [];
+  const winnerMenuItem = todaysWinner ? items.find((i) => i._id === todaysWinner.menuItemId) : null;
 
   const queryClean = searchQuery.trim().toLowerCase();
   const filteredItems = items.filter((item) => {
@@ -242,6 +264,39 @@ export default function CustomerMenuPage() {
           </button>
         </div>
 
+        {/* Today's Winner Spotlight Banner */}
+        {todaysWinner && winnerMenuItem && (
+          <section className="todays-winner-card">
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span style={{ fontSize: 18 }}>🏆</span>
+                <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.08em', color: '#b45309', textTransform: 'uppercase' }}>
+                  Today's Winner
+                </span>
+              </div>
+              <span className="pill" style={{ background: '#fef08a', color: '#854d0e', fontSize: 10, fontWeight: 750, padding: '2px 8px' }}>
+                🔥 Most Ordered Today
+              </span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginTop: 8 }}>
+              <div>
+                <strong style={{ fontSize: 15, color: '#451a03', display: 'block' }}>{todaysWinner.name}</strong>
+                <span style={{ fontSize: 12, color: '#78350f', display: 'block', marginTop: 2 }}>
+                  Ordered <strong>{todaysWinner.quantityToday} times</strong> today at {restaurant.name}
+                </span>
+              </div>
+              <button
+                type="button"
+                className="btn small"
+                style={{ background: '#b45309', borderColor: '#b45309', color: 'white', fontWeight: 700, padding: '0 14px' }}
+                onClick={() => addItemDirect(winnerMenuItem)}
+              >
+                + Add ({money(winnerMenuItem.pricePaise)})
+              </button>
+            </div>
+          </section>
+        )}
+
         {/* Quick Reorder Carousel from Previous Visit */}
         {historyQuery.data?.favoriteItems && historyQuery.data.favoriteItems.length > 0 && (
           <section style={{ marginBottom: 20, padding: '14px 16px', background: '#fdfbf7', border: '1px solid #ebd9c8', borderRadius: 16 }}>
@@ -307,7 +362,7 @@ export default function CustomerMenuPage() {
         )}
 
         {availableCategories.length > 0 && (
-          <nav className="menu-categories" aria-label="Menu categories">
+          <nav className="menu-categories" id="menu-category-nav" aria-label="Menu categories">
             {availableCategories.map((category) => (
               <button
                 key={category._id}
@@ -339,44 +394,85 @@ export default function CustomerMenuPage() {
             {filteredItems.filter((item) => item.categoryId === category._id).map((item) => {
               const qty = quantityById.get(item._id) ?? 0;
               const hasCustomizations = (item.variants && item.variants.length > 0) || (item.addons && item.addons.length > 0);
+              const isWinner = todaysWinner?.menuItemId === item._id;
+              const isBestseller = bestsellerItemIds.includes(item._id);
 
               return (
-                <article className={`menu-card ${item.available ? '' : 'is-sold-out'}`} key={item._id}>
-                  <div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-                      <h3>{item.name}</h3>
-                      <DietaryBadge type={item.dietary} />
-                    </div>
-                    {item.description && <p>{item.description}</p>}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
-                      <span className="menu-price">
-                        {item.variants && item.variants.length > 0
-                          ? `From ${money(Math.min(...item.variants.map((v) => v.pricePaise)))}`
-                          : money(item.pricePaise)}
-                      </span>
-                      {hasCustomizations && (
-                        <span style={{ fontSize: 11, color: 'var(--green)', fontWeight: 650 }}>
-                          Customizable
+                <article className={`swiggy-card ${item.available ? '' : 'is-sold-out'}`} key={item._id}>
+                  <div className="swiggy-card-info">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <DietaryBadge type={item.dietary || 'VEG'} />
+                      {isWinner ? (
+                        <span className="swiggy-social-badge winner">🏆 Today's Winner</span>
+                      ) : isBestseller ? (
+                        <span className="swiggy-social-badge reordered">
+                          <span className="meter" /> Highly reordered
                         </span>
+                      ) : null}
+                    </div>
+
+                    <h3 className="swiggy-dish-title">{item.name}</h3>
+
+                    <div className="swiggy-dish-price">
+                      {item.variants && item.variants.length > 0
+                        ? `From ${money(Math.min(...item.variants.map((v) => v.pricePaise)))}`
+                        : money(item.pricePaise)}
+                    </div>
+
+                    {item.description && <p className="swiggy-dish-desc">{item.description}</p>}
+                  </div>
+
+                  <div className="swiggy-media-col">
+                    <div className="swiggy-img-wrap">
+                      {item.imageUrl ? (
+                        <img src={item.imageUrl} alt={item.name} loading="lazy" />
+                      ) : (
+                        <div className="swiggy-placeholder-img">🍽️</div>
                       )}
                     </div>
-                    <div className="menu-action">
-                      {item.available ? (
-                        <button className="btn small" onClick={() => addItemDirect(item)}>
-                          {hasCustomizations ? (qty > 0 ? `Add more (${qty}) +` : 'Customize +') : (qty > 0 ? `Add (${qty}) +` : 'Add +')}
-                        </button>
+
+                    <div className="swiggy-btn-anchor">
+                      {!item.available ? (
+                        <span className="swiggy-sold-out-pill">✕ SOLD OUT</span>
+                      ) : qty === 0 ? (
+                        <>
+                          <button
+                            type="button"
+                            className="swiggy-add-btn"
+                            onClick={() => addItemDirect(item)}
+                          >
+                            ADD <span>+</span>
+                          </button>
+                          {hasCustomizations && (
+                            <span className="swiggy-customisable-hint">customisable</span>
+                          )}
+                        </>
                       ) : (
-                        <span className="pill red" style={{ fontSize: 11, fontWeight: 700 }}>✕ Sold Out</span>
+                        <>
+                          <div className="swiggy-stepper">
+                            <button
+                              type="button"
+                              aria-label={`Decrease ${item.name}`}
+                              onClick={() => handleDecreaseItem(item)}
+                            >
+                              −
+                            </button>
+                            <span>{qty}</span>
+                            <button
+                              type="button"
+                              aria-label={`Increase ${item.name}`}
+                              onClick={() => addItemDirect(item)}
+                            >
+                              +
+                            </button>
+                          </div>
+                          {hasCustomizations && (
+                            <span className="swiggy-customisable-hint">customisable</span>
+                          )}
+                        </>
                       )}
                     </div>
                   </div>
-                  {item.imageUrl ? (
-                    <img src={item.imageUrl} alt={item.name} loading="lazy" />
-                  ) : (
-                    <div style={{ width: '100%', height: 100, borderRadius: 13, display: 'grid', placeItems: 'center', color: '#799078', background: '#edf0e8', fontSize: 12 }}>
-                      Made fresh
-                    </div>
-                  )}
                 </article>
               );
             })}
@@ -507,24 +603,50 @@ export default function CustomerMenuPage() {
         </Modal>
       )}
 
+      {/* Floating Category Quick-Jump FAB */}
+      {availableCategories.length > 1 && (
+        <button
+          type="button"
+          className="floating-menu-fab"
+          style={{ bottom: cart.length > 0 ? 80 : 24 }}
+          onClick={() => {
+            const nav = document.getElementById('menu-category-nav');
+            if (nav) {
+              nav.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+          }}
+          title="Jump to categories"
+        >
+          <span>🍽️</span> Menu
+        </button>
+      )}
+
       {/* Floating Call Staff Button */}
       <button
         type="button"
         className="assistance-float-pill"
+        style={{ left: 16, right: 'auto', bottom: cart.length > 0 ? 80 : 24 }}
         onClick={() => setAssistanceOpen(true)}
         title="Request water, cutlery, bill or call a waiter"
       >
         <span>🔔</span> Call Staff
       </button>
 
-      {/* Bottom Sticky Table Cart Bar */}
+      {/* Floating Swiggy Bottom Table Cart Bar */}
       {cart.length > 0 && (
-        <Link className="cart-bar" to={`/order/${encodeURIComponent(token)}/checkout`}>
-          <span>
-            <strong>{totalQuantity} {totalQuantity === 1 ? 'item' : 'items'} · Table Cart</strong>
-            <small>Shared with {formatTableLabel(table.label)}</small>
-          </span>
-          <strong>{money(subtotal)} <span aria-hidden="true">→</span></strong>
+        <Link className="swiggy-floating-cart-bar" to={`/order/${encodeURIComponent(token)}/checkout`}>
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 750 }}>
+              {totalQuantity} {totalQuantity === 1 ? 'item' : 'items'} · {money(subtotal)}
+            </div>
+            <div style={{ fontSize: 11, opacity: 0.9, marginTop: 1 }}>
+              Shared with {formatTableLabel(table.label)}
+            </div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 750, fontSize: 13 }}>
+            <span>View Cart</span>
+            <span aria-hidden="true">→</span>
+          </div>
         </Link>
       )}
 
