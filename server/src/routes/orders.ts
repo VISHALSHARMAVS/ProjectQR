@@ -48,11 +48,13 @@ function makeOrderNumber(): string {
   return `PQR-${date}-${suffix}`;
 }
 
-function serializeOrder(order: OrderDoc, tableLabel: string) {
+function serializeOrder(order: OrderDoc, tableInfo: { label: string; needsClearing?: boolean } | string) {
+  const label = typeof tableInfo === 'string' ? tableInfo : tableInfo.label;
+  const needsClearing = typeof tableInfo === 'string' ? false : Boolean(tableInfo.needsClearing);
   return {
     id: String(order._id),
     orderNumber: order.orderNumber,
-    table: { id: String(order.tableId), label: tableLabel },
+    table: { id: String(order.tableId), label, needsClearing },
     items: order.items.map((item) => ({
       menuItemId: String(item.menuItemId),
       name: item.name,
@@ -80,12 +82,12 @@ function serializeOrder(order: OrderDoc, tableLabel: string) {
   };
 }
 
-async function tableLabelMap(orders: OrderDoc[]): Promise<Map<string, string>> {
+async function tableInfoMap(orders: OrderDoc[]): Promise<Map<string, { label: string; needsClearing: boolean }>> {
   const ids = [...new Set(orders.map((order) => String(order.tableId)))];
   const restaurantId = orders[0]?.restaurantId;
   if (!restaurantId) return new Map();
-  const tables = await DiningTable.find({ _id: { $in: ids }, restaurantId }).select('_id label').lean();
-  return new Map(tables.map((table) => [String(table._id), table.label]));
+  const tables = await DiningTable.find({ _id: { $in: ids }, restaurantId }).select('_id label needsClearing').lean();
+  return new Map(tables.map((table) => [String(table._id), { label: table.label, needsClearing: Boolean(table.needsClearing) }]));
 }
 
 customerOrders.use(requireCustomer, requireCustomerQr);
@@ -95,8 +97,8 @@ customerOrders.post('/', async (req, res) => {
   const { sessionId, restaurantId, tableId, customerId } = req.customer!;
   const duplicate = await Order.findOne({ customerSessionId: sessionId, idempotencyKey: parsed.data.idempotencyKey });
   if (duplicate) {
-    const table = await DiningTable.findOne({ _id: duplicate.tableId, restaurantId: duplicate.restaurantId }).select('label');
-    return res.status(200).json({ order: serializeOrder(duplicate as unknown as OrderDoc, table?.label ?? 'Table') });
+    const table = await DiningTable.findOne({ _id: duplicate.tableId, restaurantId: duplicate.restaurantId }).select('label needsClearing');
+    return res.status(200).json({ order: serializeOrder(duplicate as unknown as OrderDoc, { label: table?.label ?? 'Table', needsClearing: Boolean(table?.needsClearing) }) });
   }
   const [table, restaurant] = await Promise.all([
     DiningTable.findOne(tenantFilter(restaurantId, { _id: tableId, active: true })),
@@ -156,9 +158,9 @@ customerOrders.post('/', async (req, res) => {
     if (!duplicateError) throw error;
     const existing = await Order.findOne({ customerSessionId: sessionId, idempotencyKey: parsed.data.idempotencyKey });
     if (!existing) throw error;
-    return res.status(200).json({ order: serializeOrder(existing as unknown as OrderDoc, table.label) });
+    return res.status(200).json({ order: serializeOrder(existing as unknown as OrderDoc, { label: table.label, needsClearing: Boolean(table.needsClearing) }) });
   }
-  const response = serializeOrder(order as unknown as OrderDoc, table.label);
+  const response = serializeOrder(order as unknown as OrderDoc, { label: table.label, needsClearing: Boolean(table.needsClearing) });
   await TableCart.findOneAndUpdate({ tableId, restaurantId }, { $set: { items: [] } });
   orderSocket?.to(`restaurant:${restaurantId}`).emit('order:new', response);
   orderSocket?.to(`customer:${sessionId}`).emit('order:status', { id: order.id, orderNumber: order.orderNumber, status: order.status, updatedAt: order.updatedAt });
@@ -173,8 +175,8 @@ customerOrders.get('/', async (req, res) => {
     restaurantId: req.customer!.restaurantId,
     createdAt: { $gt: new Date(Date.now() - 12 * 60 * 60 * 1000) }
   }).sort({ createdAt: -1 }).limit(30) as unknown as OrderDoc[];
-  const labels = await tableLabelMap(orders);
-  res.json({ orders: orders.map((order) => serializeOrder(order, labels.get(String(order.tableId)) ?? 'Table')) });
+  const tableInfos = await tableInfoMap(orders);
+  res.json({ orders: orders.map((order) => serializeOrder(order, tableInfos.get(String(order.tableId)) ?? { label: 'Table', needsClearing: false })) });
 });
 
 customerOrders.get('/:id', async (req, res) => {
@@ -185,8 +187,8 @@ customerOrders.get('/:id', async (req, res) => {
     restaurantId: req.customer!.restaurantId
   }) as unknown as OrderDoc | null;
   if (!order) throw new AppError(404, 'NOT_FOUND', 'Order not found.');
-  const table = await DiningTable.findOne({ _id: order.tableId, restaurantId: order.restaurantId }).select('label');
-  res.json({ order: serializeOrder(order, table?.label ?? 'Table') });
+  const table = await DiningTable.findOne({ _id: order.tableId, restaurantId: order.restaurantId }).select('label needsClearing');
+  res.json({ order: serializeOrder(order, { label: table?.label ?? 'Table', needsClearing: Boolean(table?.needsClearing) }) });
 });
 
 restaurantOrders.use(requireStaff);
@@ -195,8 +197,8 @@ restaurantOrders.get('/', async (req, res) => {
   if (req.query.status !== undefined && !parsedStatus.success) throw new AppError(400, 'INVALID_STATUS', 'Choose a valid order status.');
   const filter = tenantFilter(req.staff!.restaurantId, parsedStatus.success ? { status: parsedStatus.data } : {});
   const orders = await Order.find(filter).sort({ createdAt: -1 }).limit(100) as unknown as OrderDoc[];
-  const labels = await tableLabelMap(orders);
-  res.json({ orders: orders.map((order) => serializeOrder(order, labels.get(String(order.tableId)) ?? 'Table')) });
+  const tableInfos = await tableInfoMap(orders);
+  res.json({ orders: orders.map((order) => serializeOrder(order, tableInfos.get(String(order.tableId)) ?? { label: 'Table', needsClearing: false })) });
 });
 
 restaurantOrders.patch('/:id/status', async (req, res) => {
@@ -215,10 +217,10 @@ restaurantOrders.patch('/:id/status', async (req, res) => {
   ) as unknown as OrderDoc | null;
   if (!updated) throw new AppError(409, 'ORDER_CHANGED', 'This order changed. Refresh the order and try again.');
   const [table, customerSession] = await Promise.all([
-    DiningTable.findOne({ _id: updated.tableId, restaurantId: updated.restaurantId }).select('label'),
+    DiningTable.findOne({ _id: updated.tableId, restaurantId: updated.restaurantId }).select('label needsClearing'),
     CustomerSession.findById(updated.customerSessionId).select('_id')
   ]);
-  const response = serializeOrder(updated, table?.label ?? 'Table');
+  const response = serializeOrder(updated, { label: table?.label ?? 'Table', needsClearing: Boolean(table?.needsClearing) });
   const event = { id: response.id, orderNumber: response.orderNumber, status: response.status, updatedAt: response.updatedAt, ...(status === 'REJECTED' ? { rejectionReason: response.rejectionReason } : {}) };
   orderSocket?.to(`restaurant:${req.staff!.restaurantId}`).emit('order:status', event);
   if (customerSession) orderSocket?.to(`customer:${customerSession._id}`).emit('order:status', event);
@@ -277,10 +279,10 @@ restaurantOrders.patch('/:id/settle', async (req, res) => {
   );
 
   const [table, customerSession] = await Promise.all([
-    DiningTable.findOne({ _id: updated.tableId, restaurantId: updated.restaurantId }).select('label'),
+    DiningTable.findOne({ _id: updated.tableId, restaurantId: updated.restaurantId }).select('label needsClearing'),
     CustomerSession.findById(updated.customerSessionId).select('_id')
   ]);
-  const response = serializeOrder(updated, table?.label ?? 'Table');
+  const response = serializeOrder(updated, { label: table?.label ?? 'Table', needsClearing: true });
 
   orderSocket?.to(`restaurant:${req.staff!.restaurantId}`).emit('order:settled', response);
   orderSocket?.to(`restaurant:${req.staff!.restaurantId}`).emit('table:clearing_needed', {

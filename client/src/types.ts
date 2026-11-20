@@ -107,7 +107,7 @@ export interface TableCartLine {
 export interface OrderRecord {
   id: string;
   orderNumber: string;
-  table: { id?: string; label: string };
+  table: { id?: string; label: string; needsClearing?: boolean };
   items: {
     menuItemId: string;
     name: string;

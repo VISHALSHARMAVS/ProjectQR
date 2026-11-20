@@ -439,16 +439,26 @@ export default function OrdersPage({ kitchen = false }: { kitchen?: boolean }) {
                     </button>
                   )}
                   {order.paymentStatus === 'PAID' && (
-                    <button
-                      type="button"
-                      className="btn small"
-                      style={{ background: '#b45309', borderColor: '#b45309', color: 'white' }}
-                      onClick={() => { if (order.table.id) vacateTableMutation.mutate(order.table.id); }}
-                      disabled={vacateTableMutation.isPending}
-                      title="Clear table and end customer session for new guests"
-                    >
-                      🧹 Clear Table
-                    </button>
+                    order.table.needsClearing ? (
+                      <button
+                        type="button"
+                        className="btn small"
+                        style={{ background: '#b45309', borderColor: '#b45309', color: 'white' }}
+                        onClick={() => { if (order.table.id) vacateTableMutation.mutate(order.table.id); }}
+                        disabled={vacateTableMutation.isPending}
+                        title="Clear table and end customer session for new guests"
+                      >
+                        🧹 Clear Table
+                      </button>
+                    ) : (
+                      <span
+                        className="pill"
+                        style={{ background: '#dcfce7', color: '#15803d', fontWeight: 700, fontSize: 11, padding: '4px 8px' }}
+                        title="Table is clean and vacant"
+                      >
+                        ✓ Table Cleared
+                      </span>
+                    )
                   )}
                   {action && (
                     <button
