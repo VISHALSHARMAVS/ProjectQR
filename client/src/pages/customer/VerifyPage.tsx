@@ -9,7 +9,17 @@ import type { RestaurantInfo } from '../../types';
 
 interface TableLanding { restaurant: RestaurantInfo; table: { id: string; label: string } }
 interface OtpResponse { message: string; expiresInSeconds: number; mockOtp?: string }
-interface VerifiedSession { sessionId: string; customer: { id: string; name: string }; restaurant: RestaurantInfo; table: { id: string; label: string }; expiresAt: string }
+interface VerifiedSession {
+  sessionId: string;
+  customer: { id: string; name: string };
+  restaurant: RestaurantInfo;
+  table: { id: string; label: string };
+  expiresAt: string;
+  tableMismatch?: {
+    currentTable: { id: string; label: string };
+    scannedTable: { id: string; label: string; token: string };
+  } | null;
+}
 
 export default function VerifyPage() {
   const { token = '' } = useParams();
@@ -33,6 +43,16 @@ export default function VerifyPage() {
     onError: (cause) => setError(cause instanceof ApiError ? cause.message : 'Could not join table.')
   });
 
+  const switchTableMutation = useMutation({
+    mutationFn: () => api.post<VerifiedSession>('/customer/switch-table', { token }),
+    onSuccess: (response) => {
+      setError('');
+      queryClient.setQueryData(['customer-session', token], response);
+      navigate(`/order/${encodeURIComponent(token)}/menu`, { replace: true });
+    },
+    onError: (cause) => setError(cause instanceof ApiError ? cause.message : 'Could not switch table.')
+  });
+
   const requestMutation = useMutation({
     mutationFn: () => api.post<OtpResponse>('/customer/request-otp', { token, name: name.trim(), phone }),
     onSuccess: (response) => {
@@ -46,7 +66,7 @@ export default function VerifyPage() {
     onSuccess: (response) => { setError(''); localStorage.removeItem(`projectqr-cart:${token}`); queryClient.setQueryData(['customer-session', token], response); navigate(`/order/${encodeURIComponent(token)}/menu`, { replace: true }); },
     onError: (cause) => setError(cause instanceof ApiError ? cause.message : 'That code could not be verified.')
   });
-  if (sessionQuery.data) return <Navigate to={`/order/${encodeURIComponent(token)}/menu`} replace />;
+  if (sessionQuery.data && !sessionQuery.data.tableMismatch) return <Navigate to={`/order/${encodeURIComponent(token)}/menu`} replace />;
   if (tableQuery.isLoading) return <div className="customer-wrap"><Loading label="Loading restaurant…" /></div>;
   if (tableQuery.error || !tableQuery.data) return <main className="customer-wrap customer-page"><div className="form-error" style={{ marginTop: 32 }}>This table link is unavailable. Ask a team member for help.</div><Link className="btn secondary" style={{ marginTop: 13 }} to="/">Back to home</Link></main>;
   const { restaurant, table } = tableQuery.data;
@@ -56,7 +76,7 @@ export default function VerifyPage() {
     '--green': restaurant.brandColor,
     '--green-dark': restaurant.brandColor
   } as CSSProperties) : undefined;
-  const isPending = quickJoinMutation.isPending || requestMutation.isPending || verifyMutation.isPending;
+  const isPending = quickJoinMutation.isPending || requestMutation.isPending || verifyMutation.isPending || switchTableMutation.isPending;
 
   return <main className="customer-wrap customer-page" style={brandStyle}>
     <header className="customer-header">
@@ -83,6 +103,26 @@ export default function VerifyPage() {
     )}
 
     <section className="customer-card surface">
+      {sessionQuery.data?.tableMismatch && (
+        <div style={{ marginBottom: 16, padding: 14, background: '#f0fdf4', borderRadius: 12, border: '1.5px solid #86efac' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+            <span style={{ fontSize: 18 }}>🪑</span>
+            <strong style={{ fontSize: 14, color: '#166534' }}>Switch Dining Table?</strong>
+          </div>
+          <p style={{ margin: '0 0 12px', fontSize: 13, color: '#14532d', lineHeight: 1.4 }}>
+            You are active at <strong>{formatTableLabel(sessionQuery.data.tableMismatch.currentTable.label)}</strong>. Click below to move your session to <strong>{formatTableLabel(table.label)}</strong>.
+          </p>
+          <button
+            type="button"
+            className="btn full"
+            onClick={() => switchTableMutation.mutate()}
+            disabled={switchTableMutation.isPending}
+          >
+            {switchTableMutation.isPending ? 'Switching table…' : `✓ Switch to ${formatTableLabel(table.label)}`}
+          </button>
+        </div>
+      )}
+
       {sessionQuery.error instanceof ApiError && sessionQuery.error.code === 'CUSTOMER_SESSION_TABLE_MISMATCH' && (
         <div className="notice" style={{ marginBottom: 14 }}>
           You were seated at a different table. Enter your name below to start your session at {formatTableLabel(table.label)}.

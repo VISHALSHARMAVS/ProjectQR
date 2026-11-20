@@ -541,11 +541,14 @@ staffRouter.get('/', async (req, res) => {
 });
 staffRouter.post('/', async (req, res) => {
   const parsed = z.object({
-    name: z.string().trim().min(2).max(100),
-    email: z.email().trim().toLowerCase(),
-    password: z.string().min(10).refine((value) => Buffer.byteLength(value, 'utf8') <= 72, 'Password must be at most 72 bytes'),
-    role: z.enum(['staff', 'kitchen'])
-  }).strict().safeParse(req.body);
+    name: z.string().trim().min(2, 'Name must be at least 2 characters').max(100, 'Name cannot exceed 100 characters'),
+    email: z.string().email('Please enter a valid email address').trim().toLowerCase(),
+    password: z.string().min(8, 'Password must be at least 8 characters').refine((value) => Buffer.byteLength(value, 'utf8') <= 72, 'Password must be at most 72 bytes'),
+    role: z.preprocess(
+      (val) => typeof val === 'string' ? val.trim().toLowerCase() : val,
+      z.enum(['staff', 'kitchen'], { message: "Role must be 'staff' or 'kitchen'" })
+    )
+  }).safeParse(req.body);
   if (!parsed.success) throw new AppError(400, 'INVALID_INPUT', parsed.error.issues[0]?.message ?? 'Check the staff details.');
   if (await User.exists({ email: parsed.data.email })) throw new AppError(409, 'EMAIL_IN_USE', 'An account with that email already exists.');
   const user = await User.create({

@@ -8,7 +8,16 @@ import { CustomerAssistanceModal } from '../../components/CustomerAssistanceModa
 import { useOrderSocket } from '../../hooks/useOrderSocket';
 import type { Category, CustomerHistory, DietaryType, MenuItem, MenuItemAddon, MenuItemVariant, RestaurantInfo, TableCartLine } from '../../types';
 
-interface CustomerSession { sessionId: string; customer: { id: string; name: string }; restaurant: RestaurantInfo; table: { id: string; label: string } }
+interface CustomerSession {
+  sessionId: string;
+  customer: { id: string; name: string };
+  restaurant: RestaurantInfo;
+  table: { id: string; label: string };
+  tableMismatch?: {
+    currentTable: { id: string; label: string };
+    scannedTable: { id: string; label: string; token: string };
+  } | null;
+}
 interface CustomerMenu {
   categories: Category[];
   items: MenuItem[];
@@ -23,11 +32,12 @@ export default function CustomerMenuPage() {
   const cartKey = `projectqr-cart:${token}`;
   useOrderSocket(true);
   const session = useQuery({ queryKey: ['customer-session', token], queryFn: () => api.get<CustomerSession>(`/customer/session?token=${encodeURIComponent(token)}`), retry: false });
-  const menu = useQuery({ queryKey: ['customer-menu', token], queryFn: () => api.get<CustomerMenu>(`/customer/menu?token=${encodeURIComponent(token)}`), enabled: Boolean(session.data), retry: false });
+  const hasValidSession = Boolean(session.data && !session.data.tableMismatch);
+  const menu = useQuery({ queryKey: ['customer-menu', token], queryFn: () => api.get<CustomerMenu>(`/customer/menu?token=${encodeURIComponent(token)}`), enabled: hasValidSession, retry: false });
   const tableCartQuery = useQuery({
     queryKey: ['table-cart', token],
     queryFn: () => api.get<{ items: TableCartLine[] }>(`/customer/cart?token=${encodeURIComponent(token)}`),
-    enabled: Boolean(session.data),
+    enabled: hasValidSession,
     retry: false,
     refetchInterval: 10_000
   });
@@ -35,7 +45,7 @@ export default function CustomerMenuPage() {
   const historyQuery = useQuery({
     queryKey: ['customer-history', token],
     queryFn: () => api.get<CustomerHistory>(`/customer/history?token=${encodeURIComponent(token)}`),
-    enabled: Boolean(session.data),
+    enabled: hasValidSession,
     retry: false
   });
 
@@ -128,7 +138,7 @@ export default function CustomerMenuPage() {
     return map;
   }, [cart]);
 
-  if (session.error instanceof ApiError && (session.error.status === 401 || session.error.code === 'CUSTOMER_SESSION_TABLE_MISMATCH')) {
+  if (session.data?.tableMismatch || (session.error instanceof ApiError && (session.error.status === 401 || session.error.code === 'CUSTOMER_SESSION_TABLE_MISMATCH'))) {
     return <Navigate to={`/order/${encodeURIComponent(token)}/verify`} replace />;
   }
   if (session.isLoading || menu.isLoading) return <Loading label="Loading your menu…" />;

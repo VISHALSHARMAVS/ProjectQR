@@ -1,5 +1,5 @@
-import { useQuery } from '@tanstack/react-query';
-import { Link, Navigate, useParams } from 'react-router-dom';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
 import type { CSSProperties } from 'react';
 import { api, ApiError } from '../../lib/api';
 import { Loading } from '../../components/ui';
@@ -7,14 +7,33 @@ import { formatTableLabel } from '../../lib/format';
 import type { RestaurantInfo } from '../../types';
 
 interface TableLanding { restaurant: RestaurantInfo; table: { id: string; label: string } }
-interface VerifiedSession { sessionId: string; customer: { id: string; name: string }; restaurant: RestaurantInfo; table: { id: string; label: string } }
+interface VerifiedSession {
+  sessionId: string;
+  customer: { id: string; name: string };
+  restaurant: RestaurantInfo;
+  table: { id: string; label: string };
+  tableMismatch?: {
+    currentTable: { id: string; label: string };
+    scannedTable: { id: string; label: string; token: string };
+  } | null;
+}
 
 export default function ScanPage() {
   const { token = '' } = useParams();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const query = useQuery({ queryKey: ['public-table', token], queryFn: () => api.get<TableLanding>(`/public/tables/${encodeURIComponent(token)}`), retry: false });
   const sessionQuery = useQuery({ queryKey: ['customer-session', token], queryFn: () => api.get<VerifiedSession>(`/customer/session?token=${encodeURIComponent(token)}`), retry: false });
 
-  if (sessionQuery.data) return <Navigate to={`/order/${encodeURIComponent(token)}/menu`} replace />;
+  const switchTable = useMutation({
+    mutationFn: (targetToken: string) => api.post<VerifiedSession>('/customer/switch-table', { token: targetToken }),
+    onSuccess: (data) => {
+      queryClient.setQueryData(['customer-session', token], data);
+      navigate(`/order/${encodeURIComponent(token)}/menu`, { replace: true });
+    }
+  });
+
+  if (sessionQuery.data && !sessionQuery.data.tableMismatch) return <Navigate to={`/order/${encodeURIComponent(token)}/menu`} replace />;
   if (query.isLoading) return <div className="customer-wrap"><Loading label="Finding your table…" /></div>;
   if (query.error) {
     const message = query.error instanceof ApiError ? query.error.message : 'This QR code could not be opened.';
@@ -53,7 +72,29 @@ export default function ScanPage() {
         </div>
         <span className="pill">Dine in</span>
       </div>
-      <Link className="btn full" to={`/order/${encodeURIComponent(token)}/verify`}>Continue to the menu <span aria-hidden="true">→</span></Link>
+
+      {sessionQuery.data?.tableMismatch ? (
+        <div style={{ marginBottom: 16, padding: 14, background: '#f0fdf4', borderRadius: 12, border: '1.5px solid #86efac' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+            <span style={{ fontSize: 18 }}>🪑</span>
+            <strong style={{ fontSize: 14, color: '#166534' }}>Switch Dining Table?</strong>
+          </div>
+          <p style={{ margin: '0 0 12px', fontSize: 13, color: '#14532d', lineHeight: 1.4 }}>
+            You were previously active at <strong>{formatTableLabel(sessionQuery.data.tableMismatch.currentTable.label)}</strong>. Would you like to move your session to <strong>{formatTableLabel(table.label)}</strong>?
+          </p>
+          <button
+            type="button"
+            className="btn full"
+            onClick={() => switchTable.mutate(token)}
+            disabled={switchTable.isPending}
+          >
+            {switchTable.isPending ? 'Switching table…' : `✓ Switch to ${formatTableLabel(table.label)}`}
+          </button>
+        </div>
+      ) : (
+        <Link className="btn full" to={`/order/${encodeURIComponent(token)}/verify`}>Continue to the menu <span aria-hidden="true">→</span></Link>
+      )}
+
       <p className="muted" style={{ margin: '12px 0 0', fontSize: 11, textAlign: 'center' }}>
         {restaurant.requireCustomerOtp
           ? 'We’ll ask you to verify a phone number before ordering.'

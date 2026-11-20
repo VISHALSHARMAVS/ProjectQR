@@ -31,10 +31,28 @@ publicRouter.get('/tables/:token', async (req, res) => {
 export const customerRouter = Router();
 const otpRateLimit = rateLimit({
   windowMs: 15 * 60 * 1000,
-  limit: 10,
+  limit: 60,
+  keyGenerator: (req) => {
+    const phone = (typeof req.body?.phone === 'string' ? req.body.phone : '') || '';
+    return phone ? `${req.ip}_${phone}` : `${req.ip}`;
+  },
+  validate: { keyGeneratorIpFallback: false },
   standardHeaders: true,
   legacyHeaders: false,
-  handler: (_req, res) => res.status(429).json({ error: { code: 'OTP_RATE_LIMITED', message: 'Too many verification requests. Try again later.' } })
+  handler: (_req, res) => res.status(429).json({ error: { code: 'OTP_RATE_LIMITED', message: 'Too many verification requests. Please wait a moment.' } })
+});
+
+const quickJoinRateLimit = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 300,
+  keyGenerator: (req) => {
+    const token = (typeof req.body?.token === 'string' ? req.body.token : '') || 'global';
+    return `${req.ip}_${token}`;
+  },
+  validate: { keyGeneratorIpFallback: false },
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (_req, res) => res.status(429).json({ error: { code: 'RATE_LIMITED', message: 'Too many join attempts from this network. Please wait a moment and try again.' } })
 });
 const requestOtpSchema = z.object({ token: z.string().min(32).max(100), name: z.string().trim().min(2).max(100), phone: phoneSchema });
 const verifyOtpSchema = z.object({ token: z.string().min(32).max(100), name: z.string().trim().min(2).max(100), phone: phoneSchema, code: z.string().regex(/^\d{6}$/, 'Enter the six-digit verification code.') });
@@ -187,14 +205,86 @@ customerRouter.post('/verify-otp', otpRateLimit, async (req, res) => {
   });
 });
 
-customerRouter.get('/session', requireCustomer, requireCustomerQr, async (req, res) => {
+customerRouter.get('/session', requireCustomer, async (req, res) => {
   const [customer, restaurant, table] = await Promise.all([
     Customer.findById(req.customer!.customerId).select('name'),
     Restaurant.findById(req.customer!.restaurantId).select('name logoUrl brandColor bannerUrl welcomeTagline'),
-    DiningTable.findOne({ _id: req.customer!.tableId, restaurantId: req.customer!.restaurantId }).select('label')
+    DiningTable.findOne({ _id: req.customer!.tableId, restaurantId: req.customer!.restaurantId }).select('label qrToken')
   ]);
   if (!customer || !restaurant || !table) throw new AppError(401, 'CUSTOMER_SESSION_EXPIRED', 'This ordering session is no longer available.');
-  res.json({ sessionId: String(req.customer!.sessionId), customer: { id: customer.id, name: customer.name }, restaurant, table: { id: table.id, label: table.label } });
+
+  const requestedToken = typeof req.query.token === 'string' ? req.query.token : undefined;
+  if (requestedToken && table.qrToken !== requestedToken) {
+    const scannedTable = await DiningTable.findOne({ qrToken: requestedToken, active: true }).select('_id label restaurantId');
+    if (scannedTable && String(scannedTable.restaurantId) === String(req.customer!.restaurantId)) {
+      return res.json({
+        sessionId: String(req.customer!.sessionId),
+        customer: { id: customer.id, name: customer.name },
+        restaurant,
+        table: { id: table.id, label: table.label },
+        tableMismatch: {
+          currentTable: { id: table.id, label: table.label },
+          scannedTable: { id: scannedTable.id, label: scannedTable.label, token: requestedToken }
+        }
+      });
+    }
+    throw new AppError(403, 'CUSTOMER_SESSION_TABLE_MISMATCH', 'This session belongs to a different table. Verify your phone for this table to continue.');
+  }
+
+  res.json({
+    sessionId: String(req.customer!.sessionId),
+    customer: { id: customer.id, name: customer.name },
+    restaurant,
+    table: { id: table.id, label: table.label },
+    tableMismatch: null
+  });
+});
+
+const switchTableSchema = z.object({
+  token: z.string().min(32).max(100)
+});
+
+customerRouter.post('/switch-table', requireCustomer, async (req, res) => {
+  const parsed = switchTableSchema.safeParse(req.body);
+  if (!parsed.success) throw new AppError(400, 'INVALID_INPUT', 'Invalid table QR token.');
+  const { table, restaurant } = await resolveActiveTable(parsed.data.token);
+
+  if (String(restaurant._id) !== String(req.customer!.restaurantId)) {
+    throw new AppError(400, 'RESTAURANT_MISMATCH', 'Cannot switch table across different restaurants.');
+  }
+
+  // Revoke previous table session
+  if (req.session.customerSessionId) {
+    await CustomerSession.updateOne({ _id: req.session.customerSessionId, revokedAt: null }, { $set: { revokedAt: new Date() } });
+  }
+
+  // Create new active session at new table
+  const expiresAt = new Date(Date.now() + 4 * 60 * 60 * 1000);
+  const customerSession = await CustomerSession.create({
+    customerId: req.customer!.customerId,
+    restaurantId: restaurant._id,
+    tableId: table._id,
+    expiresAt
+  });
+
+  const customer = await Customer.findById(req.customer!.customerId).select('name');
+  await regenerateSession(req);
+  req.session.customerSessionId = String(customerSession._id);
+
+  res.json({
+    sessionId: String(customerSession._id),
+    customer: { id: req.customer!.customerId, name: customer?.name || 'Guest' },
+    restaurant: {
+      id: restaurant.id,
+      name: restaurant.name,
+      logoUrl: restaurant.logoUrl,
+      brandColor: restaurant.brandColor,
+      bannerUrl: restaurant.bannerUrl,
+      welcomeTagline: restaurant.welcomeTagline
+    },
+    table: { id: table.id, label: table.label },
+    expiresAt
+  });
 });
 
 interface RestaurantMenuHighlights {
@@ -294,7 +384,7 @@ const quickJoinSchema = z.object({
   name: z.string().trim().min(2).max(100)
 });
 
-customerRouter.post('/quick-join', otpRateLimit, async (req, res) => {
+customerRouter.post('/quick-join', quickJoinRateLimit, async (req, res) => {
   const parsed = quickJoinSchema.safeParse(req.body);
   if (!parsed.success) throw new AppError(400, 'INVALID_INPUT', 'Please enter your name.');
   const { table, restaurant } = await resolveActiveTable(parsed.data.token);
