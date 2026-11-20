@@ -6,7 +6,8 @@ export function printOrderReceipt(
   restaurantName = 'Restaurant',
   type: 'KOT' | 'BILL' = 'KOT',
   gstin?: string,
-  gstPercentage = 5
+  gstPercentage = 5,
+  upiId?: string
 ) {
   const iframe = document.createElement('iframe');
   iframe.style.position = 'fixed';
@@ -158,6 +159,22 @@ export function printOrderReceipt(
           <div style="font-size: 10px; color: #555; text-align: right; margin-top: 2px;">
             (All prices inclusive of applicable GST)
           </div>
+          ${!isKot && upiId && order.paymentStatus !== 'PAID' ? `
+            <div class="divider"></div>
+            <div class="center" style="margin: 8px 0;">
+              <div style="font-size: 11px; font-weight: bold; margin-bottom: 4px; text-transform: uppercase;">
+                Scan to Pay via UPI (GPay/PhonePe/Paytm)
+              </div>
+              <img
+                src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&margin=4&data=${encodeURIComponent(`upi://pay?pa=${upiId}&pn=${encodeURIComponent(restaurantName)}&am=${(((order.totalPaise - (order.discountPaise || 0))) / 100).toFixed(2)}&cu=INR&tn=${encodeURIComponent(order.orderNumber)}`)}"
+                style="width: 120px; height: 120px; display: block; margin: 4px auto;"
+                alt="UPI Payment QR"
+              />
+              <div style="font-size: 10px; font-weight: bold; margin-top: 2px;">
+                UPI VPA: ${upiId}
+              </div>
+            </div>
+          ` : ''}
           ${order.paymentStatus === 'PAID' ? `
             <div style="margin-top: 8px; padding: 6px; background: #eee; text-align: center; font-size: 12px; font-weight: bold; border: 1px dashed #333;">
               ✓ PAID VIA ${order.paymentMethod || 'CASH'}

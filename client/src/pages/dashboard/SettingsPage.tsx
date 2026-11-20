@@ -18,6 +18,7 @@ interface SettingsForm {
   contactEmail: string;
   gstin: string;
   gstPercentage: number;
+  upiId: string;
   requireCustomerOtp: boolean;
 }
 
@@ -54,6 +55,7 @@ export default function SettingsPage() {
     contactEmail: overrides.contactEmail ?? restaurant?.contactEmail ?? '',
     gstin: overrides.gstin ?? restaurant?.gstin ?? '',
     gstPercentage: overrides.gstPercentage ?? restaurant?.gstPercentage ?? 5,
+    upiId: overrides.upiId ?? restaurant?.upiId ?? '',
     requireCustomerOtp: overrides.requireCustomerOtp ?? restaurant?.requireCustomerOtp ?? false
   };
 
@@ -415,6 +417,35 @@ export default function SettingsPage() {
               <option value={18}>18% (Hotel Outlets / AC Dining)</option>
             </select>
           </div>
+        </div>
+      </div>
+
+      {/* Dynamic UPI Payment Settings */}
+      <div style={{ padding: 18, background: '#f0fdf4', borderRadius: 14, border: '1px solid #86efac', margin: '18px 0' }}>
+        <div>
+          <strong style={{ fontSize: 15, display: 'flex', alignItems: 'center', gap: 6, color: '#166534' }}>
+            📱 UPI Payment Integration (Instant Bank Transfer)
+          </strong>
+          <p className="muted" style={{ margin: '4px 0 14px', fontSize: 13, color: '#14532d' }}>
+            Enter your restaurant's business UPI ID (VPA). When diners settle their bill or choose UPI, a dynamic QR code will be generated with the exact bill amount for instant scanning via GPay, PhonePe, Paytm, or BHIM.
+          </p>
+        </div>
+        <div className="field">
+          <label htmlFor="restaurant-upi-id" style={{ color: '#166534', fontWeight: 650 }}>
+            Restaurant UPI ID / VPA <span className="muted">(e.g. cafe@okaxis, 9876543210@paytm, business@hdfcbank)</span>
+          </label>
+          <input
+            className="input"
+            id="restaurant-upi-id"
+            maxLength={100}
+            disabled={!canEdit}
+            placeholder="e.g. yourrestaurant@upi"
+            value={form.upiId}
+            onChange={(e) => setOverrides((current) => ({ ...current, upiId: e.target.value.trim() }))}
+          />
+          <span className="muted" style={{ fontSize: 11, marginTop: 4, display: 'block' }}>
+            100% direct settlement: payments go straight from customer bank account to your merchant bank account with zero platform commission.
+          </span>
         </div>
       </div>
 

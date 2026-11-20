@@ -2,7 +2,7 @@ import { randomInt } from 'node:crypto';
 import { Router } from 'express';
 import type { Server } from 'socket.io';
 import { z } from 'zod';
-import { requireCustomer, requireCustomerQr, requireStaff } from '../middleware/auth.js';
+import { requireCustomer, requireCustomerQr, requireRoles, requireStaff } from '../middleware/auth.js';
 import { CustomerSession } from '../models/CustomerSession.js';
 import { DiningTable } from '../models/DiningTable.js';
 import { MenuItem } from '../models/MenuItem.js';
@@ -199,6 +199,77 @@ restaurantOrders.get('/', async (req, res) => {
   const orders = await Order.find(filter).sort({ createdAt: -1 }).limit(100) as unknown as OrderDoc[];
   const tableInfos = await tableInfoMap(orders);
   res.json({ orders: orders.map((order) => serializeOrder(order, tableInfos.get(String(order.tableId)) ?? { label: 'Table', needsClearing: false })) });
+});
+
+const staffCreateOrderSchema = z.object({
+  tableId: objectIdSchema,
+  items: z.array(z.object({
+    menuItemId: objectIdSchema,
+    quantity: z.number().int().min(1).max(50),
+    selectedVariant: variantSelectionSchema.nullable().optional(),
+    selectedAddons: z.array(addonSelectionSchema).optional(),
+    notes: z.string().trim().max(250).default('')
+  })).min(1).max(50),
+  notes: z.string().trim().max(500).default('')
+});
+
+restaurantOrders.post('/', requireRoles('owner', 'staff'), async (req, res) => {
+  const parsed = staffCreateOrderSchema.safeParse(req.body);
+  if (!parsed.success) throw new AppError(400, 'INVALID_INPUT', parsed.error.issues[0]?.message ?? 'Check order details.');
+
+  const restaurantId = req.staff!.restaurantId;
+  const table = await DiningTable.findOne(tenantFilter(restaurantId, { _id: parsed.data.tableId, active: true }));
+  if (!table) throw new AppError(404, 'TABLE_NOT_FOUND', 'Dining table not found or inactive.');
+
+  const ids = parsed.data.items.map((item) => item.menuItemId);
+  const menuItems = await MenuItem.find(tenantFilter(restaurantId, { _id: { $in: ids } }));
+  const itemMap = new Map(menuItems.map((item) => [String(item._id), item]));
+  const missing = parsed.data.items.filter((item) => !itemMap.has(item.menuItemId));
+  if (missing.length) throw new AppError(400, 'ITEM_NOT_FOUND', 'One or more items do not belong to this restaurant.');
+
+  const snapshotItems = parsed.data.items.map((requested) => {
+    const menuItem = itemMap.get(requested.menuItemId)!;
+    const basePrice = requested.selectedVariant ? requested.selectedVariant.pricePaise : menuItem.pricePaise;
+    const addonsTotal = (requested.selectedAddons || []).reduce((sum, a) => sum + a.pricePaise, 0);
+    const calculatedUnitPrice = basePrice + addonsTotal;
+
+    return {
+      menuItemId: menuItem._id,
+      name: menuItem.name,
+      unitPricePaise: calculatedUnitPrice,
+      quantity: requested.quantity,
+      selectedVariant: requested.selectedVariant ?? null,
+      selectedAddons: requested.selectedAddons ?? [],
+      notes: requested.notes,
+      subtotalPaise: calculatedUnitPrice * requested.quantity
+    };
+  });
+
+  const subtotalPaise = calculateSubtotal(snapshotItems.map((item) => ({ pricePaise: item.unitPricePaise, quantity: item.quantity })));
+  const staffName = req.staff?.name || 'Staff';
+  const order = new Order({
+    restaurantId,
+    tableId: table._id,
+    idempotencyKey: `staff-${Date.now()}-${randomInt(10000, 99999)}`,
+    orderNumber: makeOrderNumber(),
+    items: snapshotItems,
+    subtotalPaise,
+    totalPaise: subtotalPaise,
+    notes: parsed.data.notes ? `[Waiter Punch] ${parsed.data.notes}` : '[Waiter Punch]',
+    status: 'ACCEPTED',
+    statusHistory: [
+      { status: 'NEW', at: new Date(), note: `Punched by ${staffName}` },
+      { status: 'ACCEPTED', at: new Date(), note: 'Accepted by staff' }
+    ]
+  });
+
+  await order.save();
+  const response = serializeOrder(order as unknown as OrderDoc, { label: table.label, needsClearing: Boolean(table.needsClearing) });
+
+  orderSocket?.to(`restaurant:${restaurantId}`).emit('order:new', response);
+  orderSocket?.to(`table:${table._id}`).emit('order:status', { id: order.id, orderNumber: order.orderNumber, status: order.status, updatedAt: order.updatedAt });
+
+  res.status(201).json({ order: response });
 });
 
 restaurantOrders.patch('/:id/status', async (req, res) => {

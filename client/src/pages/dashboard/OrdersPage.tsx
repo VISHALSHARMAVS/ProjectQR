@@ -7,6 +7,8 @@ import { EmptyState, ErrorPanel, Loading, Modal, StatusPill } from '../../compon
 import { useOrderSocket } from '../../hooks/useOrderSocket';
 import { printOrderReceipt } from '../../lib/printer';
 import { useStaff } from '../../hooks/useStaff';
+import { ItemStockModal } from '../../components/ItemStockModal';
+import { ManualOrderModal } from '../../components/ManualOrderModal';
 import type { OrderRecord, OrderStatus } from '../../types';
 
 interface OrderList { orders: OrderRecord[] }
@@ -43,6 +45,9 @@ export default function OrdersPage({ kitchen = false }: { kitchen?: boolean }) {
   const restaurantName = restaurant?.name || 'Restaurant';
   const gstin = restaurant?.gstin;
   const gstPercentage = restaurant?.gstPercentage ?? 5;
+  const upiId = restaurant?.upiId;
+  const [punchOrderOpen, setPunchOrderOpen] = useState(false);
+  const [stockModalOpen, setStockModalOpen] = useState(false);
   const [filter, setFilter] = useState(kitchen ? 'NEW' : '');
   const [now, setNow] = useState(0);
   const [rejectionOrder, setRejectionOrder] = useState<OrderRecord | null>(null);
@@ -155,7 +160,7 @@ export default function OrdersPage({ kitchen = false }: { kitchen?: boolean }) {
     onSuccess: async (data) => {
       setSettleError('');
       if (printOnSettle) {
-        printOrderReceipt(data.order, restaurantName, 'BILL', gstin, gstPercentage);
+        printOrderReceipt(data.order, restaurantName, 'BILL', gstin, gstPercentage, upiId);
       }
       setSettlingOrder(null);
       setNotice(`Order ${data.order.orderNumber} successfully settled.`);
@@ -179,7 +184,26 @@ export default function OrdersPage({ kitchen = false }: { kitchen?: boolean }) {
         <h1>{heading}</h1>
         <p className="muted" style={{ margin: '6px 0 0', fontSize: 13 }}>Orders sync live across your team in real time.</p>
       </div>
-      <div className="toolbar">
+      <div className="toolbar" style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        {!kitchen && (
+          <button
+            type="button"
+            className="btn small"
+            style={{ background: '#16a34a', borderColor: '#15803d', color: 'white', fontWeight: 700 }}
+            onClick={() => setPunchOrderOpen(true)}
+            title="Punch in offline / walk-in order"
+          >
+            ➕ Punch New Order
+          </button>
+        )}
+        <button
+          type="button"
+          className="btn secondary small"
+          onClick={() => setStockModalOpen(true)}
+          title="Mark dishes In Stock or Sold Out"
+        >
+          📦 Item Stock
+        </button>
         <button
           type="button"
           className={`btn small ${soundEnabled ? 'secondary' : 'ghost'}`}
@@ -415,7 +439,7 @@ export default function OrdersPage({ kitchen = false }: { kitchen?: boolean }) {
                   <button
                     type="button"
                     className="btn secondary small"
-                    onClick={() => printOrderReceipt(order, restaurantName, 'BILL', gstin, gstPercentage)}
+                    onClick={() => printOrderReceipt(order, restaurantName, 'BILL', gstin, gstPercentage, upiId)}
                     title="Print Customer Bill Receipt (with GST Breakdown)"
                   >
                     🧾 Bill
@@ -573,6 +597,34 @@ export default function OrdersPage({ kitchen = false }: { kitchen?: boolean }) {
                 </div>
               </div>
 
+              {/* Dynamic Instant UPI QR Preview */}
+              {paymentMethod === 'UPI' && (
+                <div style={{ textAlign: 'center', padding: 14, background: '#f0fdf4', borderRadius: 12, border: '1.5px solid #86efac', marginBottom: 16 }}>
+                  <span style={{ fontSize: 11, fontWeight: 800, color: '#166534', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                    Instant UPI QR Code (GPay / PhonePe / Paytm)
+                  </span>
+                  {upiId ? (
+                    <>
+                      <img
+                        src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&margin=6&data=${encodeURIComponent(`upi://pay?pa=${upiId}&pn=${encodeURIComponent(restaurantName)}&am=${(netPayablePaise / 100).toFixed(2)}&cu=INR&tn=${encodeURIComponent(settlingOrder.orderNumber)}`)}`}
+                        alt="UPI QR Code"
+                        style={{ width: 140, height: 140, display: 'block', margin: '10px auto', borderRadius: 8, boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}
+                      />
+                      <div style={{ fontSize: 13, fontWeight: 700, color: '#14532d' }}>
+                        UPI VPA: {upiId}
+                      </div>
+                      <div style={{ fontSize: 11, color: '#166534', marginTop: 2 }}>
+                        Customer scans this QR code to transfer exactly <strong>{money(netPayablePaise)}</strong> directly to your bank account.
+                      </div>
+                    </>
+                  ) : (
+                    <p style={{ margin: '8px 0 0', fontSize: 12, color: '#166534' }}>
+                      To show an automated dynamic QR code here, add your restaurant's UPI ID in <strong>Settings ➔ UPI Payments</strong>.
+                    </p>
+                  )}
+                </div>
+              )}
+
               <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, marginBottom: 14, cursor: 'pointer' }}>
                 <input
                   type="checkbox"
@@ -607,6 +659,24 @@ export default function OrdersPage({ kitchen = false }: { kitchen?: boolean }) {
           );
         })()}
       </Modal>
+    )}
+
+    {/* Manual Waiter Punch-in Modal */}
+    {punchOrderOpen && (
+      <ManualOrderModal
+        onClose={() => setPunchOrderOpen(false)}
+        onOrderCreated={(order) => {
+          setNotice(`Order ${order.orderNumber} successfully sent to kitchen!`);
+          window.setTimeout(() => setNotice(''), 4000);
+        }}
+      />
+    )}
+
+    {/* Kitchen Stock & Item Availability Modal */}
+    {stockModalOpen && (
+      <ItemStockModal
+        onClose={() => setStockModalOpen(false)}
+      />
     )}
   </>;
 }

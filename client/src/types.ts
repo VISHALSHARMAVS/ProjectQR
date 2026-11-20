@@ -12,6 +12,7 @@ export interface RestaurantInfo {
   contactEmail?: string;
   gstin?: string;
   gstPercentage?: number;
+  upiId?: string;
   requireCustomerOtp?: boolean;
   active?: boolean;
 }

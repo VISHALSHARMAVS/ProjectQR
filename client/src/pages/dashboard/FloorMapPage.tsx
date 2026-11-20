@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { EmptyState, ErrorPanel, Loading, Modal, StatusPill } from '../../components/ui';
+import { ManualOrderModal } from '../../components/ManualOrderModal';
 import { useOrderSocket } from '../../hooks/useOrderSocket';
 import { api } from '../../lib/api';
 import { playKitchenChime, playWaiterCallAlert } from '../../lib/audio';
@@ -74,6 +75,7 @@ const statusConfig: Record<TableLiveState, { label: string; bg: string; border: 
 export default function FloorMapPage() {
   const queryClient = useQueryClient();
   const [selectedTable, setSelectedTable] = useState<LiveTableInfo | null>(null);
+  const [punchOrderTableId, setPunchOrderTableId] = useState<string | null>(null);
   const [filterState, setFilterState] = useState<string>('ALL');
 
   const onNewOrder = useCallback(() => {
@@ -148,8 +150,17 @@ export default function FloorMapPage() {
             Live status of every table in your dining room. Tap a table to view tickets and requests.
           </p>
         </div>
-        <div className="toolbar">
-          <Link className="btn small" to="/dashboard/tables">
+        <div className="toolbar" style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <button
+            type="button"
+            className="btn small"
+            style={{ background: '#16a34a', borderColor: '#15803d', color: 'white', fontWeight: 700 }}
+            onClick={() => setPunchOrderTableId('')}
+            title="Take walk-in order"
+          >
+            ➕ Punch New Order
+          </button>
+          <Link className="btn secondary small" to="/dashboard/tables">
             ➕ Add Table & QR
           </Link>
           <button className="btn secondary small" onClick={() => void query.refetch()}>
@@ -446,12 +457,43 @@ export default function FloorMapPage() {
             )}
           </div>
 
-          <div className="toolbar" style={{ justifyContent: 'end', marginTop: 20 }}>
-            <button type="button" className="btn secondary" onClick={() => setSelectedTable(null)}>
-              Close
+          <div className="toolbar" style={{ justifyContent: 'space-between', alignItems: 'center', marginTop: 20, flexWrap: 'wrap', gap: 10 }}>
+            <button
+              type="button"
+              className="btn small"
+              style={{ background: '#16a34a', borderColor: '#15803d', color: 'white', fontWeight: 700 }}
+              onClick={() => {
+                const id = selectedTable.id;
+                setSelectedTable(null);
+                setPunchOrderTableId(id);
+              }}
+            >
+              ➕ Punch Order for {formatTableLabel(selectedTable.label)}
             </button>
+            <div style={{ display: 'flex', gap: 8 }}>
+              {selectedTable.orders.length > 0 && (
+                <Link className="btn secondary small" to="/dashboard/orders">
+                  View & Settle in Orders →
+                </Link>
+              )}
+              <button type="button" className="btn secondary" onClick={() => setSelectedTable(null)}>
+                Close
+              </button>
+            </div>
           </div>
         </Modal>
+      )}
+
+      {/* Manual Waiter Punch-in Modal */}
+      {punchOrderTableId !== null && (
+        <ManualOrderModal
+          initialTableId={punchOrderTableId || undefined}
+          onClose={() => setPunchOrderTableId(null)}
+          onOrderCreated={() => {
+            void queryClient.invalidateQueries({ queryKey: ['floor-tables'] });
+            void queryClient.invalidateQueries({ queryKey: ['staff-orders'] });
+          }}
+        />
       )}
     </>
   );

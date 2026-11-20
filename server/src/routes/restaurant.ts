@@ -247,17 +247,18 @@ const settingsSchema = z.object({
   contactEmail: z.union([z.literal(''), z.email().trim().toLowerCase()]).optional(),
   gstin: z.string().trim().max(15).optional(),
   gstPercentage: z.number().min(0).max(28).optional(),
+  upiId: z.string().trim().max(100).optional(),
   requireCustomerOtp: z.boolean().optional()
 }).strict();
 restaurantRouter.get('/settings', async (req, res) => {
-  const restaurant = await Restaurant.findById(req.staff!.restaurantId).select('name slug description logoUrl brandColor bannerUrl welcomeTagline address contactPhone contactEmail gstin gstPercentage requireCustomerOtp active');
+  const restaurant = await Restaurant.findById(req.staff!.restaurantId).select('name slug description logoUrl brandColor bannerUrl welcomeTagline address contactPhone contactEmail gstin gstPercentage upiId requireCustomerOtp active');
   if (!restaurant) throw new AppError(404, 'NOT_FOUND', 'Restaurant not found.');
   res.json({ restaurant });
 });
 restaurantRouter.patch('/settings', requireRoles('owner'), async (req, res) => {
   const parsed = settingsSchema.safeParse(req.body);
   if (!parsed.success || Object.keys(parsed.data ?? {}).length === 0) throw new AppError(400, 'INVALID_INPUT', parsed.success ? 'Provide at least one setting.' : parsed.error.issues[0]?.message ?? 'Invalid settings.');
-  const restaurant = await Restaurant.findByIdAndUpdate(req.staff!.restaurantId, parsed.data, { returnDocument: 'after', runValidators: true }).select('name slug description logoUrl brandColor bannerUrl welcomeTagline address contactPhone contactEmail gstin gstPercentage requireCustomerOtp active');
+  const restaurant = await Restaurant.findByIdAndUpdate(req.staff!.restaurantId, parsed.data, { returnDocument: 'after', runValidators: true }).select('name slug description logoUrl brandColor bannerUrl welcomeTagline address contactPhone contactEmail gstin gstPercentage upiId requireCustomerOtp active');
   if (!restaurant) throw new AppError(404, 'NOT_FOUND', 'Restaurant not found.');
   res.json({ restaurant });
 });

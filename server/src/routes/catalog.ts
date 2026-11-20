@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { Category } from '../models/Category.js';
 import { MenuItem } from '../models/MenuItem.js';
 import { requireRoles, requireStaff } from '../middleware/auth.js';
+import { getOrderSocket } from './orders.js';
 import { saveMenuImage } from '../services/imageStorage.js';
 import { AppError } from '../utils/errors.js';
 import { objectIdSchema } from '../utils/validation.js';
@@ -68,12 +69,29 @@ const menuInput = z.object(menuFields);
 const menuPatch = menuInput.partial();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024, files: 1 } });
 
-menuRouter.use(requireStaff, requireRoles('owner', 'staff'));
-menuRouter.get('/', async (req, res) => {
+menuRouter.use(requireStaff);
+menuRouter.get('/', requireRoles('owner', 'staff', 'kitchen'), async (req, res) => {
   const items = await MenuItem.find(tenantFilter(req.staff!.restaurantId)).sort({ displayOrder: 1, name: 1 }).lean();
   res.json({ items });
 });
-menuRouter.post('/', async (req, res) => {
+menuRouter.patch('/:id/availability', requireRoles('owner', 'staff', 'kitchen'), async (req, res) => {
+  if (!objectIdSchema.safeParse(req.params.id).success) throw new AppError(400, 'INVALID_ID', 'Invalid menu item identifier.');
+  const parsed = z.object({ available: z.boolean() }).safeParse(req.body);
+  if (!parsed.success) throw new AppError(400, 'INVALID_INPUT', 'Must provide boolean available state.');
+  const item = await MenuItem.findOneAndUpdate(
+    tenantFilter(req.staff!.restaurantId, { _id: req.params.id }),
+    { $set: { available: parsed.data.available } },
+    { returnDocument: 'after' }
+  );
+  if (!item) throw new AppError(404, 'NOT_FOUND', 'Menu item not found.');
+  const socket = getOrderSocket();
+  socket?.to(`restaurant:${req.staff!.restaurantId}`).emit('menu:item_updated', {
+    id: String(item._id),
+    available: item.available
+  });
+  res.json({ item });
+});
+menuRouter.post('/', requireRoles('owner', 'staff'), async (req, res) => {
   const parsed = menuInput.safeParse(req.body);
   if (!parsed.success) throw new AppError(400, 'INVALID_INPUT', parsed.error.issues[0]?.message ?? 'Invalid menu item.');
   const category = await Category.findOne(tenantFilter(req.staff!.restaurantId, { _id: parsed.data.categoryId }));
@@ -81,7 +99,7 @@ menuRouter.post('/', async (req, res) => {
   const item = await MenuItem.create({ ...parsed.data, restaurantId: req.staff!.restaurantId });
   res.status(201).json({ item });
 });
-menuRouter.patch('/:id', async (req, res) => {
+menuRouter.patch('/:id', requireRoles('owner', 'staff'), async (req, res) => {
   if (!objectIdSchema.safeParse(req.params.id).success) throw new AppError(400, 'INVALID_ID', 'Invalid menu item identifier.');
   const parsed = menuPatch.safeParse(req.body);
   if (!parsed.success || Object.keys(parsed.data ?? {}).length === 0) throw new AppError(400, 'INVALID_INPUT', 'Provide at least one valid menu item field.');
@@ -93,7 +111,7 @@ menuRouter.patch('/:id', async (req, res) => {
   if (!item) throw new AppError(404, 'NOT_FOUND', 'Menu item not found.');
   res.json({ item });
 });
-menuRouter.delete('/:id', async (req, res) => {
+menuRouter.delete('/:id', requireRoles('owner', 'staff'), async (req, res) => {
   if (!objectIdSchema.safeParse(req.params.id).success) throw new AppError(400, 'INVALID_ID', 'Invalid menu item identifier.');
   const item = await MenuItem.findOneAndDelete(tenantFilter(req.staff!.restaurantId, { _id: req.params.id }));
   if (!item) throw new AppError(404, 'NOT_FOUND', 'Menu item not found.');
