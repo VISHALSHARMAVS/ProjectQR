@@ -66,12 +66,13 @@ export interface TableRecord {
   createdAt?: string;
 }
 
-export type TableLiveState = 'VACANT' | 'SEATED' | 'PREPARING' | 'READY' | 'HELP_NEEDED' | 'BILL_REQUESTED';
+export type TableLiveState = 'VACANT' | 'NEEDS_CLEARING' | 'SEATED' | 'PREPARING' | 'READY' | 'HELP_NEEDED' | 'BILL_REQUESTED';
 
 export interface LiveTableInfo {
   id: string;
   label: string;
   active: boolean;
+  needsClearing?: boolean;
   state: TableLiveState;
   pendingRequest: {
     id: string;
@@ -106,7 +107,7 @@ export interface TableCartLine {
 export interface OrderRecord {
   id: string;
   orderNumber: string;
-  table: { label: string };
+  table: { id?: string; label: string };
   items: {
     menuItemId: string;
     name: string;

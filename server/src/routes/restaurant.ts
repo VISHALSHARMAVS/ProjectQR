@@ -5,12 +5,15 @@ import QRCode from 'qrcode';
 import { z } from 'zod';
 import { env } from '../config/env.js';
 import { requireRoles, requireStaff } from '../middleware/auth.js';
+import { CustomerSession } from '../models/CustomerSession.js';
 import { DiningTable } from '../models/DiningTable.js';
 import { MenuItem } from '../models/MenuItem.js';
 import { Order, type OrderDoc } from '../models/Order.js';
 import { Restaurant } from '../models/Restaurant.js';
 import { ServiceRequest } from '../models/ServiceRequest.js';
+import { TableCart } from '../models/TableCart.js';
 import { User } from '../models/User.js';
+import { getOrderSocket } from './orders.js';
 import { saveMenuImage } from '../services/imageStorage.js';
 import { hashPassword } from '../services/password.js';
 import { AppError } from '../utils/errors.js';
@@ -375,7 +378,7 @@ tablesRouter.get('/live-status', async (req, res) => {
     const tableOrders = ordersByTable.get(tid) || [];
 
     // Derive status
-    let state: 'VACANT' | 'SEATED' | 'PREPARING' | 'READY' | 'HELP_NEEDED' | 'BILL_REQUESTED' = 'VACANT';
+    let state: 'VACANT' | 'NEEDS_CLEARING' | 'SEATED' | 'PREPARING' | 'READY' | 'HELP_NEEDED' | 'BILL_REQUESTED' = 'VACANT';
 
     if (pendingRequest?.type === 'BILL') {
       state = 'BILL_REQUESTED';
@@ -387,6 +390,8 @@ tablesRouter.get('/live-status', async (req, res) => {
       state = 'PREPARING';
     } else if (tableOrders.some((o) => o.status === 'NEW')) {
       state = 'SEATED';
+    } else if (table.needsClearing) {
+      state = 'NEEDS_CLEARING';
     }
 
     const totalActiveBillPaise = tableOrders.reduce((sum, o) => sum + o.totalPaise, 0);
@@ -395,6 +400,7 @@ tablesRouter.get('/live-status', async (req, res) => {
       id: String(table._id),
       label: table.label,
       active: table.active,
+      needsClearing: Boolean(table.needsClearing),
       state,
       pendingRequest: pendingRequest ? {
         id: pendingRequest.id,
@@ -440,6 +446,81 @@ tablesRouter.delete('/:id', async (req, res) => {
   const table = await DiningTable.findOneAndUpdate(tenantFilter(req.staff!.restaurantId, { _id: req.params.id }), { active: false }, { returnDocument: 'after', runValidators: true }).select('-qrToken');
   if (!table) throw new AppError(404, 'NOT_FOUND', 'Table not found.');
   res.status(204).end();
+});
+tablesRouter.post('/:id/vacate', async (req, res) => {
+  if (!objectIdSchema.safeParse(req.params.id).success) throw new AppError(400, 'INVALID_ID', 'Invalid table identifier.');
+  const table = await DiningTable.findOne(tenantFilter(req.staff!.restaurantId, { _id: req.params.id }));
+  if (!table) throw new AppError(404, 'NOT_FOUND', 'Table not found.');
+
+  // 1. Mark table clean and ready
+  table.needsClearing = false;
+  table.clearedAt = new Date();
+  table.clearedBy = req.staff!.id as unknown as import('mongoose').Types.ObjectId;
+  await table.save();
+
+  // 2. Revoke all active customer sessions for this table
+  await CustomerSession.updateMany(
+    { tableId: table._id, revokedAt: null },
+    { $set: { revokedAt: new Date() } }
+  );
+
+  // 3. Clear the shared table cart
+  await TableCart.deleteOne({ tableId: table._id });
+
+  // 4. Resolve any outstanding service requests for this table
+  await ServiceRequest.updateMany(
+    { tableId: table._id, status: 'PENDING' },
+    { $set: { status: 'RESOLVED', resolvedAt: new Date() } }
+  );
+
+  // 5. Broadcast real-time socket events
+  const socket = getOrderSocket();
+  socket?.to(`table:${table._id}`).emit('table:vacated', {
+    tableId: String(table._id),
+    tableLabel: table.label,
+    message: 'This dining visit has been completed. The table is now clear.'
+  });
+  socket?.to(`restaurant:${req.staff!.restaurantId}`).emit('table:vacated', {
+    tableId: String(table._id),
+    tableLabel: table.label,
+    clearedAt: table.clearedAt
+  });
+
+  res.json({
+    success: true,
+    table: {
+      id: String(table._id),
+      label: table.label,
+      state: 'VACANT',
+      needsClearing: false
+    }
+  });
+});
+tablesRouter.post('/:id/mark-clearing', async (req, res) => {
+  if (!objectIdSchema.safeParse(req.params.id).success) throw new AppError(400, 'INVALID_ID', 'Invalid table identifier.');
+  const table = await DiningTable.findOneAndUpdate(
+    tenantFilter(req.staff!.restaurantId, { _id: req.params.id }),
+    { $set: { needsClearing: true } },
+    { returnDocument: 'after' }
+  );
+  if (!table) throw new AppError(404, 'NOT_FOUND', 'Table not found.');
+
+  const socket = getOrderSocket();
+  socket?.to(`restaurant:${req.staff!.restaurantId}`).emit('table:clearing_needed', {
+    tableId: String(table._id),
+    tableLabel: table.label,
+    needsClearing: true
+  });
+
+  res.json({
+    success: true,
+    table: {
+      id: String(table._id),
+      label: table.label,
+      state: 'NEEDS_CLEARING',
+      needsClearing: true
+    }
+  });
 });
 tablesRouter.post('/:id/qr', requireRoles('owner', 'staff'), async (req, res) => {
   if (!objectIdSchema.safeParse(req.params.id).success) throw new AppError(400, 'INVALID_ID', 'Invalid table identifier.');

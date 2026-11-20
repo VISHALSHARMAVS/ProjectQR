@@ -21,6 +21,14 @@ const statusConfig: Record<TableLiveState, { label: string; bg: string; border: 
     badge: 'gray',
     icon: '⚪'
   },
+  NEEDS_CLEARING: {
+    label: 'Needs Clearing',
+    bg: '#fef3c7',
+    border: '#f59e0b',
+    text: '#b45309',
+    badge: 'orange',
+    icon: '🧹'
+  },
   SEATED: {
     label: 'Seated / Browsing',
     bg: '#f0fdf4',
@@ -99,6 +107,14 @@ export default function FloorMapPage() {
     }
   });
 
+  const vacateTable = useMutation({
+    mutationFn: (tableId: string) => api.post(`/tables/${encodeURIComponent(tableId)}/vacate`, {}),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['floor-map'] });
+      setSelectedTable(null);
+    }
+  });
+
   if (query.isLoading) return <Loading label="Loading live floor map…" />;
   if (query.error || !query.data) {
     return <ErrorPanel message="Failed to load floor map." retry={() => void query.refetch()} />;
@@ -108,7 +124,8 @@ export default function FloorMapPage() {
 
   const counts = {
     total: tables.length,
-    active: tables.filter((t) => t.state !== 'VACANT').length,
+    active: tables.filter((t) => !['VACANT', 'NEEDS_CLEARING'].includes(t.state)).length,
+    clearing: tables.filter((t) => t.state === 'NEEDS_CLEARING').length,
     help: tables.filter((t) => ['HELP_NEEDED', 'BILL_REQUESTED'].includes(t.state)).length,
     preparing: tables.filter((t) => ['PREPARING', 'READY'].includes(t.state)).length
   };
@@ -116,7 +133,7 @@ export default function FloorMapPage() {
   const filteredTables = filterState === 'ALL'
     ? tables
     : filterState === 'OCCUPIED'
-      ? tables.filter((t) => t.state !== 'VACANT')
+      ? tables.filter((t) => !['VACANT', 'NEEDS_CLEARING'].includes(t.state))
       : filterState === 'ATTENTION'
         ? tables.filter((t) => ['HELP_NEEDED', 'BILL_REQUESTED'].includes(t.state))
         : tables.filter((t) => t.state === filterState);
@@ -161,6 +178,12 @@ export default function FloorMapPage() {
           <div style={{ fontSize: 24, fontWeight: 800, marginTop: 4, color: '#15803d' }}>{counts.active}</div>
         </div>
         <div style={{ textAlign: 'center', borderLeft: '1px solid var(--line)' }}>
+          <span className="muted" style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 700 }}>Needs Clearing</span>
+          <div style={{ fontSize: 24, fontWeight: 800, marginTop: 4, color: counts.clearing > 0 ? '#b45309' : 'inherit' }}>
+            {counts.clearing > 0 ? `🧹 ${counts.clearing}` : '0'}
+          </div>
+        </div>
+        <div style={{ textAlign: 'center', borderLeft: '1px solid var(--line)' }}>
           <span className="muted" style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 700 }}>In Kitchen</span>
           <div style={{ fontSize: 24, fontWeight: 800, marginTop: 4, color: '#b45309' }}>{counts.preparing}</div>
         </div>
@@ -177,6 +200,7 @@ export default function FloorMapPage() {
         {[
           { key: 'ALL', label: 'All Tables' },
           { key: 'OCCUPIED', label: 'Occupied' },
+          { key: 'NEEDS_CLEARING', label: `Needs Clearing 🧹${counts.clearing > 0 ? ` (${counts.clearing})` : ''}` },
           { key: 'ATTENTION', label: 'Attention Needed 🚨' },
           { key: 'VACANT', label: 'Vacant' }
         ].map((tab) => (
@@ -283,6 +307,32 @@ export default function FloorMapPage() {
                     </strong>
                   )}
                 </div>
+
+                {/* 1-Tap Quick Action when Needs Clearing */}
+                {table.state === 'NEEDS_CLEARING' && (
+                  <div style={{ marginTop: 10, borderTop: '1px solid #fde68a', paddingTop: 8 }}>
+                    <button
+                      type="button"
+                      className="btn full small"
+                      style={{
+                        background: '#b45309',
+                        borderColor: '#b45309',
+                        color: 'white',
+                        fontWeight: 750,
+                        fontSize: 11,
+                        padding: '6px 8px',
+                        boxShadow: '0 2px 6px rgba(180, 83, 9, 0.2)'
+                      }}
+                      disabled={vacateTable.isPending}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        vacateTable.mutate(table.id);
+                      }}
+                    >
+                      {vacateTable.isPending ? 'Clearing…' : '🧹 Clear & Mark Vacant'}
+                    </button>
+                  </div>
+                )}
               </div>
             );
           })}
@@ -312,6 +362,31 @@ export default function FloorMapPage() {
               </div>
             </div>
           </div>
+
+          {/* Table Clearing / Reset Action */}
+          {selectedTable.state !== 'VACANT' && (
+            <div style={{ padding: 14, background: selectedTable.state === 'NEEDS_CLEARING' ? '#fef3c7' : '#f8fafc', border: `1.5px solid ${selectedTable.state === 'NEEDS_CLEARING' ? '#fde047' : 'var(--line)'}`, borderRadius: 12, marginBottom: 16 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+                <div>
+                  <strong style={{ color: selectedTable.state === 'NEEDS_CLEARING' ? '#854d0e' : 'var(--ink)', display: 'block', fontSize: 13 }}>
+                    {selectedTable.state === 'NEEDS_CLEARING' ? '🧹 Table Awaiting Cleaning & Cutlery' : 'Reset Table for Next Guests'}
+                  </strong>
+                  <span style={{ fontSize: 11, color: selectedTable.state === 'NEEDS_CLEARING' ? '#a16207' : 'var(--muted)', display: 'block', marginTop: 2 }}>
+                    Marks table Vacant, revokes guest phone sessions, and clears table cart.
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  className="btn small"
+                  style={{ background: '#b45309', borderColor: '#92400e', color: 'white', fontWeight: 750, whiteSpace: 'nowrap' }}
+                  disabled={vacateTable.isPending}
+                  onClick={() => vacateTable.mutate(selectedTable.id)}
+                >
+                  {vacateTable.isPending ? 'Clearing…' : '🧹 Clear & Mark Vacant'}
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Pending Assistance Request Action */}
           {selectedTable.pendingRequest && (

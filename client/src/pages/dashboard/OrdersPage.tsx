@@ -122,6 +122,19 @@ export default function OrdersPage({ kitchen = false }: { kitchen?: boolean }) {
     onError: (cause: Error) => setError(cause instanceof ApiError ? cause.message : 'The order status could not be changed.')
   });
 
+  const vacateTableMutation = useMutation({
+    mutationFn: (tableId: string) => api.post(`/tables/${encodeURIComponent(tableId)}/vacate`, {}),
+    onSuccess: () => {
+      setNotice('Table marked as clean and vacant. Guest session ended.');
+      void queryClient.invalidateQueries({ queryKey: ['staff-orders'] });
+      void queryClient.invalidateQueries({ queryKey: ['floor-map'] });
+      window.setTimeout(() => setNotice(''), 4000);
+    },
+    onError: (cause: Error) => {
+      setError(cause instanceof ApiError ? cause.message : 'Could not clear table.');
+    }
+  });
+
   const settleMutation = useMutation({
     mutationFn: ({
       orderId,
@@ -401,6 +414,18 @@ export default function OrdersPage({ kitchen = false }: { kitchen?: boolean }) {
                       title="Settle bill & record tender (Cash/UPI/Card)"
                     >
                       💳 Settle
+                    </button>
+                  )}
+                  {order.paymentStatus === 'PAID' && (
+                    <button
+                      type="button"
+                      className="btn small"
+                      style={{ background: '#b45309', borderColor: '#b45309', color: 'white' }}
+                      onClick={() => { if (order.table.id) vacateTableMutation.mutate(order.table.id); }}
+                      disabled={vacateTableMutation.isPending}
+                      title="Clear table and end customer session for new guests"
+                    >
+                      🧹 Clear Table
                     </button>
                   )}
                   {action && (

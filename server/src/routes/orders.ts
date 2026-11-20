@@ -52,7 +52,7 @@ function serializeOrder(order: OrderDoc, tableLabel: string) {
   return {
     id: String(order._id),
     orderNumber: order.orderNumber,
-    table: { label: tableLabel },
+    table: { id: String(order.tableId), label: tableLabel },
     items: order.items.map((item) => ({
       menuItemId: String(item.menuItemId),
       name: item.name,
@@ -270,6 +270,12 @@ restaurantOrders.patch('/:id/settle', async (req, res) => {
 
   if (!updated) throw new AppError(409, 'ORDER_CHANGED', 'This order could not be updated.');
 
+  // Automatically mark the dining table as needing clearing upon settlement
+  await DiningTable.updateOne(
+    { _id: updated.tableId, restaurantId: updated.restaurantId },
+    { $set: { needsClearing: true } }
+  );
+
   const [table, customerSession] = await Promise.all([
     DiningTable.findOne({ _id: updated.tableId, restaurantId: updated.restaurantId }).select('label'),
     CustomerSession.findById(updated.customerSessionId).select('_id')
@@ -277,6 +283,11 @@ restaurantOrders.patch('/:id/settle', async (req, res) => {
   const response = serializeOrder(updated, table?.label ?? 'Table');
 
   orderSocket?.to(`restaurant:${req.staff!.restaurantId}`).emit('order:settled', response);
+  orderSocket?.to(`restaurant:${req.staff!.restaurantId}`).emit('table:clearing_needed', {
+    tableId: String(updated.tableId),
+    tableLabel: table?.label ?? 'Table',
+    needsClearing: true
+  });
   orderSocket?.to(`restaurant:${req.staff!.restaurantId}`).emit('order:status', {
     id: response.id,
     orderNumber: response.orderNumber,

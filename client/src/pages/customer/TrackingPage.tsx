@@ -24,6 +24,7 @@ export default function TrackingPage() {
   const [assistanceOpen, setAssistanceOpen] = useState(false);
   const [restoring, setRestoring] = useState(false);
   const [restoreError, setRestoreError] = useState('');
+  const [tableVacated, setTableVacated] = useState(false);
 
   const orderQuery = useQuery({
     queryKey: ['customer-order', orderId, token],
@@ -32,7 +33,7 @@ export default function TrackingPage() {
     refetchInterval: false,
     retry: false
   });
-  useOrderSocket(true);
+  useOrderSocket(true, undefined, undefined, () => setTableVacated(true));
 
   if (!orderId) {
     return (
@@ -247,8 +248,17 @@ export default function TrackingPage() {
           </div>
         )}
 
-        {/* Only show Bill request if order was NOT rejected */}
-        {!rejected && (
+        {/* Paid & Settled confirmation or Bill request */}
+        {order.paymentStatus === 'PAID' ? (
+          <div style={{ marginTop: 16, padding: '12px 14px', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 10, textAlign: 'center' }}>
+            <span style={{ fontSize: 13, fontWeight: 700, color: '#15803d' }}>
+              ✓ Bill Paid & Settled ({order.paymentMethod})
+            </span>
+            <p className="muted" style={{ margin: '4px 0 0', fontSize: 11 }}>
+              Thank you for dining with us! Hope you enjoyed your meal.
+            </p>
+          </div>
+        ) : !rejected ? (
           <div style={{ marginTop: 16, paddingTop: 14, borderTop: '1px dashed var(--line)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span className="muted" style={{ fontSize: 13 }}>Need water, cutlery or bill?</span>
             <button
@@ -259,12 +269,26 @@ export default function TrackingPage() {
               🔔 Request Help / Bill
             </button>
           </div>
-        )}
+        ) : null}
       </section>
 
-      <Link className="btn secondary full" style={{ marginTop: 14 }} to={`/order/${encodeURIComponent(token)}/menu`}>
-        Back to the menu
-      </Link>
+      {/* Table Vacated Notification Banner */}
+      {tableVacated && (
+        <div style={{ padding: 14, background: '#f0fdf4', border: '1.5px solid #86efac', borderRadius: 12, marginTop: 14, textAlign: 'center' }}>
+          <strong style={{ color: '#15803d', display: 'block', fontSize: 14 }}>
+            👋 Table Cleared · Visit Complete
+          </strong>
+          <p style={{ margin: '4px 0 0', fontSize: 12, color: '#166534' }}>
+            This table is now cleared for the next guests. Thank you for dining with us!
+          </p>
+        </div>
+      )}
+
+      {!tableVacated && (
+        <Link className="btn secondary full" style={{ marginTop: 14 }} to={`/order/${encodeURIComponent(token)}/menu`}>
+          Back to the menu
+        </Link>
+      )}
 
       <CustomerAssistanceModal
         isOpen={assistanceOpen}
