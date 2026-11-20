@@ -6,7 +6,15 @@ import { formatTableLabel } from '../../lib/format';
 import type { TableRecord } from '../../types';
 
 interface TablesPayload { tables: TableRecord[] }
-interface QrData { qrCode: string; url: string; restaurantName: string; tableLabel: string }
+interface QrData {
+  qrCode: string;
+  url: string;
+  restaurantName: string;
+  tableLabel: string;
+  brandColor?: string;
+  logoUrl?: string;
+  welcomeTagline?: string;
+}
 
 export default function TablesPage() {
   const client = useQueryClient();
@@ -311,6 +319,79 @@ export default function TablesPage() {
     </section>
     {editing && <Modal title="Edit table" onClose={() => { setEditing(null); setError(''); }}><form className="form-grid" onSubmit={(event) => { event.preventDefault(); save.mutate(); }}><div className="field"><label htmlFor="edit-table-label">Table number or label</label><input className="input" id="edit-table-label" required maxLength={40} value={editLabel} onChange={(event) => setEditLabel(event.target.value)} /></div>{error && <div className="form-error">{error}</div>}<button className="btn full" disabled={save.isPending}>{save.isPending ? 'Saving…' : 'Save table'}</button></form></Modal>}
     {deactivating && <Modal title="Deactivate this table?" onClose={() => { setDeactivating(null); setError(''); }}><p className="muted">New orders through {deactivating.label}’s QR code will stop. Existing orders will remain available to your team.</p>{error && <div className="form-error" style={{ marginBottom: 12 }}>{error}</div>}<div className="toolbar" style={{ justifyContent: 'end' }}><button className="btn secondary" onClick={() => setDeactivating(null)}>Cancel</button><button className="btn danger" onClick={() => deactivate.mutate(deactivating)} disabled={deactivate.isPending}>{deactivate.isPending ? 'Deactivating…' : 'Deactivate table'}</button></div></Modal>}
-    {qr && <Modal title={`${formatTableLabel(qr.tableLabel)} QR code`} onClose={() => setQr(null)} width={570}><div className="qr-print-card"><strong>{qr.restaurantName}</strong><div style={{ color: 'var(--muted)', marginTop: 5 }}>{formatTableLabel(qr.tableLabel)}</div><img src={qr.qrCode} alt={`QR code for ${qr.restaurantName}, ${formatTableLabel(qr.tableLabel)}`} /><div style={{ fontSize: 13, fontWeight: 650 }}>Scan to view menu and order</div></div><div className="muted" style={{ overflowWrap: 'anywhere', fontSize: 11, textAlign: 'center' }}>{qr.url}</div><div className="toolbar" style={{ justifyContent: 'center', marginTop: 17 }}><a className="btn secondary" href={qr.qrCode} download={qrFilename}>Download PNG</a><button className="btn" onClick={() => window.print()}>Print table sign</button></div></Modal>}
+    {qr && (
+      <Modal title={`${formatTableLabel(qr.tableLabel)} QR code`} onClose={() => setQr(null)} width={570}>
+        <div
+          className="qr-print-card"
+          style={{
+            border: `2px solid ${qr.brandColor || 'var(--line)'}`,
+            borderRadius: 20,
+            padding: 24,
+            boxShadow: '0 8px 30px rgba(0,0,0,0.06)'
+          }}
+        >
+          {qr.logoUrl && (
+            <div style={{ width: 56, height: 56, margin: '0 auto 10px', borderRadius: 14, overflow: 'hidden', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', background: '#fff' }}>
+              <img src={qr.logoUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', margin: 0 }} />
+            </div>
+          )}
+          <strong style={{ fontSize: 20, display: 'block', color: qr.brandColor || 'inherit', letterSpacing: '-0.02em' }}>
+            {qr.restaurantName}
+          </strong>
+          {qr.welcomeTagline && (
+            <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--muted)' }}>
+              {qr.welcomeTagline}
+            </p>
+          )}
+
+          <div
+            style={{
+              display: 'inline-block',
+              margin: '12px auto 8px',
+              padding: '4px 16px',
+              borderRadius: 20,
+              background: `${qr.brandColor || '#315b43'}15`,
+              color: qr.brandColor || '#315b43',
+              fontWeight: 800,
+              fontSize: 14,
+              letterSpacing: '0.04em'
+            }}
+          >
+            {formatTableLabel(qr.tableLabel)}
+          </div>
+
+          <div style={{ position: 'relative', width: 'min(240px, 100%)', margin: '8px auto' }}>
+            <img
+              src={qr.qrCode}
+              alt={`QR code for ${qr.restaurantName}, ${formatTableLabel(qr.tableLabel)}`}
+              style={{ width: '100%', height: 'auto', display: 'block', borderRadius: 12 }}
+            />
+          </div>
+
+          <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink)', marginTop: 4 }}>
+            📱 Scan with camera to view menu & order
+          </div>
+          <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 2 }}>
+            No app download required · Direct table service
+          </div>
+        </div>
+
+        <div className="muted" style={{ overflowWrap: 'anywhere', fontSize: 11, textAlign: 'center', marginTop: 10 }}>
+          {qr.url}
+        </div>
+        <div className="toolbar" style={{ justifyContent: 'center', marginTop: 17, gap: 10 }}>
+          <a className="btn secondary" href={qr.qrCode} download={qrFilename}>
+            Download PNG ({qr.brandColor ? 'Custom Theme' : 'Standard'})
+          </a>
+          <button
+            className="btn"
+            style={{ background: qr.brandColor || undefined, borderColor: qr.brandColor || undefined }}
+            onClick={() => window.print()}
+          >
+            🖨️ Print table sign
+          </button>
+        </div>
+      </Modal>
+    )}
   </>;
 }

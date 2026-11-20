@@ -527,11 +527,27 @@ tablesRouter.post('/:id/qr', requireRoles('owner', 'staff'), async (req, res) =>
   if (!objectIdSchema.safeParse(req.params.id).success) throw new AppError(400, 'INVALID_ID', 'Invalid table identifier.');
   const table = await DiningTable.findOne(tenantFilter(req.staff!.restaurantId, { _id: req.params.id }));
   if (!table) throw new AppError(404, 'NOT_FOUND', 'Table not found.');
-  const restaurant = await Restaurant.findById(req.staff!.restaurantId).select('name');
+  const restaurant = await Restaurant.findById(req.staff!.restaurantId).select('name brandColor logoUrl welcomeTagline');
   if (!restaurant) throw new AppError(404, 'NOT_FOUND', 'Restaurant not found.');
   const url = `${env.PUBLIC_APP_URL.replace(/\/$/, '')}/order/${table.qrToken}`;
-  const dataUrl = await QRCode.toDataURL(url, { width: 640, margin: 2, errorCorrectionLevel: 'H', color: { dark: '#171714', light: '#FFFFFF' } });
-  res.json({ qrCode: dataUrl, url, restaurantName: restaurant.name, tableLabel: table.label });
+  const brandDark = restaurant.brandColor && /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(restaurant.brandColor)
+    ? restaurant.brandColor
+    : '#171714';
+  const dataUrl = await QRCode.toDataURL(url, {
+    width: 640,
+    margin: 2,
+    errorCorrectionLevel: 'H',
+    color: { dark: brandDark, light: '#FFFFFF' }
+  });
+  res.json({
+    qrCode: dataUrl,
+    url,
+    restaurantName: restaurant.name,
+    tableLabel: table.label,
+    brandColor: brandDark,
+    logoUrl: restaurant.logoUrl || '',
+    welcomeTagline: restaurant.welcomeTagline || ''
+  });
 });
 
 export const staffRouter = Router();
