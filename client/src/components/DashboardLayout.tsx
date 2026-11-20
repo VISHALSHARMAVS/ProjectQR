@@ -35,6 +35,7 @@ export default function DashboardLayout() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
+  const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const logout = useMutation({
     mutationFn: () => api.post('/auth/logout'),
     onSuccess: async () => {
@@ -64,6 +65,21 @@ export default function DashboardLayout() {
     '--green-dark': brandColor,
     '--soft-green': `${brandColor}18`
   } as CSSProperties;
+
+  const user = staff.data?.user;
+  const userName = user?.name || 'User';
+  const userRole = user?.role || 'owner';
+  const userEmail = user?.email || '';
+  const initials = userName
+    .split(' ')
+    .filter(Boolean)
+    .map(n => n[0])
+    .slice(0, 2)
+    .join('')
+    .toUpperCase() || 'U';
+
+  const roleLabel = userRole === 'owner' ? '👑 Owner' : userRole === 'kitchen' ? '🍳 Kitchen' : '🧑‍💼 Staff';
+  const roleBadgeClass = userRole === 'owner' ? 'role-owner' : userRole === 'kitchen' ? 'role-kitchen' : 'role-staff';
 
   const visibleLinks = staff.data?.user.role === 'kitchen'
     ? links.filter((item) => ['/dashboard/orders', '/dashboard/kitchen'].includes(item.to))
@@ -118,7 +134,80 @@ export default function DashboardLayout() {
               <strong style={{ fontSize: 14 }}>{name}</strong>
             </div>
           </div>
-          <span className="pill">{staff.data?.user.role ?? 'owner'}</span>
+          <div style={{ position: 'relative' }}>
+            <button
+              type="button"
+              className="profile-chip-btn"
+              onClick={() => setProfileDropdownOpen((prev) => !prev)}
+              aria-label="User profile and quick actions"
+              aria-expanded={profileDropdownOpen}
+            >
+              <div className="profile-chip-avatar">{initials}</div>
+              <div className="profile-chip-info">
+                <span className="profile-chip-name">{userName}</span>
+                <span className={`profile-role-badge ${roleBadgeClass}`}>{roleLabel}</span>
+              </div>
+              <span className="profile-chip-caret" aria-hidden="true">{profileDropdownOpen ? '▲' : '▼'}</span>
+            </button>
+
+            {profileDropdownOpen && (
+              <>
+                <div className="profile-dropdown-scrim" onClick={() => setProfileDropdownOpen(false)} />
+                <div className="profile-dropdown-menu">
+                  <div className="profile-dropdown-header">
+                    <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink)' }}>{userName}</div>
+                    {userEmail && (
+                      <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {userEmail}
+                      </div>
+                    )}
+                    <div style={{ marginTop: 6 }}>
+                      <span className={`profile-role-badge ${roleBadgeClass}`}>{roleLabel}</span>
+                    </div>
+                  </div>
+                  <div className="profile-dropdown-divider" />
+                  <div className="profile-dropdown-links">
+                    <Link
+                      to="/dashboard/settings"
+                      className="profile-dropdown-item"
+                      onClick={() => setProfileDropdownOpen(false)}
+                    >
+                      <span aria-hidden="true">⚙️</span>
+                      <span>Settings & GST</span>
+                    </Link>
+                    <Link
+                      to="/dashboard/day-close"
+                      className="profile-dropdown-item"
+                      onClick={() => setProfileDropdownOpen(false)}
+                    >
+                      <span aria-hidden="true">📋</span>
+                      <span>Day Close Z-Report</span>
+                    </Link>
+                    <Link
+                      to="/dashboard/orders"
+                      className="profile-dropdown-item"
+                      onClick={() => setProfileDropdownOpen(false)}
+                    >
+                      <span aria-hidden="true">🔔</span>
+                      <span>Live Order Board</span>
+                    </Link>
+                  </div>
+                  <div className="profile-dropdown-divider" />
+                  <button
+                    type="button"
+                    className="profile-dropdown-item signout"
+                    onClick={() => {
+                      setProfileDropdownOpen(false);
+                      logout.mutate();
+                    }}
+                  >
+                    <span aria-hidden="true">↪</span>
+                    <span>Sign out</span>
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
         </header>
 
         <main className="staff-content"><Outlet /></main>

@@ -255,6 +255,139 @@ img { max-width: 100%; }
 .mobile-drawer-link:hover { background: #f0f1e9; color: var(--ink); }
 .mobile-drawer-link.active { background: var(--soft-green); color: var(--green-dark); font-weight: 700; }
 .mobile-drawer-footer { margin-top: auto; padding-top: 14px; border-top: 1px solid var(--line); }
+
+/* User Profile Chip & Dropdown */
+.profile-chip-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 10px 4px 5px;
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+.profile-chip-btn:hover {
+  background: #fbfaf6;
+  border-color: #cbd5e1;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+}
+.profile-chip-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--green);
+  color: white;
+  font-weight: 750;
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  letter-spacing: 0.05em;
+  flex-shrink: 0;
+}
+.profile-chip-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  text-align: left;
+}
+.profile-chip-name {
+  font-size: 13px;
+  font-weight: 650;
+  color: var(--ink);
+}
+.profile-role-badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 7px;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  line-height: 1.4;
+}
+.profile-role-badge.role-owner {
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fde68a;
+}
+.profile-role-badge.role-kitchen {
+  background: #ffedd5;
+  color: #c2410c;
+  border: 1px solid #fed7aa;
+}
+.profile-role-badge.role-staff {
+  background: #e0e7ff;
+  color: #3730a3;
+  border: 1px solid #c7d2fe;
+}
+.profile-chip-caret {
+  font-size: 11px;
+  color: #94a3b8;
+  margin-left: 2px;
+}
+.profile-dropdown-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 1050;
+}
+.profile-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 240px;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.12);
+  z-index: 1060;
+  padding: 8px;
+  background: #fff;
+}
+.profile-dropdown-header {
+  padding: 8px 10px 10px;
+}
+.profile-dropdown-divider {
+  height: 1px;
+  background: var(--line);
+  margin: 4px -8px;
+}
+.profile-dropdown-links {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 4px 0;
+}
+.profile-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #334155;
+  text-decoration: none;
+  border: none;
+  background: none;
+  width: 100%;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.1s ease;
+}
+.profile-dropdown-item:hover {
+  background: #f1f5f9;
+  color: var(--ink);
+}
+.profile-dropdown-item.signout:hover {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+@media (max-width: 640px) {
+  .profile-chip-name {
+    display: none;
+  }
+}
 .modal-backdrop { position: fixed; inset: 0; z-index: 20; display: grid; place-items: center; padding: 18px; background: rgba(20, 28, 21, .42); }
 .modal { width: min(520px, 100%); max-height: min(90vh, 850px); overflow: auto; padding: 22px; }
 .modal-header { display: flex; align-items: start; justify-content: space-between; gap: 14px; margin-bottom: 17px; }
