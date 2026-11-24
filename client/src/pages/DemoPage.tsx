@@ -1068,49 +1068,104 @@ export default function DemoPage() {
             })}
           </div>
 
-          {/* Selected Table Detail Drawer */}
-          {selectedTableId && (
-            <div className="surface" style={{ marginTop: 28, padding: 20, borderRadius: 16 }}>
-              {(() => {
-                const table = state.tables.find((t) => t._id === selectedTableId);
-                const tableOrders = state.orders.filter((o) => o.table.label === table?.label);
-                return (
-                  <div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                      <h3 className="heading-6" style={{ margin: 0 }}>
-                        {table?.label} details
-                      </h3>
+          {/* Selected Table Detail Inspector Modal */}
+          {selectedTableId && (() => {
+            const table = state.tables.find((t) => t._id === selectedTableId);
+            const tableOrders = state.orders.filter((o) => o.table.label === table?.label);
+            const isOccupied = table?.status === 'OCCUPIED';
+            const isBilled = table?.status === 'BILL_REQUESTED';
+            return (
+              <Modal
+                title={`${table?.label || 'Table'} Inspector`}
+                onClose={() => setSelectedTableId(null)}
+                width={480}
+              >
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span
+                        style={{
+                          width: 10,
+                          height: 10,
+                          borderRadius: '50%',
+                          background: isBilled ? '#8b5cf6' : isOccupied ? '#ea580c' : '#22c55e'
+                        }}
+                      />
+                      <strong style={{ fontSize: 15 }}>
+                        {isBilled ? 'Bill requested' : isOccupied ? 'Occupied / Dining' : 'Available & Ready'}
+                      </strong>
+                    </div>
+                    {table?.pin && (
+                      <span
+                        className="pill font-mono-numbers"
+                        style={{
+                          background: 'rgba(245, 158, 11, 0.12)',
+                          color: '#d97706',
+                          borderColor: 'rgba(245, 158, 11, 0.3)',
+                          fontSize: 12,
+                          fontWeight: 700
+                        }}
+                      >
+                        4 Digit PIN: {table.pin}
+                      </span>
+                    )}
+                  </div>
+
+                  <div style={{ borderTop: '1px solid var(--line)', paddingTop: 14, marginBottom: 16 }}>
+                    <div className="eyebrow" style={{ marginBottom: 10, color: 'var(--ink)' }}>
+                      Active Table Tickets & Orders
+                    </div>
+                    {tableOrders.length === 0 ? (
+                      <div className="surface" style={{ padding: '16px', textAlign: 'center', color: 'var(--muted)', fontSize: 13, borderRadius: 10 }}>
+                        No orders currently placed for this table.
+                      </div>
+                    ) : (
+                      <div style={{ display: 'grid', gap: 10, maxHeight: '40vh', overflowY: 'auto' }}>
+                        {tableOrders.map((ord) => (
+                          <div key={ord.id} style={{ padding: 12, border: '1px solid var(--line)', borderRadius: 10, background: 'var(--paper-elevated)' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, fontWeight: 700 }}>
+                              <span className="font-mono-numbers">{ord.orderNumber} ({ord.status})</span>
+                              <span className="font-mono-numbers" style={{ color: 'var(--green)' }}>{money(ord.totalPaise)}</span>
+                            </div>
+                            <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 4 }}>
+                              {ord.items.map((i) => `${i.quantity}x ${i.name}`).join(', ')}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Manager Table Controls */}
+                  <div style={{ borderTop: '1px solid var(--line)', paddingTop: 14, display: 'flex', gap: 8, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+                    {table && isOccupied && (
                       <button
                         type="button"
                         className="btn secondary small"
-                        onClick={() => setSelectedTableId(null)}
+                        onClick={() => {
+                          setState((prev) => ({
+                            ...prev,
+                            tables: prev.tables.map((t) => t._id === table._id ? { ...t, status: 'AVAILABLE' as const, pin: undefined, activeOrdersCount: 0 } : t)
+                          }));
+                          showNotification(`${table.label} marked available and vacated.`);
+                          setSelectedTableId(null);
+                        }}
                       >
-                        Close
+                        Vacate & clear PIN
                       </button>
-                    </div>
-                    <p className="muted" style={{ fontSize: 13, margin: '0 0 14px' }}>
-                      Status: <strong>{table?.status}</strong> · Table PIN: <strong>{table?.pin || 'None'}</strong>
-                    </p>
-                    {tableOrders.length === 0 ? (
-                      <p className="muted" style={{ fontSize: 13 }}>No active orders for this table.</p>
-                    ) : (
-                      tableOrders.map((ord) => (
-                        <div key={ord.id} style={{ padding: 12, border: '1px solid var(--line)', borderRadius: 10, marginBottom: 8 }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, fontWeight: 600 }}>
-                            <span>Order {ord.orderNumber} ({ord.status})</span>
-                            <span className="font-mono-numbers">{money(ord.totalPaise)}</span>
-                          </div>
-                          <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 4 }}>
-                            {ord.items.map((i) => `${i.quantity}x ${i.name}`).join(', ')}
-                          </div>
-                        </div>
-                      ))
                     )}
+                    <button
+                      type="button"
+                      className="btn small"
+                      onClick={() => setSelectedTableId(null)}
+                    >
+                      Close inspector
+                    </button>
                   </div>
-                );
-              })()}
-            </div>
-          )}
+                </div>
+              </Modal>
+            );
+          })()}
         </main>
       )}
 

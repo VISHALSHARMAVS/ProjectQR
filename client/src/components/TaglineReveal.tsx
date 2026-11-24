@@ -76,17 +76,18 @@ export function TaglineReveal({
         {words.map((word, idx) => {
           const isRevealed = idx < progress;
           return (
-            <span
-              key={idx}
-              style={{
-                display: 'inline-block',
-                marginRight: '0.28em',
-                transition: 'color 400ms cubic-bezier(0.22, 1, 0.36, 1), opacity 400ms cubic-bezier(0.22, 1, 0.36, 1)',
-                color: isRevealed ? 'var(--ink)' : 'var(--muted)',
-                opacity: isRevealed ? 1 : 0.28
-              }}
-            >
-              {word}
+            <span key={idx}>
+              <span
+                style={{
+                  display: 'inline-block',
+                  transition: 'color 400ms cubic-bezier(0.22, 1, 0.36, 1), opacity 400ms cubic-bezier(0.22, 1, 0.36, 1)',
+                  color: isRevealed ? 'var(--ink)' : 'var(--muted)',
+                  opacity: isRevealed ? 1 : 0.28
+                }}
+              >
+                {word}
+              </span>
+              {idx < words.length - 1 ? ' ' : ''}
             </span>
           );
         })}

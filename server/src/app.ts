@@ -53,8 +53,9 @@ export function createApplication(sessionStore?: Store): ProjectQrApplication {
         defaultSrc: ["'self'"],
         imgSrc: ["'self'", 'data:', 'https:'],
         connectSrc: ["'self'", 'ws:', 'wss:'],
-        styleSrc: ["'self'", "'unsafe-inline'"],
-        scriptSrc: ["'self'"],
+        styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+        fontSrc: ["'self'", 'https://fonts.gstatic.com', 'data:'],
+        scriptSrc: ["'self'", "'unsafe-inline'"],
         objectSrc: ["'none'"],
         frameAncestors: ["'self'"]
       }
