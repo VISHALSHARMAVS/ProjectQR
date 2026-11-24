@@ -12,8 +12,55 @@ export function DietaryBadge({ type = 'VEG' }: { type?: DietaryType }) {
   return <span className="dietary-badge veg" title="Pure Vegetarian" aria-label="Pure Vegetarian"><span className="dietary-symbol" /></span>;
 }
 
+export function ScanPlateIcon({ size = 20, light = false }: { size?: number; light?: boolean }) {
+  const strokeColor = light ? '#ffffff' : 'currentColor';
+  const accentColor = '#ea580c';
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 256 256"
+      fill="none"
+      aria-hidden="true"
+      style={{ display: 'inline-block', verticalAlign: 'middle', flexShrink: 0 }}
+    >
+      <g stroke={strokeColor} strokeWidth="18" strokeLinecap="round" strokeLinejoin="round">
+        <polyline points="28,78 28,28 78,28" />
+        <polyline points="178,28 228,28 228,78" />
+        <polyline points="28,178 28,228 78,228" />
+        <polyline points="178,228 228,228 228,178" />
+      </g>
+      <line x1="64" y1="156" x2="192" y2="156" stroke={strokeColor} strokeWidth="16" strokeLinecap="round" />
+      <path
+        d="M 74,156 C 74,98 100,78 128,78 C 156,78 182,98 182,156"
+        stroke={strokeColor}
+        strokeWidth="16"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <circle cx="128" cy="66" r="11" fill={accentColor} />
+    </svg>
+  );
+}
+
 export function Brand({ light = false }: { light?: boolean }) {
-  return <span className="brand"><span className="brand-mark" style={light ? { color: 'var(--green)', background: 'white' } : undefined}>QR</span><span className="brand-name">ProjectQR</span></span>;
+  return (
+    <span className="brand">
+      <span
+        className="brand-mark"
+        style={
+          light
+            ? { color: 'white', background: 'rgba(255, 255, 255, 0.15)', border: '1px solid rgba(255, 255, 255, 0.25)' }
+            : { color: 'var(--green)', background: 'var(--soft-green)', border: '1px solid var(--line)' }
+        }
+      >
+        <ScanPlateIcon size={20} light={light} />
+      </span>
+      <span className="brand-name" style={light ? { color: 'white' } : undefined}>
+        Project<span style={{ color: light ? '#a7f3d0' : 'var(--green)' }}>QR</span>
+      </span>
+    </span>
+  );
 }
 
 export function StatusPill({ status }: { status: OrderStatus }) {
