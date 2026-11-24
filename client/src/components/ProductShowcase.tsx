@@ -79,7 +79,7 @@ export function ProductShowcase() {
                 <div>
                   <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>The Olive Tree Bistro</h3>
                   <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 2 }}>
-                    Table 4 · PIN: <strong>7712</strong> · UPI Auto-confirm
+                    Table 4 · PIN: <strong>7712</strong> · UPI auto confirm
                   </div>
                 </div>
               </div>
@@ -90,7 +90,7 @@ export function ProductShowcase() {
 
             {/* Category Chips */}
             <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 12 }}>
-              <span className="category-chip active">Wood-fired mains</span>
+              <span className="category-chip active">Wood fired mains</span>
               <span className="category-chip">Small plates</span>
               <span className="category-chip">Artisanal brews</span>
             </div>
@@ -139,7 +139,7 @@ export function ProductShowcase() {
                 <h4 className="swiggy-dish-title">Smoked Chicken & Rosemary Flatbread</h4>
                 <div className="swiggy-dish-price">₹580.00</div>
                 <p className="swiggy-dish-desc">
-                  Slow-smoked pulled chicken breast, caramelized balsamic shallots and pecorino cheese.
+                  Slow smoked pulled chicken breast, caramelized balsamic shallots and pecorino cheese.
                 </p>
               </div>
               <div className="swiggy-media-col">
@@ -203,7 +203,7 @@ export function ProductShowcase() {
               {/* Ticket 1 */}
               <div style={{ padding: 16, borderRadius: 12, border: '2px solid var(--orange)', background: 'var(--paper)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                  <strong style={{ fontSize: 15 }}>TK-104 · Table 4</strong>
+                  <strong style={{ fontSize: 15 }}>Ticket 104 · Table 4</strong>
                   <span className="pill orange" style={{ fontSize: 10 }}>COOKING</span>
                 </div>
                 <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 8 }}>
@@ -223,7 +223,7 @@ export function ProductShowcase() {
               {/* Ticket 2 */}
               <div style={{ padding: 16, borderRadius: 12, border: '2px solid var(--green)', background: 'var(--paper)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                  <strong style={{ fontSize: 15 }}>TK-101 · Table 1</strong>
+                  <strong style={{ fontSize: 15 }}>Ticket 101 · Table 1</strong>
                   <span className="pill green" style={{ fontSize: 10 }}>READY</span>
                 </div>
                 <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 8 }}>
@@ -241,7 +241,7 @@ export function ProductShowcase() {
               {/* Ticket 3 */}
               <div style={{ padding: 16, borderRadius: 12, border: '1.5px solid var(--line)', background: 'var(--paper)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                  <strong style={{ fontSize: 15 }}>TK-102 · Table 2</strong>
+                  <strong style={{ fontSize: 15 }}>Ticket 102 · Table 2</strong>
                   <span className="pill" style={{ fontSize: 10 }}>ACCEPTED</span>
                 </div>
                 <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 8 }}>
@@ -307,7 +307,7 @@ export function ProductShowcase() {
             <div style={{ borderTop: '1px solid var(--line)', paddingTop: 16 }}>
               <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 10 }}>Dining room table states</div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(95px, 1fr))', gap: 10 }}>
-                {['T-1 (Ready)', 'T-2 (Occupied)', 'T-3 (Available)', 'T-4 (Cooking)', 'T-5 (Available)', 'T-6 (Available)', 'T-7 (Billed)', 'T-8 (Available)'].map((t, idx) => {
+                {['Table 1 (Ready)', 'Table 2 (Occupied)', 'Table 3 (Available)', 'Table 4 (Cooking)', 'Table 5 (Available)', 'Table 6 (Available)', 'Table 7 (Billed)', 'Table 8 (Available)'].map((t, idx) => {
                   const isAvailable = t.includes('Available');
                   const isReady = t.includes('Ready');
                   return (
