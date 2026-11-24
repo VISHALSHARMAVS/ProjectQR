@@ -93,45 +93,53 @@ button { cursor: pointer; }
 button:disabled { cursor: not-allowed; opacity: .55; }
 img { max-width: 100%; }
 
-/* Typography Rules (B1) - No orphaned words */
+/* Typography Rules (B1) - No orphaned words & balanced headings */
 h1, h2, h3, h4, h5, h6, .heading-1, .heading-2, .heading-3, .heading-4, .heading-5, .heading-6 {
   text-wrap: balance;
+  font-family: 'Manrope', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 p, body, .body-1, .body-2, .body-3, .body-4, .body-5, .body-6 {
   text-wrap: pretty;
 }
 
-/* Named Text Styles (B1) */
-.heading-1 { font-size: 60px; line-height: 60px; font-weight: 600; letter-spacing: -0.04em; }
-.heading-2 { font-size: 48px; line-height: 48px; font-weight: 600; letter-spacing: -0.03em; }
-.heading-3 { font-size: 36px; line-height: 40px; font-weight: 600; letter-spacing: -0.025em; }
-.heading-4 { font-size: 30px; line-height: 36px; font-weight: 600; letter-spacing: -0.02em; }
-.heading-5 { font-size: 24px; line-height: 32px; font-weight: 600; letter-spacing: -0.015em; }
-.heading-6 { font-size: 20px; line-height: 28px; font-weight: 600; letter-spacing: -0.01em; }
-.title-1 { font-size: 20px; line-height: 28px; font-weight: 500; }
-.title-2 { font-size: 18px; line-height: 28px; font-weight: 500; }
-.title-3 { font-size: 16px; line-height: 24px; font-weight: 500; }
-.title-4 { font-size: 14px; line-height: 20px; font-weight: 500; }
-.title-5 { font-size: 12px; line-height: 16px; font-weight: 500; }
-.body-1 { font-size: 16px; line-height: 24px; font-weight: 600; }
-.body-2 { font-size: 16px; line-height: 24px; font-weight: 500; }
-.body-3 { font-size: 16px; line-height: 24px; font-weight: 400; }
-.body-4 { font-size: 14px; line-height: 20px; font-weight: 600; }
-.body-5 { font-size: 14px; line-height: 20px; font-weight: 500; }
-.body-6 { font-size: 14px; line-height: 20px; font-weight: 400; }
-.button-lg { font-size: 18px; line-height: 28px; font-weight: 600; }
-.button-md { font-size: 16px; line-height: 24px; font-weight: 600; }
-.button-sm { font-size: 14px; line-height: 20px; font-weight: 600; }
+/* Named Text Styles (Mesa Design System & Modern Typography Scale) */
+.heading-1 { font-size: clamp(34px, 5.5vw, 56px); line-height: 1.1; font-weight: 800; letter-spacing: -0.035em; }
+.heading-2 { font-size: clamp(28px, 4vw, 42px); line-height: 1.15; font-weight: 700; letter-spacing: -0.03em; }
+.heading-3 { font-size: clamp(22px, 3vw, 32px); line-height: 1.25; font-weight: 700; letter-spacing: -0.025em; }
+.heading-4 { font-size: clamp(18px, 2.2vw, 24px); line-height: 1.3; font-weight: 600; letter-spacing: -0.02em; }
+.heading-5 { font-size: 18px; line-height: 1.35; font-weight: 600; letter-spacing: -0.015em; }
+.heading-6 { font-size: 15px; line-height: 1.4; font-weight: 600; letter-spacing: -0.01em; }
+.title-1 { font-size: 20px; line-height: 1.4; font-weight: 600; letter-spacing: -0.02em; }
+.title-2 { font-size: 18px; line-height: 1.4; font-weight: 600; letter-spacing: -0.015em; }
+.title-3 { font-size: 16px; line-height: 1.45; font-weight: 600; }
+.title-4 { font-size: 14px; line-height: 1.45; font-weight: 600; }
+.title-5 { font-size: 12px; line-height: 1.4; font-weight: 600; }
+.body-1 { font-size: 16px; line-height: 1.5; font-weight: 600; }
+.body-2 { font-size: 15px; line-height: 1.55; font-weight: 500; }
+.body-3 { font-size: 15px; line-height: 1.6; font-weight: 400; }
+.body-4 { font-size: 14px; line-height: 1.5; font-weight: 600; }
+.body-5 { font-size: 14px; line-height: 1.5; font-weight: 500; }
+.body-6 { font-size: 14px; line-height: 1.55; font-weight: 400; }
+.button-lg { font-size: 17px; line-height: 24px; font-weight: 700; letter-spacing: -0.01em; }
+.button-md { font-size: 15px; line-height: 22px; font-weight: 600; letter-spacing: -0.01em; }
+.button-sm { font-size: 13px; line-height: 18px; font-weight: 600; }
 .button-xsm { font-size: 12px; line-height: 16px; font-weight: 600; }
-.caption-1 { font-size: 14px; line-height: 20px; font-weight: 500; }
-.caption-2 { font-size: 14px; line-height: 20px; font-weight: 400; }
-.caption-3 { font-size: 12px; line-height: 16px; font-weight: 600; }
-.caption-4 { font-size: 12px; line-height: 16px; font-weight: 500; }
-.caption-5 { font-size: 12px; line-height: 16px; font-weight: 400; }
+.caption-1 { font-size: 13px; line-height: 1.45; font-weight: 500; }
+.caption-2 { font-size: 13px; line-height: 1.45; font-weight: 400; }
+.caption-3 { font-size: 11px; line-height: 1.4; font-weight: 600; letter-spacing: 0.02em; }
+.caption-4 { font-size: 11px; line-height: 1.4; font-weight: 500; }
+.caption-5 { font-size: 11px; line-height: 1.4; font-weight: 400; }
 
 .font-mono-numbers {
   font-family: 'Geist Mono', monospace;
   font-variant-numeric: tabular-nums;
+}
+
+.metric-number {
+  font-family: 'Geist Mono', monospace;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  letter-spacing: -0.03em;
 }
 
 /* Accessible Focus States (B9) */
@@ -155,7 +163,7 @@ p, body, .body-1, .body-2, .body-3, .body-4, .body-5, .body-6 {
 .topbar { height: 72px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--line); }
 .brand { display: inline-flex; align-items: center; gap: 10px; font-weight: 700; letter-spacing: -.03em; }
 .brand-mark { display: grid; width: 34px; height: 34px; place-items: center; border-radius: 10px; color: white; background: var(--green); font-size: 14px; font-weight: 700; }
-.eyebrow { color: var(--muted); font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; }
+.eyebrow { color: var(--muted); font-size: 11.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
 .muted { color: var(--muted); }
 .surface { border: 1px solid var(--line); border-radius: 16px; background: var(--paper); box-shadow: var(--shadow); }
 
@@ -459,6 +467,11 @@ p, body, .body-1, .body-2, .body-3, .body-4, .body-5, .body-6 {
   pointer-events: none;
 }
 
+[data-theme="dark"] .pill {
+  color: #86efac;
+  background: rgba(22, 163, 74, 0.16);
+  border-color: rgba(34, 197, 94, 0.32);
+}
 [data-theme="dark"] .pill.orange { color: #fdba74; background: #271406; border-color: #431407; }
 [data-theme="dark"] .pill.red { color: #fca5a5; background: #2b0e0e; border-color: #450a0a; }
 [data-theme="dark"] .form-error { color: #fca5a5; background: #2b0e0e; border-color: #7f1d1d; }
@@ -595,24 +608,26 @@ p, body, .body-1, .body-2, .body-3, .body-4, .body-5, .body-6 {
   padding-right: 4px;
 }
 .swiggy-dish-title {
-  font-size: 16px;
-  line-height: 22px;
-  font-weight: 600;
+  font-size: 15.5px;
+  line-height: 1.35;
+  font-weight: 700;
+  letter-spacing: -0.015em;
   color: var(--ink);
   margin: 0;
   text-wrap: balance;
 }
 .swiggy-dish-price {
   font-family: 'Geist Mono', monospace;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 14.5px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
   color: var(--ink);
   font-variant-numeric: tabular-nums;
   margin-top: 4px;
 }
 .swiggy-dish-desc {
-  font-size: 13px;
-  line-height: 18px;
+  font-size: 12.5px;
+  line-height: 1.5;
   color: var(--muted);
   margin: 4px 0 0;
   text-wrap: pretty;
@@ -1400,8 +1415,8 @@ p, body, .body-1, .body-2, .body-3, .body-4, .body-5, .body-6 {
 }
 
 .site-footer-heading {
-  font-size: 12px;
-  font-weight: 700;
+  font-size: 12.5px;
+  font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--ink);
@@ -1419,6 +1434,7 @@ p, body, .body-1, .body-2, .body-3, .body-4, .body-5, .body-6 {
 
 .site-footer-link {
   font-size: 13.5px;
+  font-weight: 500;
   color: var(--muted);
   text-decoration: none;
   transition: color 150ms ease, transform 150ms ease;

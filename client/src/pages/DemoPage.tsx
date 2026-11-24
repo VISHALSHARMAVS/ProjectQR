@@ -788,8 +788,10 @@ export default function DemoPage() {
                       {/* Ticket Header */}
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
                         <div>
-                          <strong style={{ fontSize: 16, color: 'var(--ink)' }}>{order.orderNumber}</strong>
-                          <span style={{ fontSize: 12, color: 'var(--muted)', display: 'block' }}>
+                          <strong className="font-mono-numbers" style={{ fontSize: 18, fontWeight: 800, color: 'var(--ink)', letterSpacing: '-0.02em', display: 'block' }}>
+                            {order.orderNumber}
+                          </strong>
+                          <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--muted)', display: 'block', marginTop: 2 }}>
                             {formatTableLabel(order.table.label)}{order.customer?.name ? ` · ${order.customer.name}` : ''}
                           </span>
                         </div>
@@ -806,7 +808,10 @@ export default function DemoPage() {
                         {order.items.map((line, idx) => (
                           <div key={idx} style={{ marginBottom: 6 }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14 }}>
-                              <strong>{line.quantity}x {line.name}</strong>
+                              <strong style={{ fontWeight: 700 }}>
+                                <span className="font-mono-numbers" style={{ color: 'var(--green)', marginRight: 5 }}>{line.quantity}x</span>
+                                {line.name}
+                              </strong>
                             </div>
                             {line.selectedVariant && (
                               <div style={{ fontSize: 12, color: 'var(--muted)' }}>

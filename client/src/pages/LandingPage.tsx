@@ -96,9 +96,6 @@ export default function LandingPage() {
               <span
                 className="pill"
                 style={{
-                  background: 'var(--soft-green)',
-                  color: 'var(--green-dark)',
-                  border: '1px solid var(--line)',
                   padding: '6px 14px',
                   fontSize: 12,
                   fontWeight: 600,
