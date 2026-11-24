@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, ApiError } from '../../lib/api';
 import { elapsedSince, formatTableLabel, money } from '../../lib/format';
@@ -211,6 +212,16 @@ export default function OrdersPage({ kitchen = false }: { kitchen?: boolean }) {
           >
             ➕ Punch New Order
           </button>
+        )}
+        {!kitchen && (
+          <Link
+            to="/dashboard/reviews"
+            className="btn secondary small"
+            style={{ color: '#b45309', borderColor: '#fde68a' }}
+            title="View customer dining feedback & complaints"
+          >
+            ⭐ Reviews & Alerts
+          </Link>
         )}
         <button
           type="button"

@@ -103,6 +103,11 @@ export default function OverviewPage() {
           <strong style={{ fontSize: 14, display: 'block' }}>Floor Map</strong>
           <span className="muted" style={{ fontSize: 12 }}>Real-time table states</span>
         </Link>
+        <Link to="/dashboard/reviews" className="surface" style={{ padding: '16px 14px', borderRadius: 14, textDecoration: 'none', color: 'inherit', border: '1px solid #e2e8f0', background: '#ffffff', display: 'block', transition: 'all 0.15s' }}>
+          <div style={{ fontSize: 22, marginBottom: 8, color: '#f59e0b' }}>⭐</div>
+          <strong style={{ fontSize: 14, display: 'block' }}>Reviews & Alerts</strong>
+          <span className="muted" style={{ fontSize: 12 }}>Table recovery & Google rating</span>
+        </Link>
         <Link to="/dashboard/menu" className="surface" style={{ padding: '16px 14px', borderRadius: 14, textDecoration: 'none', color: 'inherit', border: '1px solid #e2e8f0', background: '#ffffff', display: 'block', transition: 'all 0.15s' }}>
           <div style={{ fontSize: 22, marginBottom: 8, color: '#0284c7' }}>🍽️</div>
           <strong style={{ fontSize: 14, display: 'block' }}>Menu Items</strong>

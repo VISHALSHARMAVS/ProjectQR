@@ -1,5 +1,5 @@
 import { useState, type CSSProperties, type ReactNode } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, Navigate, NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useStaff } from '../hooks/useStaff';
 import { api } from '../lib/api';
@@ -91,7 +91,8 @@ const navSections = [
     items: [
       { to: '/dashboard/orders', label: 'Live Orders', icon: <OrdersIcon /> },
       { to: '/dashboard/kitchen', label: 'Kitchen KDS', icon: <KitchenIcon /> },
-      { to: '/dashboard/floor-map', label: 'Floor Map', icon: <FloorMapIcon /> }
+      { to: '/dashboard/floor-map', label: 'Floor Map', icon: <FloorMapIcon /> },
+      { to: '/dashboard/reviews', label: 'Reviews & Alerts', icon: <ReviewsIcon /> }
     ]
   },
   {
@@ -106,7 +107,6 @@ const navSections = [
     title: 'Reports & Admin',
     items: [
       { to: '/dashboard/overview', label: 'Overview', icon: <OverviewIcon /> },
-      { to: '/dashboard/reviews', label: 'Reviews & Feedback', icon: <ReviewsIcon /> },
       { to: '/dashboard/day-close', label: 'Day Close / Register', icon: <DayCloseIcon /> },
       { to: '/dashboard/settings', label: 'Settings', icon: <SettingsIcon /> }
     ]
@@ -134,6 +134,15 @@ export default function DashboardLayout() {
   const navigate = useNavigate();
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
+
+  const reviewsCountQuery = useQuery({
+    queryKey: ['restaurant-reviews-count'],
+    queryFn: () => api.get<{ summary: { unresolvedComplaints: number } }>('/restaurant/reviews'),
+    refetchInterval: 15_000,
+    enabled: staff.data?.user.role !== 'kitchen'
+  });
+  const unresolvedAlertCount = reviewsCountQuery.data?.summary?.unresolvedComplaints ?? 0;
+
   const logout = useMutation({
     mutationFn: () => api.post('/auth/logout'),
     onSuccess: async () => {
@@ -149,9 +158,28 @@ export default function DashboardLayout() {
       title={item.label}
       aria-label={item.label}
       className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+      style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
     >
-      <span className="nav-icon" aria-hidden="true">{item.icon}</span>
-      <span className="nav-label">{item.label}</span>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+        <span className="nav-icon" aria-hidden="true">{item.icon}</span>
+        <span className="nav-label">{item.label}</span>
+      </div>
+      {item.to === '/dashboard/reviews' && unresolvedAlertCount > 0 && (
+        <span
+          className="pill red"
+          style={{
+            fontSize: 10,
+            padding: '1px 6px',
+            fontWeight: 800,
+            background: '#ef4444',
+            color: '#ffffff',
+            borderRadius: 10
+          }}
+          title={`${unresolvedAlertCount} unresolved guest incidents`}
+        >
+          {unresolvedAlertCount}
+        </span>
+      )}
     </NavLink>
   );
 
@@ -279,6 +307,19 @@ export default function DashboardLayout() {
                   </div>
                   <div className="profile-dropdown-divider" />
                   <div className="profile-dropdown-links">
+                    <Link
+                      to="/dashboard/reviews"
+                      className="profile-dropdown-item"
+                      onClick={() => setProfileDropdownOpen(false)}
+                    >
+                      <span aria-hidden="true">⭐</span>
+                      <span>Reviews & Table Alerts</span>
+                      {unresolvedAlertCount > 0 && (
+                        <span style={{ marginLeft: 'auto', background: '#ef4444', color: '#fff', fontSize: 10, padding: '2px 6px', borderRadius: 10, fontWeight: 700 }}>
+                          {unresolvedAlertCount}
+                        </span>
+                      )}
+                    </Link>
                     <Link
                       to="/dashboard/settings"
                       className="profile-dropdown-item"
