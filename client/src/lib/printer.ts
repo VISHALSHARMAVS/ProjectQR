@@ -48,7 +48,7 @@ export function printOrderReceipt(
           </div>
         ` : ''}
         ${item.notes ? `
-          <div style="font-size: 11px; font-style: italic; color: #111; margin-left: 12px;">
+          <div style="font-size: 11px; color: #111; margin-left: 12px;">
             *Note: ${item.notes}*
           </div>
         ` : ''}

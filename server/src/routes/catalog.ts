@@ -3,7 +3,7 @@ import multer from 'multer';
 import { z } from 'zod';
 import { Category } from '../models/Category.js';
 import { MenuItem } from '../models/MenuItem.js';
-import { requireRoles, requireStaff } from '../middleware/auth.js';
+import { requirePermission, requireRoles, requireStaff } from '../middleware/auth.js';
 import { getOrderSocket } from './orders.js';
 import { saveMenuImage } from '../services/imageStorage.js';
 import { AppError } from '../utils/errors.js';
@@ -14,18 +14,18 @@ export const categoryRouter = Router();
 const categoryInput = z.object({ name: z.string().trim().min(1).max(80), description: z.string().trim().max(300).default(''), displayOrder: z.number().int().min(0).max(10000).default(0), active: z.boolean().default(true) });
 const categoryPatch = categoryInput.partial();
 
-categoryRouter.use(requireStaff, requireRoles('owner', 'staff'));
+categoryRouter.use(requireStaff, requireRoles('owner', 'manager', 'staff', 'cashier', 'waiter'));
 categoryRouter.get('/', async (req, res) => {
   const categories = await Category.find(tenantFilter(req.staff!.restaurantId)).sort({ displayOrder: 1, name: 1 }).lean();
   res.json({ categories });
 });
-categoryRouter.post('/', async (req, res) => {
+categoryRouter.post('/', requirePermission('canEditMenu'), async (req, res) => {
   const parsed = categoryInput.safeParse(req.body);
   if (!parsed.success) throw new AppError(400, 'INVALID_INPUT', parsed.error.issues[0]?.message ?? 'Invalid category.');
   const category = await Category.create({ ...parsed.data, restaurantId: req.staff!.restaurantId });
   res.status(201).json({ category });
 });
-categoryRouter.patch('/:id', async (req, res) => {
+categoryRouter.patch('/:id', requirePermission('canEditMenu'), async (req, res) => {
   if (!objectIdSchema.safeParse(req.params.id).success) throw new AppError(400, 'INVALID_ID', 'Invalid category identifier.');
   const parsed = categoryPatch.safeParse(req.body);
   if (!parsed.success || Object.keys(parsed.data ?? {}).length === 0) throw new AppError(400, 'INVALID_INPUT', 'Provide at least one valid category field.');
@@ -33,7 +33,7 @@ categoryRouter.patch('/:id', async (req, res) => {
   if (!category) throw new AppError(404, 'NOT_FOUND', 'Category not found.');
   res.json({ category });
 });
-categoryRouter.delete('/:id', async (req, res) => {
+categoryRouter.delete('/:id', requirePermission('canEditMenu'), async (req, res) => {
   if (!objectIdSchema.safeParse(req.params.id).success) throw new AppError(400, 'INVALID_ID', 'Invalid category identifier.');
   const category = await Category.findOne(tenantFilter(req.staff!.restaurantId, { _id: req.params.id }));
   if (!category) throw new AppError(404, 'NOT_FOUND', 'Category not found.');
@@ -70,11 +70,11 @@ const menuPatch = menuInput.partial();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024, files: 1 } });
 
 menuRouter.use(requireStaff);
-menuRouter.get('/', requireRoles('owner', 'staff', 'kitchen'), async (req, res) => {
+menuRouter.get('/', async (req, res) => {
   const items = await MenuItem.find(tenantFilter(req.staff!.restaurantId)).sort({ displayOrder: 1, name: 1 }).lean();
   res.json({ items });
 });
-menuRouter.patch('/:id/availability', requireRoles('owner', 'staff', 'kitchen'), async (req, res) => {
+menuRouter.patch('/:id/availability', requirePermission('canManageStock'), async (req, res) => {
   if (!objectIdSchema.safeParse(req.params.id).success) throw new AppError(400, 'INVALID_ID', 'Invalid menu item identifier.');
   const parsed = z.object({ available: z.boolean() }).safeParse(req.body);
   if (!parsed.success) throw new AppError(400, 'INVALID_INPUT', 'Must provide boolean available state.');
@@ -91,7 +91,7 @@ menuRouter.patch('/:id/availability', requireRoles('owner', 'staff', 'kitchen'),
   });
   res.json({ item });
 });
-menuRouter.post('/', requireRoles('owner', 'staff'), async (req, res) => {
+menuRouter.post('/', requirePermission('canEditMenu'), async (req, res) => {
   const parsed = menuInput.safeParse(req.body);
   if (!parsed.success) throw new AppError(400, 'INVALID_INPUT', parsed.error.issues[0]?.message ?? 'Invalid menu item.');
   const category = await Category.findOne(tenantFilter(req.staff!.restaurantId, { _id: parsed.data.categoryId }));
@@ -99,7 +99,7 @@ menuRouter.post('/', requireRoles('owner', 'staff'), async (req, res) => {
   const item = await MenuItem.create({ ...parsed.data, restaurantId: req.staff!.restaurantId });
   res.status(201).json({ item });
 });
-menuRouter.patch('/:id', requireRoles('owner', 'staff'), async (req, res) => {
+menuRouter.patch('/:id', requirePermission('canEditMenu'), async (req, res) => {
   if (!objectIdSchema.safeParse(req.params.id).success) throw new AppError(400, 'INVALID_ID', 'Invalid menu item identifier.');
   const parsed = menuPatch.safeParse(req.body);
   if (!parsed.success || Object.keys(parsed.data ?? {}).length === 0) throw new AppError(400, 'INVALID_INPUT', 'Provide at least one valid menu item field.');
@@ -111,13 +111,13 @@ menuRouter.patch('/:id', requireRoles('owner', 'staff'), async (req, res) => {
   if (!item) throw new AppError(404, 'NOT_FOUND', 'Menu item not found.');
   res.json({ item });
 });
-menuRouter.delete('/:id', requireRoles('owner', 'staff'), async (req, res) => {
+menuRouter.delete('/:id', requirePermission('canEditMenu'), async (req, res) => {
   if (!objectIdSchema.safeParse(req.params.id).success) throw new AppError(400, 'INVALID_ID', 'Invalid menu item identifier.');
   const item = await MenuItem.findOneAndDelete(tenantFilter(req.staff!.restaurantId, { _id: req.params.id }));
   if (!item) throw new AppError(404, 'NOT_FOUND', 'Menu item not found.');
   res.status(204).end();
 });
-menuRouter.post('/:id/image', requireRoles('owner', 'staff'), upload.single('image'), async (req, res) => {
+menuRouter.post('/:id/image', requirePermission('canEditMenu'), upload.single('image'), async (req, res) => {
   if (!objectIdSchema.safeParse(req.params.id).success) throw new AppError(400, 'INVALID_ID', 'Invalid menu item identifier.');
   if (!req.file) throw new AppError(400, 'IMAGE_REQUIRED', 'Choose an image file to upload.');
   const item = await MenuItem.findOne(tenantFilter(req.staff!.restaurantId, { _id: req.params.id }));

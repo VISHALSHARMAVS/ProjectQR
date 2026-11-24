@@ -2,24 +2,48 @@ import type { NextFunction, Request, Response } from 'express';
 import { CustomerSession } from '../models/CustomerSession.js';
 import { DiningTable } from '../models/DiningTable.js';
 import { Restaurant } from '../models/Restaurant.js';
-import { User } from '../models/User.js';
+import { getDefaultPermissions, User, type UserPermissions, type UserRole } from '../models/User.js';
 import { AppError } from '../utils/errors.js';
 
 export async function requireStaff(req: Request, _res: Response, next: NextFunction): Promise<void> {
   if (!req.session.userId) return next(new AppError(401, 'AUTH_REQUIRED', 'Please sign in to continue.'));
-  const user = await User.findById(req.session.userId).select('_id restaurantId name email role active');
+  const user = await User.findById(req.session.userId).select('_id restaurantId name email role permissions active');
   const restaurantActive = user ? await Restaurant.exists({ _id: user.restaurantId, active: true }) : null;
   if (!user || !user.active || !restaurantActive) {
     req.session.destroy(() => undefined);
     return next(new AppError(401, 'AUTH_REQUIRED', 'Your session is no longer active. Please sign in again.'));
   }
-  req.staff = { id: user._id, restaurantId: user.restaurantId, name: user.name, email: user.email, role: user.role };
+  const role = user.role as UserRole;
+  const permissions = (user.permissions && Object.keys(user.permissions).length > 0)
+    ? (user.permissions as unknown as UserPermissions)
+    : getDefaultPermissions(role);
+
+  req.staff = {
+    id: user._id,
+    restaurantId: user.restaurantId,
+    name: user.name,
+    email: user.email,
+    role,
+    permissions
+  };
   next();
 }
 
-export function requireRoles(...roles: ('owner' | 'staff' | 'kitchen')[]) {
+export function requireRoles(...roles: UserRole[]) {
   return (req: Request, _res: Response, next: NextFunction): void => {
     if (!req.staff || !roles.includes(req.staff.role)) return next(new AppError(403, 'FORBIDDEN', 'You do not have permission to do that.'));
+    next();
+  };
+}
+
+export function requirePermission(permission: keyof UserPermissions) {
+  return (req: Request, _res: Response, next: NextFunction): void => {
+    if (!req.staff) return next(new AppError(401, 'AUTH_REQUIRED', 'Please sign in to continue.'));
+    if (req.staff.role === 'owner') return next();
+    const perms = req.staff.permissions || getDefaultPermissions(req.staff.role);
+    if (!perms[permission]) {
+      return next(new AppError(403, 'FORBIDDEN', 'You do not have permission to perform this action.'));
+    }
     next();
   };
 }

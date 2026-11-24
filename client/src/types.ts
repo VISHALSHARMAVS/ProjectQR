@@ -24,11 +24,26 @@ export interface RestaurantInfo {
   active?: boolean;
 }
 
+export type UserRole = 'owner' | 'manager' | 'cashier' | 'waiter' | 'kitchen' | 'staff';
+
+export interface UserPermissions {
+  canViewFinancials: boolean;
+  canEditMenu: boolean;
+  canManageStock: boolean;
+  canSettleBills: boolean;
+  canPunchOrders: boolean;
+  canManageReviews: boolean;
+  canCloseRegister: boolean;
+}
+
 export interface StaffUser {
   id: string;
   name: string;
   email: string;
-  role: 'owner' | 'staff' | 'kitchen';
+  role: UserRole;
+  permissions?: UserPermissions;
+  active?: boolean;
+  createdAt?: string;
 }
 
 export interface Category {

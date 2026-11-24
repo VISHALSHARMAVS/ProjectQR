@@ -4,6 +4,7 @@ import { Link, Navigate, NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useStaff } from '../hooks/useStaff';
 import { api } from '../lib/api';
 import { Loading } from './ui';
+import type { UserRole } from '../types';
 
 function OverviewIcon() {
   return (
@@ -124,8 +125,16 @@ export function ProtectedDashboard() {
 
 export function ManagementOnly({ children }: { children: ReactNode }) {
   const staff = useStaff();
-  if (staff.data?.user.role === 'kitchen') return <Navigate to="/dashboard/kitchen" replace />;
-  return children;
+  const role = staff.data?.user.role;
+  if (role === 'kitchen') return <Navigate to="/dashboard/kitchen" replace />;
+  if (role === 'waiter') return <Navigate to="/dashboard/floor-map" replace />;
+  return <>{children}</>;
+}
+
+export function OwnerOnly({ children }: { children: ReactNode }) {
+  const staff = useStaff();
+  if (staff.data?.user.role !== 'owner') return <Navigate to="/dashboard/orders" replace />;
+  return <>{children}</>;
 }
 
 export default function DashboardLayout() {
@@ -194,7 +203,6 @@ export default function DashboardLayout() {
 
   const user = staff.data?.user;
   const userName = user?.name || 'User';
-  const userRole = user?.role || 'owner';
   const userEmail = user?.email || '';
   const initials = userName
     .split(' ')
@@ -204,12 +212,45 @@ export default function DashboardLayout() {
     .join('')
     .toUpperCase() || 'U';
 
-  const roleLabel = userRole === 'owner' ? '👑 Owner' : userRole === 'kitchen' ? '🍳 Kitchen' : '🧑‍💼 Staff';
-  const roleBadgeClass = userRole === 'owner' ? 'role-owner' : userRole === 'kitchen' ? 'role-kitchen' : 'role-staff';
+  const userRole = (user?.role as UserRole) || 'owner';
+  const perms = user?.permissions;
 
-  const visibleLinks = staff.data?.user.role === 'kitchen'
-    ? links.filter((item) => ['/dashboard/orders', '/dashboard/kitchen'].includes(item.to))
-    : links;
+  const roleLabel =
+    userRole === 'owner' ? '👑 Owner' :
+    userRole === 'manager' ? '🧑‍💼 Manager' :
+    userRole === 'cashier' ? '💵 Cashier' :
+    userRole === 'waiter' ? '🛎️ Waiter' :
+    userRole === 'kitchen' ? '🍳 Kitchen' :
+    '👤 Staff';
+  const roleBadgeClass = `role-${userRole}`;
+
+  const isLinkVisible = (to: string): boolean => {
+    if (userRole === 'owner') return true;
+    if (userRole === 'kitchen') {
+      return ['/dashboard/kitchen', '/dashboard/orders'].includes(to);
+    }
+    if (userRole === 'waiter') {
+      if (['/dashboard/floor-map', '/dashboard/orders', '/dashboard/tables'].includes(to)) return true;
+      if (to === '/dashboard/menu' && perms?.canManageStock) return true;
+      return false;
+    }
+    if (userRole === 'cashier') {
+      if (['/dashboard/orders', '/dashboard/floor-map', '/dashboard/day-close', '/dashboard/tables'].includes(to)) return true;
+      if (to === '/dashboard/menu' && perms?.canManageStock) return true;
+      return false;
+    }
+    if (userRole === 'manager') {
+      return to !== '/dashboard/settings';
+    }
+    return to !== '/dashboard/settings';
+  };
+
+  const visibleLinks = links.filter((item) => isLinkVisible(item.to));
+
+  const filteredNavSections = navSections.map((section) => ({
+    ...section,
+    items: section.items.filter((item) => isLinkVisible(item.to))
+  })).filter((section) => section.items.length > 0);
 
   return (
     <div className="staff-layout" style={brandStyle}>
@@ -225,20 +266,14 @@ export default function DashboardLayout() {
           <span className="brand-name">{name}</span>
         </Link>
         <nav className="nav-list" aria-label="Restaurant navigation">
-          {staff.data?.user.role === 'kitchen' ? (
-            <div style={{ display: 'grid', gap: 3 }}>
-              {visibleLinks.map(itemLink)}
-            </div>
-          ) : (
-            navSections.map((section) => (
-              <div key={section.title} style={{ marginBottom: 6 }}>
-                <div className="sidebar-section-title">{section.title}</div>
-                <div style={{ display: 'grid', gap: 3 }}>
-                  {section.items.map(itemLink)}
-                </div>
+          {filteredNavSections.map((section) => (
+            <div key={section.title} style={{ marginBottom: 6 }}>
+              <div className="sidebar-section-title">{section.title}</div>
+              <div style={{ display: 'grid', gap: 3 }}>
+                {section.items.map(itemLink)}
               </div>
-            ))
-          )}
+            </div>
+          ))}
         </nav>
         <div className="sidebar-bottom">
           <div className="sidebar-label">Signed in as</div>
@@ -307,43 +342,61 @@ export default function DashboardLayout() {
                   </div>
                   <div className="profile-dropdown-divider" />
                   <div className="profile-dropdown-links">
-                    <Link
-                      to="/dashboard/reviews"
-                      className="profile-dropdown-item"
-                      onClick={() => setProfileDropdownOpen(false)}
-                    >
-                      <span aria-hidden="true">⭐</span>
-                      <span>Reviews & Table Alerts</span>
-                      {unresolvedAlertCount > 0 && (
-                        <span style={{ marginLeft: 'auto', background: '#ef4444', color: '#fff', fontSize: 10, padding: '2px 6px', borderRadius: 10, fontWeight: 700 }}>
-                          {unresolvedAlertCount}
-                        </span>
-                      )}
-                    </Link>
-                    <Link
-                      to="/dashboard/settings"
-                      className="profile-dropdown-item"
-                      onClick={() => setProfileDropdownOpen(false)}
-                    >
-                      <span aria-hidden="true">⚙️</span>
-                      <span>Settings & GST</span>
-                    </Link>
-                    <Link
-                      to="/dashboard/day-close"
-                      className="profile-dropdown-item"
-                      onClick={() => setProfileDropdownOpen(false)}
-                    >
-                      <span aria-hidden="true">📋</span>
-                      <span>Day Close Z-Report</span>
-                    </Link>
-                    <Link
-                      to="/dashboard/orders"
-                      className="profile-dropdown-item"
-                      onClick={() => setProfileDropdownOpen(false)}
-                    >
-                      <span aria-hidden="true">🔔</span>
-                      <span>Live Order Board</span>
-                    </Link>
+                    {isLinkVisible('/dashboard/reviews') && (
+                      <Link
+                        to="/dashboard/reviews"
+                        className="profile-dropdown-item"
+                        onClick={() => setProfileDropdownOpen(false)}
+                      >
+                        <span aria-hidden="true">⭐</span>
+                        <span>Reviews & Table Alerts</span>
+                        {unresolvedAlertCount > 0 && (
+                          <span style={{ marginLeft: 'auto', background: '#ef4444', color: '#fff', fontSize: 10, padding: '2px 6px', borderRadius: 10, fontWeight: 700 }}>
+                            {unresolvedAlertCount}
+                          </span>
+                        )}
+                      </Link>
+                    )}
+                    {userRole === 'owner' && (
+                      <Link
+                        to="/dashboard/settings"
+                        className="profile-dropdown-item"
+                        onClick={() => setProfileDropdownOpen(false)}
+                      >
+                        <span aria-hidden="true">⚙️</span>
+                        <span>Settings & Team Access</span>
+                      </Link>
+                    )}
+                    {isLinkVisible('/dashboard/day-close') && (
+                      <Link
+                        to="/dashboard/day-close"
+                        className="profile-dropdown-item"
+                        onClick={() => setProfileDropdownOpen(false)}
+                      >
+                        <span aria-hidden="true">📋</span>
+                        <span>Day Close Z-Report</span>
+                      </Link>
+                    )}
+                    {isLinkVisible('/dashboard/orders') && (
+                      <Link
+                        to="/dashboard/orders"
+                        className="profile-dropdown-item"
+                        onClick={() => setProfileDropdownOpen(false)}
+                      >
+                        <span aria-hidden="true">🔔</span>
+                        <span>Live Order Board</span>
+                      </Link>
+                    )}
+                    {isLinkVisible('/dashboard/floor-map') && (
+                      <Link
+                        to="/dashboard/floor-map"
+                        className="profile-dropdown-item"
+                        onClick={() => setProfileDropdownOpen(false)}
+                      >
+                        <span aria-hidden="true">🗺️</span>
+                        <span>Floor Map</span>
+                      </Link>
+                    )}
                   </div>
                   <div className="profile-dropdown-divider" />
                   <button

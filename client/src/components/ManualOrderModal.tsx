@@ -317,7 +317,7 @@ export function ManualOrderModal({ initialTableId, onClose, onOrderCreated }: Ma
                         <div style={{ fontSize: 11, color: 'var(--muted)' }}>+ {entry.selectedAddons.map((a) => a.name).join(', ')}</div>
                       )}
                       {entry.notes && (
-                        <div style={{ fontSize: 11, fontStyle: 'italic', color: '#854d0e' }}>Note: {entry.notes}</div>
+                        <div style={{ fontSize: 11, color: '#854d0e' }}>Note: {entry.notes}</div>
                       )}
                       <div style={{ fontSize: 12, fontWeight: 700, marginTop: 2 }}>{money(calculateItemPrice(entry))}</div>
                     </div>

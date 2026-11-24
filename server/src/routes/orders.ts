@@ -2,7 +2,7 @@ import { randomInt } from 'node:crypto';
 import { Router } from 'express';
 import type { Server } from 'socket.io';
 import { z } from 'zod';
-import { requireCustomer, requireCustomerQr, requireRoles, requireStaff } from '../middleware/auth.js';
+import { requireCustomer, requireCustomerQr, requirePermission, requireRoles, requireStaff } from '../middleware/auth.js';
 import { CustomerSession } from '../models/CustomerSession.js';
 import { DiningTable } from '../models/DiningTable.js';
 import { MenuItem } from '../models/MenuItem.js';
@@ -272,7 +272,7 @@ const staffCreateOrderSchema = z.object({
   notes: z.string().trim().max(500).default('')
 });
 
-restaurantOrders.post('/', requireRoles('owner', 'staff'), async (req, res) => {
+restaurantOrders.post('/', requirePermission('canPunchOrders'), async (req, res) => {
   const parsed = staffCreateOrderSchema.safeParse(req.body);
   if (!parsed.success) throw new AppError(400, 'INVALID_INPUT', parsed.error.issues[0]?.message ?? 'Check order details.');
 
@@ -458,13 +458,13 @@ export async function settleOrderRecord(params: {
   return { order: response };
 }
 
-restaurantOrders.patch('/:id/settle', async (req, res) => {
+restaurantOrders.patch('/:id/settle', requirePermission('canSettleBills'), async (req, res) => {
   if (!objectIdSchema.safeParse(req.params.id).success) throw new AppError(400, 'INVALID_ID', 'Invalid order identifier.');
   const parsed = settleSchema.safeParse(req.body);
   if (!parsed.success) throw new AppError(400, 'INVALID_INPUT', parsed.error.issues[0]?.message ?? 'Invalid settlement details.');
 
   const result = await settleOrderRecord({
-    orderId: req.params.id,
+    orderId: req.params.id as string,
     restaurantId: req.staff!.restaurantId,
     paymentMethod: parsed.data.paymentMethod,
     discountPaise: parsed.data.discountPaise,

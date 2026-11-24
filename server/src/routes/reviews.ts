@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { requireCustomer, requireCustomerQr, requireStaff } from '../middleware/auth.js';
+import { requireCustomer, requireCustomerQr, requirePermission, requireStaff } from '../middleware/auth.js';
 import { Customer } from '../models/Customer.js';
 import { DiningTable } from '../models/DiningTable.js';
 import { Order } from '../models/Order.js';
@@ -211,7 +211,7 @@ const resolveReviewSchema = z.object({
   resolutionNote: z.string().trim().min(2).max(500)
 });
 
-restaurantReviewRouter.patch('/:id/resolve', async (req, res) => {
+restaurantReviewRouter.patch('/:id/resolve', requirePermission('canManageReviews'), async (req, res) => {
   if (!objectIdSchema.safeParse(req.params.id).success) throw new AppError(400, 'INVALID_ID', 'Invalid review identifier.');
   const parsed = resolveReviewSchema.safeParse(req.body);
   if (!parsed.success) throw new AppError(400, 'INVALID_INPUT', 'Please provide a short resolution note.');

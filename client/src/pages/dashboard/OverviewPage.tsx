@@ -20,6 +20,7 @@ interface DashboardData {
     preparingOrders: number;
     totalSalesPaise: number;
     totalOrdersCount: number;
+    financialsHidden?: boolean;
   };
   topSellers: TopSeller[];
   recentlyCompleted: { id: string; orderNumber: string; status: OrderStatus; totalPaise: number; updatedAt: string; tableLabel: string }[];
@@ -101,7 +102,13 @@ export default function OverviewPage() {
             <span className="eyebrow" style={{ color: '#15803d' }}>Total Revenue</span>
             <span style={{ fontSize: 16, background: '#dcfce7', width: 32, height: 32, borderRadius: 8, display: 'grid', placeItems: 'center' }}>💰</span>
           </div>
-          <div className="stat-value">{money(metrics.totalSalesPaise || 0)}</div>
+          <div className="stat-value">
+            {metrics.financialsHidden ? (
+              <span style={{ fontSize: 18, color: 'var(--muted)', fontWeight: 600 }}>🔒 Protected</span>
+            ) : (
+              money(metrics.totalSalesPaise || 0)
+            )}
+          </div>
           <div className="stat-caption">{metrics.totalOrdersCount || 0} orders processed</div>
         </article>
 
@@ -325,7 +332,7 @@ export default function OverviewPage() {
                 </div>
 
                 {rev.comment && (
-                  <p style={{ margin: '8px 0', fontSize: 13, fontStyle: 'italic', color: '#334155' }}>
+                  <p style={{ margin: '8px 0', fontSize: 13, color: '#334155' }}>
                     "{rev.comment}"
                   </p>
                 )}

@@ -1,5 +1,6 @@
 import type { Types } from 'mongoose';
 import type { OrderStatus } from '../models/Order.js';
+import type { UserPermissions, UserRole } from '../models/User.js';
 
 declare module 'express-session' {
   interface SessionData {
@@ -11,7 +12,14 @@ declare module 'express-session' {
 declare global {
   namespace Express {
     interface Request {
-      staff?: { id: Types.ObjectId; restaurantId: Types.ObjectId; name: string; email: string; role: 'owner' | 'staff' | 'kitchen' };
+      staff?: {
+        id: Types.ObjectId;
+        restaurantId: Types.ObjectId;
+        name: string;
+        email: string;
+        role: UserRole;
+        permissions?: UserPermissions;
+      };
       customer?: {
         sessionId: Types.ObjectId;
         customerId: Types.ObjectId;

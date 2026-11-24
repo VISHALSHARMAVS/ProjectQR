@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, ApiError } from '../../lib/api';
 import { useStaff } from '../../hooks/useStaff';
 import { ErrorPanel, Loading, Modal } from '../../components/ui';
-import type { RestaurantInfo, StaffUser } from '../../types';
+import type { RestaurantInfo, StaffUser, UserPermissions, UserRole } from '../../types';
 
 interface SettingsPayload { restaurant: RestaurantInfo }
 interface SettingsForm {
@@ -595,34 +595,499 @@ export default function SettingsPage() {
 
 interface StaffList { users: (StaffUser & { _id?: string; active: boolean; createdAt: string })[] }
 
+function getDefaultPermissions(role: UserRole): UserPermissions {
+  switch (role) {
+    case 'owner':
+    case 'manager':
+      return {
+        canViewFinancials: true,
+        canEditMenu: true,
+        canManageStock: true,
+        canSettleBills: true,
+        canPunchOrders: true,
+        canManageReviews: true,
+        canCloseRegister: true
+      };
+    case 'cashier':
+      return {
+        canViewFinancials: false,
+        canEditMenu: false,
+        canManageStock: true,
+        canSettleBills: true,
+        canPunchOrders: true,
+        canManageReviews: false,
+        canCloseRegister: true
+      };
+    case 'waiter':
+      return {
+        canViewFinancials: false,
+        canEditMenu: false,
+        canManageStock: true,
+        canSettleBills: false,
+        canPunchOrders: true,
+        canManageReviews: false,
+        canCloseRegister: false
+      };
+    case 'kitchen':
+      return {
+        canViewFinancials: false,
+        canEditMenu: false,
+        canManageStock: true,
+        canSettleBills: false,
+        canPunchOrders: false,
+        canManageReviews: false,
+        canCloseRegister: false
+      };
+    case 'staff':
+    default:
+      return {
+        canViewFinancials: false,
+        canEditMenu: false,
+        canManageStock: true,
+        canSettleBills: true,
+        canPunchOrders: true,
+        canManageReviews: true,
+        canCloseRegister: false
+      };
+  }
+}
+
+const roleMeta: Record<UserRole, { label: string; icon: string; description: string; badgeColor: string }> = {
+  owner: { label: 'Owner', icon: '👑', description: 'Master administrator with full unconstrained power', badgeColor: '#854d0e' },
+  manager: { label: 'Manager', icon: '🧑‍💼', description: 'Floor oversight, complaint recovery, item stock, orders', badgeColor: '#1e40af' },
+  cashier: { label: 'Cashier / Reception', icon: '💵', description: 'Counter billing, payments, shift register close', badgeColor: '#166534' },
+  waiter: { label: 'Waiter / Captain', icon: '🛎️', description: 'Floor map, table status, punching walk in orders', badgeColor: '#b45309' },
+  kitchen: { label: 'Kitchen Cook', icon: '🍳', description: 'Kitchen KDS ticket queue preparation only', badgeColor: '#9f1239' },
+  staff: { label: 'Staff', icon: '👤', description: 'General operations and orders', badgeColor: '#475569' }
+};
+
+const permissionMeta: { key: keyof UserPermissions; label: string; description: string; icon: string }[] = [
+  { key: 'canViewFinancials', label: 'View Total Sales and Revenue', description: 'See daily turnover, orders value, and financial metrics on dashboard', icon: '💰' },
+  { key: 'canEditMenu', label: 'Edit Menu Dishes and Prices', description: 'Add or modify dishes, categories, and item pricing', icon: '🍽️' },
+  { key: 'canManageStock', label: 'Toggle 86 / Out of Stock', description: 'Mark dishes unavailable or restore stock during rush hours', icon: '🚫' },
+  { key: 'canSettleBills', label: 'Settle Bills and Collect Payments', description: 'Mark table bills paid via Cash, Card, or manual UPI', icon: '💳' },
+  { key: 'canPunchOrders', label: 'Punch Walk In / Table Orders', description: 'Take orders for guests directly from staff device', icon: '📝' },
+  { key: 'canManageReviews', label: 'Table Complaints and Recovery', description: 'View dining feedback, receive live table alerts, and record resolutions', icon: '⭐' },
+  { key: 'canCloseRegister', label: 'Close Register and Cash Drawer', description: 'Run end of day register reconciliation and generate Z Report', icon: '📋' }
+];
+
 function StaffAccess() {
   const client = useQueryClient();
   const query = useQuery({ queryKey: ['staff-users'], queryFn: () => api.get<StaffList>('/restaurant/staff') });
-  const [open, setOpen] = useState(false);
+  const [openAddModal, setOpenAddModal] = useState(false);
+  const [editingStaff, setEditingStaff] = useState<(StaffUser & { _id?: string }) | null>(null);
+
+  // Form states for creating staff
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState<'staff' | 'kitchen'>('kitchen');
+  const [role, setRole] = useState<UserRole>('waiter');
+  const [customPowers, setCustomPowers] = useState<UserPermissions>(getDefaultPermissions('waiter'));
+  const [showAdvancedPowers, setShowAdvancedPowers] = useState(false);
   const [error, setError] = useState('');
+
+  // Form states for editing existing staff
+  const [editRole, setEditRole] = useState<UserRole>('waiter');
+  const [editPowers, setEditPowers] = useState<UserPermissions>(getDefaultPermissions('waiter'));
+  const [editError, setEditError] = useState('');
+
+  const handleRoleChange = (newRole: UserRole) => {
+    setRole(newRole);
+    setCustomPowers(getDefaultPermissions(newRole));
+  };
+
   const create = useMutation({
     mutationFn: () => api.post('/restaurant/staff', {
       name: name.trim(),
       email: email.trim().toLowerCase(),
       password,
-      role
+      role,
+      permissions: customPowers
     }),
-    onSuccess: async () => { setOpen(false); setName(''); setEmail(''); setPassword(''); setError(''); await client.invalidateQueries({ queryKey: ['staff-users'] }); },
+    onSuccess: async () => {
+      setOpenAddModal(false);
+      setName('');
+      setEmail('');
+      setPassword('');
+      setError('');
+      setShowAdvancedPowers(false);
+      await client.invalidateQueries({ queryKey: ['staff-users'] });
+    },
     onError: (cause: Error) => setError(cause instanceof ApiError ? cause.message : 'This account could not be created.')
   });
+
+  const update = useMutation({
+    mutationFn: ({ id, role, permissions, active }: { id: string; role?: UserRole; permissions?: UserPermissions; active?: boolean }) =>
+      api.patch(`/restaurant/staff/${id}`, { role, permissions, active }),
+    onSuccess: async () => {
+      setEditingStaff(null);
+      setEditError('');
+      await client.invalidateQueries({ queryKey: ['staff-users'] });
+    },
+    onError: (cause: Error) => setEditError(cause instanceof ApiError ? cause.message : 'Could not update staff account.')
+  });
+
   const toggle = useMutation({
     mutationFn: ({ id, active }: { id: string; active: boolean }) => api.patch(`/restaurant/staff/${id}`, { active }),
     onSuccess: () => void client.invalidateQueries({ queryKey: ['staff-users'] }),
     onError: (cause: Error) => setError(cause instanceof ApiError ? cause.message : 'This account could not be updated.')
   });
-  return <section className="surface" style={{ maxWidth: 760, marginTop: 18, padding: 22 }}>
-    <div className="heading-row" style={{ marginTop: 0 }}><div><span className="eyebrow">Team access</span><h2>Staff accounts</h2><p className="muted" style={{ margin: '6px 0 0', fontSize: 13 }}>Give your team their own sign-in for orders or kitchen work.</p></div><button className="btn small" onClick={() => { setError(''); setOpen(true); }}>Add staff</button></div>
-    {error && !open && <div className="form-error" style={{ marginBottom: 12 }} role="alert">{error}</div>}
-    {query.isLoading ? <Loading /> : query.error ? <ErrorPanel message="Staff accounts could not be loaded." retry={() => void query.refetch()} /> : <div className="table-wrap"><table className="data-table"><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th /></tr></thead><tbody>{(query.data?.users ?? []).map((user) => <tr key={user.id ?? user._id}><td><strong>{user.name}</strong></td><td>{user.email}</td><td>{user.role}</td><td><span className={`pill ${user.active ? '' : 'gray'}`}>{user.active ? 'Active' : 'Inactive'}</span></td><td>{user.role !== 'owner' && <button className="btn secondary small" onClick={() => toggle.mutate({ id: user.id ?? user._id!, active: !user.active })}>{user.active ? 'Deactivate' : 'Reactivate'}</button>}</td></tr>)}</tbody></table></div>}
-    {open && <Modal title="Add a staff account" onClose={() => { if (!create.isPending) setOpen(false); }}><form className="form-grid" onSubmit={(event) => { event.preventDefault(); setError(''); create.mutate(); }}><div className="field"><label htmlFor="staff-name">Name</label><input className="input" id="staff-name" required minLength={2} maxLength={100} value={name} onChange={(event) => setName(event.target.value)} /></div><div className="field"><label htmlFor="staff-email">Email</label><input className="input" id="staff-email" type="email" required value={email} onChange={(event) => setEmail(event.target.value)} /></div><div className="field"><label htmlFor="staff-role">Access</label><select className="select" id="staff-role" value={role} onChange={(event) => setRole(event.target.value as 'staff' | 'kitchen')}><option value="kitchen">Kitchen</option><option value="staff">Staff</option></select><span className="muted" style={{ fontSize: 11 }}>Kitchen accounts can view and update orders. Staff accounts can also manage the menu and tables.</span></div><div className="field"><label htmlFor="staff-password">Temporary password</label><input className="input" id="staff-password" type="password" minLength={8} maxLength={72} required value={password} onChange={(event) => setPassword(event.target.value)} placeholder="At least 8 characters" /></div>{error && <div className="form-error" role="alert">{error}</div>}<button className="btn full" disabled={create.isPending}>{create.isPending ? 'Creating…' : 'Create account'}</button></form></Modal>}
-  </section>;
+
+  const openEditModal = (staff: StaffUser & { _id?: string }) => {
+    setEditingStaff(staff);
+    setEditRole(staff.role);
+    setEditPowers(staff.permissions || getDefaultPermissions(staff.role));
+    setEditError('');
+  };
+
+  return (
+    <section className="surface" style={{ maxWidth: 860, marginTop: 18, padding: 24, borderRadius: 16 }}>
+      <div className="heading-row" style={{ marginTop: 0 }}>
+        <div>
+          <span className="eyebrow">Access Control and Team Permissions</span>
+          <h2>Staff accounts and role powers</h2>
+          <p className="muted" style={{ margin: '6px 0 0', fontSize: 13 }}>
+            Assign specific powers to managers, waiters, cashiers, and cooks. Shield daily revenue and menu pricing from unauthorized edits.
+          </p>
+        </div>
+        <button
+          className="btn small"
+          onClick={() => {
+            setError('');
+            handleRoleChange('waiter');
+            setOpenAddModal(true);
+          }}
+        >
+          ➕ Add team member
+        </button>
+      </div>
+
+      {error && !openAddModal && <div className="form-error" style={{ marginBottom: 14 }} role="alert">{error}</div>}
+
+      {query.isLoading ? (
+        <Loading />
+      ) : query.error ? (
+        <ErrorPanel message="Staff accounts could not be loaded." retry={() => void query.refetch()} />
+      ) : (
+        <div className="table-wrap" style={{ marginTop: 12 }}>
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Team Member</th>
+                <th>Role</th>
+                <th>Enabled Powers</th>
+                <th>Status</th>
+                <th style={{ textAlign: 'right' }}>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(query.data?.users ?? []).map((user) => {
+                const userId = user.id ?? user._id!;
+                const userRole = (user.role as UserRole) || 'staff';
+                const meta = roleMeta[userRole] || roleMeta.staff;
+                const perms = user.permissions || getDefaultPermissions(userRole);
+                const isOwner = userRole === 'owner';
+
+                return (
+                  <tr key={userId}>
+                    <td>
+                      <strong>{user.name}</strong>
+                      <div className="muted" style={{ fontSize: 12, marginTop: 2 }}>{user.email}</div>
+                    </td>
+                    <td>
+                      <span
+                        className="pill"
+                        style={{
+                          background: isOwner ? '#fef3c7' : '#f1f5f9',
+                          color: meta.badgeColor,
+                          fontWeight: 700,
+                          fontSize: 12,
+                          gap: 4
+                        }}
+                      >
+                        <span>{meta.icon}</span>
+                        <span>{meta.label}</span>
+                      </span>
+                    </td>
+                    <td>
+                      {isOwner ? (
+                        <span className="pill green" style={{ fontSize: 11 }}>Full Unrestricted Access</span>
+                      ) : (
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, maxWidth: 280 }}>
+                          {perms.canViewFinancials && <span className="pill green" style={{ fontSize: 10, padding: '1px 6px' }}>💰 Sales</span>}
+                          {perms.canEditMenu && <span className="pill green" style={{ fontSize: 10, padding: '1px 6px' }}>🍽️ Menu</span>}
+                          {perms.canSettleBills && <span className="pill green" style={{ fontSize: 10, padding: '1px 6px' }}>💳 Billing</span>}
+                          {perms.canPunchOrders && <span className="pill green" style={{ fontSize: 10, padding: '1px 6px' }}>📝 Punch</span>}
+                          {perms.canManageReviews && <span className="pill green" style={{ fontSize: 10, padding: '1px 6px' }}>⭐ Reviews</span>}
+                          {perms.canCloseRegister && <span className="pill green" style={{ fontSize: 10, padding: '1px 6px' }}>📋 Register</span>}
+                          {!perms.canViewFinancials && !perms.canEditMenu && !perms.canSettleBills && !perms.canPunchOrders && !perms.canManageReviews && (
+                            <span className="pill gray" style={{ fontSize: 10, padding: '1px 6px' }}>🍳 Kitchen KDS only</span>
+                          )}
+                        </div>
+                      )}
+                    </td>
+                    <td>
+                      <span className={`pill ${user.active ? '' : 'gray'}`}>
+                        {user.active ? 'Active' : 'Inactive'}
+                      </span>
+                    </td>
+                    <td style={{ textAlign: 'right' }}>
+                      {!isOwner && (
+                        <div style={{ display: 'inline-flex', gap: 6 }}>
+                          <button
+                            type="button"
+                            className="btn secondary small"
+                            onClick={() => openEditModal(user)}
+                            title="Configure role powers"
+                          >
+                            ⚙️ Edit Powers
+                          </button>
+                          <button
+                            type="button"
+                            className="btn secondary small"
+                            style={{ color: user.active ? '#991b1b' : 'inherit' }}
+                            onClick={() => toggle.mutate({ id: userId, active: !user.active })}
+                          >
+                            {user.active ? 'Deactivate' : 'Reactivate'}
+                          </button>
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* Add New Staff Modal with Role and Permission Matrix */}
+      {openAddModal && (
+        <Modal
+          title="Add team member"
+          onClose={() => { if (!create.isPending) setOpenAddModal(false); }}
+        >
+          <form
+            className="form-grid"
+            onSubmit={(event) => {
+              event.preventDefault();
+              setError('');
+              create.mutate();
+            }}
+          >
+            <div className="field">
+              <label htmlFor="staff-name">Full name</label>
+              <input
+                className="input"
+                id="staff-name"
+                required
+                minLength={2}
+                maxLength={100}
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+                placeholder="Rohan Verma"
+              />
+            </div>
+
+            <div className="field">
+              <label htmlFor="staff-email">Work email address</label>
+              <input
+                className="input"
+                id="staff-email"
+                type="email"
+                required
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                placeholder="rohan@restaurant.com"
+              />
+            </div>
+
+            <div className="field">
+              <label htmlFor="staff-role">Assigned role</label>
+              <select
+                className="select"
+                id="staff-role"
+                value={role}
+                onChange={(event) => handleRoleChange(event.target.value as UserRole)}
+              >
+                <option value="manager">🧑‍💼 Manager (Floor operations, complaints, stock, orders)</option>
+                <option value="cashier">💵 Cashier / Reception (Billing counter, payments, register close)</option>
+                <option value="waiter">🛎️ Waiter / Captain (Floor map, table orders, table PIN defense)</option>
+                <option value="kitchen">🍳 Kitchen (Kitchen KDS preparation queue only)</option>
+              </select>
+              <span className="muted" style={{ fontSize: 12 }}>
+                {roleMeta[role]?.description}
+              </span>
+            </div>
+
+            <div className="field">
+              <label htmlFor="staff-password">Temporary password</label>
+              <input
+                className="input"
+                id="staff-password"
+                type="password"
+                minLength={8}
+                maxLength={72}
+                required
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                placeholder="At least 8 characters"
+              />
+            </div>
+
+            {/* Power Customization Section */}
+            <div style={{ border: '1px solid var(--line)', borderRadius: 12, padding: 14, background: '#f8fafc' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <strong style={{ fontSize: 13, display: 'block' }}>Operational Powers for this Account</strong>
+                  <span className="muted" style={{ fontSize: 11 }}>Presets are active. You can customize any switch below.</span>
+                </div>
+                <button
+                  type="button"
+                  className="btn secondary small"
+                  onClick={() => setShowAdvancedPowers(!showAdvancedPowers)}
+                  style={{ fontSize: 11 }}
+                >
+                  {showAdvancedPowers ? 'Hide powers' : 'Customize powers'}
+                </button>
+              </div>
+
+              {showAdvancedPowers && (
+                <div style={{ display: 'grid', gap: 10, marginTop: 14 }}>
+                  {permissionMeta.map((perm) => (
+                    <label
+                      key={perm.key}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        padding: '8px 12px',
+                        background: '#ffffff',
+                        border: '1px solid #e2e8f0',
+                        borderRadius: 8,
+                        cursor: 'pointer'
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <span style={{ fontSize: 16 }}>{perm.icon}</span>
+                        <div>
+                          <strong style={{ fontSize: 13, display: 'block' }}>{perm.label}</strong>
+                          <span className="muted" style={{ fontSize: 11 }}>{perm.description}</span>
+                        </div>
+                      </div>
+                      <input
+                        type="checkbox"
+                        checked={Boolean(customPowers[perm.key])}
+                        onChange={(e) => setCustomPowers({ ...customPowers, [perm.key]: e.target.checked })}
+                        style={{ width: 18, height: 18, accentColor: 'var(--green)' }}
+                      />
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {error && <div className="form-error" role="alert">{error}</div>}
+
+            <button className="btn full" disabled={create.isPending}>
+              {create.isPending ? 'Creating account…' : 'Create team member'}
+            </button>
+          </form>
+        </Modal>
+      )}
+
+      {/* Edit Powers & Role Modal for Existing Staff */}
+      {editingStaff && (
+        <Modal
+          title={`Edit powers: ${editingStaff.name}`}
+          onClose={() => { if (!update.isPending) setEditingStaff(null); }}
+        >
+          <form
+            className="form-grid"
+            onSubmit={(event) => {
+              event.preventDefault();
+              setEditError('');
+              update.mutate({
+                id: editingStaff.id ?? editingStaff._id!,
+                role: editRole,
+                permissions: editPowers
+              });
+            }}
+          >
+            <div className="field">
+              <label htmlFor="edit-role">Role preset</label>
+              <select
+                className="select"
+                id="edit-role"
+                value={editRole}
+                onChange={(event) => {
+                  const newRole = event.target.value as UserRole;
+                  setEditRole(newRole);
+                  setEditPowers(getDefaultPermissions(newRole));
+                }}
+              >
+                <option value="manager">🧑‍💼 Manager</option>
+                <option value="cashier">💵 Cashier / Reception</option>
+                <option value="waiter">🛎️ Waiter / Captain</option>
+                <option value="kitchen">🍳 Kitchen Cook</option>
+              </select>
+            </div>
+
+            <div className="field">
+              <label style={{ marginBottom: 4 }}>Custom permission powers</label>
+              <div style={{ display: 'grid', gap: 8 }}>
+                {permissionMeta.map((perm) => (
+                  <label
+                    key={perm.key}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '10px 12px',
+                      background: '#ffffff',
+                      border: '1px solid #e2e8f0',
+                      borderRadius: 8,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <span style={{ fontSize: 16 }}>{perm.icon}</span>
+                      <div>
+                        <strong style={{ fontSize: 13, display: 'block' }}>{perm.label}</strong>
+                        <span className="muted" style={{ fontSize: 11 }}>{perm.description}</span>
+                      </div>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={Boolean(editPowers[perm.key])}
+                      onChange={(e) => setEditPowers({ ...editPowers, [perm.key]: e.target.checked })}
+                      style={{ width: 18, height: 18, accentColor: 'var(--green)' }}
+                    />
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {editError && <div className="form-error" role="alert">{editError}</div>}
+
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 8 }}>
+              <button
+                type="button"
+                className="btn secondary"
+                onClick={() => setEditingStaff(null)}
+              >
+                Cancel
+              </button>
+              <button
+                className="btn"
+                disabled={update.isPending}
+              >
+                {update.isPending ? 'Saving…' : 'Save powers'}
+              </button>
+            </div>
+          </form>
+        </Modal>
+      )}
+    </section>
+  );
 }

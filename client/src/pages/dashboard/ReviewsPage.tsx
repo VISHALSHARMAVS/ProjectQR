@@ -459,8 +459,7 @@ export default function ReviewsPage() {
                       color: 'var(--ink)',
                       background: '#f8fafc',
                       padding: '10px 14px',
-                      borderRadius: 8,
-                      fontStyle: 'italic'
+                      borderRadius: 8
                     }}
                   >
                     "{r.comment}"

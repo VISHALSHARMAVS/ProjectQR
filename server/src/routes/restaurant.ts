@@ -4,7 +4,7 @@ import multer from 'multer';
 import QRCode from 'qrcode';
 import { z } from 'zod';
 import { env } from '../config/env.js';
-import { requireRoles, requireStaff } from '../middleware/auth.js';
+import { requirePermission, requireRoles, requireStaff } from '../middleware/auth.js';
 import { CustomerSession } from '../models/CustomerSession.js';
 import { DiningTable } from '../models/DiningTable.js';
 import { MenuItem } from '../models/MenuItem.js';
@@ -12,7 +12,7 @@ import { Order, type OrderDoc } from '../models/Order.js';
 import { Restaurant } from '../models/Restaurant.js';
 import { ServiceRequest } from '../models/ServiceRequest.js';
 import { TableCart } from '../models/TableCart.js';
-import { User } from '../models/User.js';
+import { User, getDefaultPermissions, type UserDoc, type UserPermissions, type UserRole } from '../models/User.js';
 import { getOrderSocket } from './orders.js';
 import { saveMenuImage } from '../services/imageStorage.js';
 import { hashPassword } from '../services/password.js';
@@ -69,28 +69,31 @@ restaurantRouter.get('/dashboard', async (req, res) => {
     totalRevenuePaise: item.totalRevenuePaise
   }));
 
+  const canViewFinancials = req.staff?.role === 'owner' || Boolean(req.staff?.permissions?.canViewFinancials);
+
   res.json({
     metrics: {
       menuItems,
       activeTables,
       newOrders,
       preparingOrders,
-      totalSalesPaise: revenueSummary.totalSalesPaise,
-      totalOrdersCount: revenueSummary.completedOrdersCount
+      totalSalesPaise: canViewFinancials ? revenueSummary.totalSalesPaise : 0,
+      totalOrdersCount: revenueSummary.completedOrdersCount,
+      financialsHidden: !canViewFinancials
     },
-    topSellers,
+    topSellers: canViewFinancials ? topSellers : topSellers.map((item) => ({ ...item, totalRevenuePaise: 0 })),
     recentlyCompleted: recent.map((order) => ({
       id: String(order._id),
       orderNumber: order.orderNumber,
       status: order.status,
-      totalPaise: order.totalPaise,
+      totalPaise: canViewFinancials ? order.totalPaise : 0,
       updatedAt: order.updatedAt,
       tableLabel: labels.get(String(order.tableId)) ?? 'Table'
     }))
   });
 });
 
-restaurantRouter.get('/day-close', async (req, res) => {
+restaurantRouter.get('/day-close', requirePermission('canCloseRegister'), async (req, res) => {
   const restaurantId = req.staff!.restaurantId;
   const restaurant = await Restaurant.findById(restaurantId).select('name gstin gstPercentage');
   if (!restaurant) throw new AppError(404, 'NOT_FOUND', 'Restaurant not found.');
@@ -330,7 +333,7 @@ restaurantRouter.patch('/service-requests/:id/resolve', async (req, res) => {
 });
 
 export const tablesRouter = Router();
-tablesRouter.use(requireStaff, requireRoles('owner', 'staff'));
+tablesRouter.use(requireStaff);
 
 tablesRouter.get('/live-status', async (req, res) => {
   const restaurantId = req.staff!.restaurantId;
@@ -435,13 +438,13 @@ tablesRouter.get('/', async (req, res) => {
   const tables = await DiningTable.find(tenantFilter(req.staff!.restaurantId)).sort({ createdAt: 1, label: 1 }).select('-qrToken').lean();
   res.json({ tables });
 });
-tablesRouter.post('/', async (req, res) => {
+tablesRouter.post('/', requireRoles('owner', 'manager', 'staff'), async (req, res) => {
   const parsed = z.object({ label: labelSchema }).strict().safeParse(req.body);
   if (!parsed.success) throw new AppError(400, 'INVALID_INPUT', parsed.error.issues[0]?.message ?? 'Enter a table label.');
   const table = await DiningTable.create({ restaurantId: req.staff!.restaurantId, label: parsed.data.label, qrToken: randomBytes(24).toString('base64url') });
   res.status(201).json({ table: { id: table.id, label: table.label, active: table.active, createdAt: table.createdAt } });
 });
-tablesRouter.patch('/:id', async (req, res) => {
+tablesRouter.patch('/:id', requireRoles('owner', 'manager', 'staff'), async (req, res) => {
   if (!objectIdSchema.safeParse(req.params.id).success) throw new AppError(400, 'INVALID_ID', 'Invalid table identifier.');
   const parsed = z.object({ label: labelSchema.optional(), active: z.boolean().optional() }).strict().safeParse(req.body);
   if (!parsed.success || Object.keys(parsed.data ?? {}).length === 0) throw new AppError(400, 'INVALID_INPUT', 'Provide a valid table label or active state.');
@@ -449,7 +452,7 @@ tablesRouter.patch('/:id', async (req, res) => {
   if (!table) throw new AppError(404, 'NOT_FOUND', 'Table not found.');
   res.json({ table });
 });
-tablesRouter.delete('/:id', async (req, res) => {
+tablesRouter.delete('/:id', requireRoles('owner', 'manager', 'staff'), async (req, res) => {
   if (!objectIdSchema.safeParse(req.params.id).success) throw new AppError(400, 'INVALID_ID', 'Invalid table identifier.');
   const table = await DiningTable.findOneAndUpdate(tenantFilter(req.staff!.restaurantId, { _id: req.params.id }), { active: false }, { returnDocument: 'after', runValidators: true }).select('-qrToken');
   if (!table) throw new AppError(404, 'NOT_FOUND', 'Table not found.');
@@ -532,7 +535,7 @@ tablesRouter.post('/:id/mark-clearing', async (req, res) => {
     }
   });
 });
-tablesRouter.post('/:id/qr', requireRoles('owner', 'staff'), async (req, res) => {
+tablesRouter.post('/:id/qr', requireRoles('owner', 'manager', 'staff'), async (req, res) => {
   if (!objectIdSchema.safeParse(req.params.id).success) throw new AppError(400, 'INVALID_ID', 'Invalid table identifier.');
   const table = await DiningTable.findOne(tenantFilter(req.staff!.restaurantId, { _id: req.params.id }));
   if (!table) throw new AppError(404, 'NOT_FOUND', 'Table not found.');
@@ -559,12 +562,35 @@ tablesRouter.post('/:id/qr', requireRoles('owner', 'staff'), async (req, res) =>
   });
 });
 
+const permissionSchema = z.object({
+  canViewFinancials: z.boolean().optional(),
+  canEditMenu: z.boolean().optional(),
+  canManageStock: z.boolean().optional(),
+  canSettleBills: z.boolean().optional(),
+  canPunchOrders: z.boolean().optional(),
+  canManageReviews: z.boolean().optional(),
+  canCloseRegister: z.boolean().optional()
+});
+
 export const staffRouter = Router();
 staffRouter.use(requireStaff, requireRoles('owner'));
+
 staffRouter.get('/', async (req, res) => {
-  const users = await User.find(tenantFilter(req.staff!.restaurantId)).select('name email role active createdAt').sort({ createdAt: 1 }).lean();
-  res.json({ users });
+  const users = await User.find(tenantFilter(req.staff!.restaurantId))
+    .select('name email role permissions active createdAt')
+    .sort({ createdAt: 1 })
+    .lean();
+  res.json({
+    users: users.map((u) => ({
+      ...u,
+      id: String(u._id),
+      permissions: (u.permissions && Object.keys(u.permissions).length > 0)
+        ? u.permissions
+        : getDefaultPermissions(u.role as UserRole)
+    }))
+  });
 });
+
 staffRouter.post('/', async (req, res) => {
   const parsed = z.object({
     name: z.string().trim().min(2, 'Name must be at least 2 characters').max(100, 'Name cannot exceed 100 characters'),
@@ -572,25 +598,87 @@ staffRouter.post('/', async (req, res) => {
     password: z.string().min(8, 'Password must be at least 8 characters').refine((value) => Buffer.byteLength(value, 'utf8') <= 72, 'Password must be at most 72 bytes'),
     role: z.preprocess(
       (val) => typeof val === 'string' ? val.trim().toLowerCase() : val,
-      z.enum(['staff', 'kitchen'], { message: "Role must be 'staff' or 'kitchen'" })
-    )
+      z.enum(['manager', 'cashier', 'waiter', 'kitchen', 'staff'], { message: "Role must be 'manager', 'cashier', 'waiter', 'kitchen', or 'staff'" })
+    ),
+    permissions: permissionSchema.optional()
   }).safeParse(req.body);
   if (!parsed.success) throw new AppError(400, 'INVALID_INPUT', parsed.error.issues[0]?.message ?? 'Check the staff details.');
   if (await User.exists({ email: parsed.data.email })) throw new AppError(409, 'EMAIL_IN_USE', 'An account with that email already exists.');
+
+  const role = parsed.data.role as UserRole;
+  const permissions = {
+    ...getDefaultPermissions(role),
+    ...(parsed.data.permissions || {})
+  };
+
   const user = await User.create({
     restaurantId: req.staff!.restaurantId,
     name: parsed.data.name,
     email: parsed.data.email,
     passwordHash: await hashPassword(parsed.data.password),
-    role: parsed.data.role
+    role,
+    permissions
   });
-  res.status(201).json({ user: { id: user.id, name: user.name, email: user.email, role: user.role, active: user.active, createdAt: user.createdAt } });
+
+  res.status(201).json({
+    user: {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      permissions: user.permissions,
+      active: user.active,
+      createdAt: user.createdAt
+    }
+  });
 });
+
 staffRouter.patch('/:id', async (req, res) => {
   if (!objectIdSchema.safeParse(req.params.id).success) throw new AppError(400, 'INVALID_ID', 'Invalid staff account identifier.');
-  const parsed = z.object({ active: z.boolean() }).strict().safeParse(req.body);
-  if (!parsed.success) throw new AppError(400, 'INVALID_INPUT', 'Choose whether this account is active.');
-  const user = await User.findOneAndUpdate(tenantFilter(req.staff!.restaurantId, { _id: req.params.id, role: { $in: ['staff', 'kitchen'] } }), parsed.data, { returnDocument: 'after', runValidators: true }).select('name email role active createdAt');
-  if (!user) throw new AppError(404, 'NOT_FOUND', 'Staff account not found.');
-  res.json({ user });
+  const parsed = z.object({
+    active: z.boolean().optional(),
+    name: z.string().trim().min(2).max(100).optional(),
+    role: z.enum(['manager', 'cashier', 'waiter', 'kitchen', 'staff']).optional(),
+    permissions: permissionSchema.optional()
+  }).safeParse(req.body);
+  if (!parsed.success) throw new AppError(400, 'INVALID_INPUT', 'Check staff updates.');
+
+  const existing = await User.findOne(tenantFilter(req.staff!.restaurantId, { _id: req.params.id, role: { $ne: 'owner' } }));
+  if (!existing) throw new AppError(404, 'NOT_FOUND', 'Staff account not found or cannot be modified.');
+
+  if (parsed.data.name !== undefined) existing.name = parsed.data.name;
+  if (parsed.data.active !== undefined) existing.active = parsed.data.active;
+  if (parsed.data.role !== undefined) {
+    existing.role = parsed.data.role as UserRole;
+    if (!parsed.data.permissions) {
+      existing.permissions = getDefaultPermissions(existing.role);
+    }
+  }
+  if (parsed.data.permissions !== undefined) {
+    existing.permissions = {
+      ...(existing.permissions || getDefaultPermissions(existing.role)),
+      ...parsed.data.permissions
+    };
+  }
+
+  await existing.save();
+
+  res.json({
+    user: {
+      id: String(existing._id),
+      name: existing.name,
+      email: existing.email,
+      role: existing.role,
+      permissions: existing.permissions,
+      active: existing.active,
+      createdAt: (existing as unknown as { createdAt: Date }).createdAt
+    }
+  });
+});
+
+staffRouter.delete('/:id', async (req, res) => {
+  if (!objectIdSchema.safeParse(req.params.id).success) throw new AppError(400, 'INVALID_ID', 'Invalid staff account identifier.');
+  const user = await User.findOneAndDelete(tenantFilter(req.staff!.restaurantId, { _id: req.params.id, role: { $ne: 'owner' } }));
+  if (!user) throw new AppError(404, 'NOT_FOUND', 'Staff account not found or cannot be deleted.');
+  res.json({ success: true, message: 'Staff account removed successfully.' });
 });
