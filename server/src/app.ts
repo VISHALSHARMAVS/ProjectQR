@@ -150,12 +150,25 @@ export function createApplication(sessionStore?: Store): ProjectQrApplication {
 
   if (env.NODE_ENV === 'production') {
     const clientBuildPath = fileURLToPath(new URL('../../client/dist/', import.meta.url));
-    app.use(express.static(clientBuildPath));
+    app.use(express.static(clientBuildPath, {
+      setHeaders: (res, filePath) => {
+        if (filePath.endsWith('.html')) {
+          res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+          res.setHeader('Pragma', 'no-cache');
+          res.setHeader('Expires', '0');
+        } else if (filePath.includes(path.sep + 'assets' + path.sep) || filePath.includes('/assets/')) {
+          res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+        }
+      }
+    }));
     app.use((req, res, next) => {
       const isBackendPath = req.path === '/api' || req.path.startsWith('/api/')
         || req.path === '/uploads' || req.path.startsWith('/uploads/')
         || req.path === '/socket.io' || req.path.startsWith('/socket.io/');
       if (req.method !== 'GET' || isBackendPath) return next();
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
       res.sendFile(path.join(clientBuildPath, 'index.html'), (error) => {
         if (error) next(error);
       });
