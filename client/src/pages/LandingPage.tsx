@@ -75,13 +75,14 @@ export default function LandingPage() {
               FAQ
             </a>
           </div>
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0 }}>
             <ThemeToggle variant="compact" />
-            <Link className="btn secondary small" to="/login">
+            <Link className="btn secondary small landing-header-signin" to="/login">
               Sign in
             </Link>
-            <Link className="btn small" to="/register">
-              Start free trial
+            <Link className="btn small" to="/register" style={{ whiteSpace: 'nowrap' }}>
+              <span className="desktop-only-text">Start free trial</span>
+              <span className="mobile-only-text">Try free</span>
             </Link>
           </div>
         </nav>
@@ -91,16 +92,20 @@ export default function LandingPage() {
         {/* Above the Fold: Hero Section (B5) */}
         <section className="page-wrap" style={{ paddingTop: 'clamp(40px, 6vw, 72px)', paddingBottom: 64 }}>
           <div style={{ maxWidth: 680, margin: '0 auto', textAlign: 'center' }}>
-            <div style={{ display: 'inline-flex', marginBottom: 16 }}>
+            <div style={{ display: 'inline-flex', maxWidth: '100%', marginBottom: 16 }}>
               <span
                 className="pill"
                 style={{
                   background: 'var(--soft-green)',
                   color: 'var(--green-dark)',
                   border: '1px solid var(--line)',
-                  padding: '4px 12px',
+                  padding: '6px 14px',
                   fontSize: 12,
-                  fontWeight: 600
+                  fontWeight: 600,
+                  maxWidth: '100%',
+                  textAlign: 'center',
+                  whiteSpace: 'normal',
+                  lineHeight: 1.4
                 }}
               >
                 Table side QR ordering and restaurant operating system
@@ -111,9 +116,11 @@ export default function LandingPage() {
               className="heading-1 hero-heading-gradient"
               style={{
                 margin: '0 0 16px',
-                fontSize: 'clamp(32px, 5.5vw, 56px)',
-                lineHeight: 1.1,
-                letterSpacing: '-0.035em'
+                fontSize: 'clamp(28px, 6.5vw, 56px)',
+                lineHeight: 1.12,
+                letterSpacing: '-0.035em',
+                overflowWrap: 'break-word',
+                wordBreak: 'break-word'
               }}
             >
               Turn every dining table<br />into an instant checkout
@@ -142,7 +149,21 @@ export default function LandingPage() {
             </div>
 
             {/* Proof Signal */}
-            <div style={{ marginTop: 24, display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--muted)' }}>
+            <div
+              style={{
+                marginTop: 24,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 8,
+                fontSize: 13,
+                color: 'var(--muted)',
+                flexWrap: 'wrap',
+                maxWidth: '100%',
+                lineHeight: 1.5,
+                textAlign: 'center'
+              }}
+            >
               <span style={{ color: 'var(--green)', fontSize: 14, fontWeight: 700 }}>✓</span>
               <span>Built for independent dine in restaurants, cafes and bars · Zero upfront hardware · 14 day free trial</span>
             </div>

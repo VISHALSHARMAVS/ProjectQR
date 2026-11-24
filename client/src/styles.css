@@ -1534,16 +1534,37 @@ p, body, .body-1, .body-2, .body-3, .body-4, .body-5, .body-6 {
   color: var(--ink);
 }
 
+.mobile-only-text {
+  display: none;
+}
+.desktop-only-text {
+  display: inline;
+}
+
 @media (max-width: 768px) {
   .landing-nav-links {
     display: none;
   }
   .landing-floating-header {
-    top: 8px;
-    padding: 0 10px;
+    top: 6px;
+    padding: 0 8px;
+    width: 100%;
+    box-sizing: border-box;
   }
   .landing-floating-nav {
-    padding: 6px 14px;
+    padding: 6px 12px;
+    gap: 8px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  .landing-header-signin {
+    display: none !important;
+  }
+  .mobile-only-text {
+    display: inline;
+  }
+  .desktop-only-text {
+    display: none;
   }
 }
 

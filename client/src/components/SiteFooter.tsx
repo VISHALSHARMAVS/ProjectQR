@@ -25,17 +25,17 @@ export function SiteFooter() {
               borderBottom: '1px solid var(--line)'
             }}
           >
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center' }}>
-              <span className="pill" style={{ background: 'var(--paper)', border: '1px solid var(--line)', fontSize: 12, padding: '6px 12px' }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center', maxWidth: '100%' }}>
+              <span className="pill" style={{ background: 'var(--paper)', border: '1px solid var(--line)', fontSize: 12, padding: '6px 12px', whiteSpace: 'normal', lineHeight: 1.4 }}>
                 💳 <strong>0% Commission</strong> · Direct UPI settlement
               </span>
-              <span className="pill" style={{ background: 'var(--paper)', border: '1px solid var(--line)', fontSize: 12, padding: '6px 12px' }}>
+              <span className="pill" style={{ background: 'var(--paper)', border: '1px solid var(--line)', fontSize: 12, padding: '6px 12px', whiteSpace: 'normal', lineHeight: 1.4 }}>
                 ⚡ <strong>Zero app download</strong> · Browser native
               </span>
-              <span className="pill" style={{ background: 'var(--paper)', border: '1px solid var(--line)', fontSize: 12, padding: '6px 12px' }}>
+              <span className="pill" style={{ background: 'var(--paper)', border: '1px solid var(--line)', fontSize: 12, padding: '6px 12px', whiteSpace: 'normal', lineHeight: 1.4 }}>
                 🔒 <strong>Table PIN defense</strong> · Separate bill safety
               </span>
-              <span className="pill" style={{ background: 'var(--paper)', border: '1px solid var(--line)', fontSize: 12, padding: '6px 12px' }}>
+              <span className="pill" style={{ background: 'var(--paper)', border: '1px solid var(--line)', fontSize: 12, padding: '6px 12px', whiteSpace: 'normal', lineHeight: 1.4 }}>
                 📱 <strong>Hardware independent</strong> · Any phone or tablet
               </span>
             </div>
