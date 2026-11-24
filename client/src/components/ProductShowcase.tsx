@@ -8,7 +8,7 @@ export function ProductShowcase() {
   const [activeTab, setActiveTab] = useState<ShowcaseTab>('menu');
 
   return (
-    <section style={{ padding: '64px 0', background: 'var(--paper)', borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)' }}>
+    <section className="glass-surface" style={{ padding: '64px 0', borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)' }}>
       <div className="page-wrap">
         <div style={{ maxWidth: 680, margin: '0 auto 36px', textAlign: 'center' }}>
           <span className="eyebrow" style={{ color: 'var(--green)' }}>Complete restaurant platform</span>
@@ -63,13 +63,12 @@ export function ProductShowcase() {
         {/* TAB 1: CUSTOMER MENU SHOWCASE */}
         {activeTab === 'menu' && (
           <div
-            className="surface"
+            className="glass-card"
             style={{
               maxWidth: 720,
               margin: '0 auto',
               padding: '24px 20px',
-              borderRadius: 20,
-              boxShadow: '0 12px 36px rgba(0, 0, 0, 0.06)'
+              borderRadius: 20
             }}
           >
             {/* Mock Diner Header */}
@@ -182,13 +181,12 @@ export function ProductShowcase() {
         {/* TAB 2: KITCHEN DISPLAY SHOWCASE */}
         {activeTab === 'kitchen' && (
           <div
-            className="surface"
+            className="glass-card"
             style={{
               maxWidth: 900,
               margin: '0 auto',
               padding: '24px 20px',
-              borderRadius: 20,
-              boxShadow: '0 12px 36px rgba(0, 0, 0, 0.06)'
+              borderRadius: 20
             }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18, flexWrap: 'wrap', gap: 10 }}>
@@ -262,13 +260,12 @@ export function ProductShowcase() {
         {/* TAB 3: RESTAURANT OWNER DASHBOARD SHOWCASE */}
         {activeTab === 'dashboard' && (
           <div
-            className="surface"
+            className="glass-card"
             style={{
               maxWidth: 900,
               margin: '0 auto',
               padding: '24px 20px',
-              borderRadius: 20,
-              boxShadow: '0 12px 36px rgba(0, 0, 0, 0.06)'
+              borderRadius: 20
             }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 10 }}>

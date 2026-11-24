@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Brand, Modal } from './ui';
 import { ThemeToggle } from './ThemeToggle';
+import { ScrollReveal } from './ScrollReveal';
 
 export function SiteFooter() {
   const [legalModal, setLegalModal] = useState<'privacy' | 'terms' | 'settlement' | null>(null);
@@ -10,6 +11,39 @@ export function SiteFooter() {
     <>
       <footer className="site-footer">
         <div className="page-wrap">
+          <ScrollReveal>
+            {/* Top Trust Pill Strip */}
+          <div
+            style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: 12,
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              paddingBottom: 28,
+              marginBottom: 36,
+              borderBottom: '1px solid var(--line)'
+            }}
+          >
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center' }}>
+              <span className="pill" style={{ background: 'var(--paper)', border: '1px solid var(--line)', fontSize: 12, padding: '6px 12px' }}>
+                💳 <strong>0% Commission</strong> · Direct UPI settlement
+              </span>
+              <span className="pill" style={{ background: 'var(--paper)', border: '1px solid var(--line)', fontSize: 12, padding: '6px 12px' }}>
+                ⚡ <strong>Zero app download</strong> · Browser native
+              </span>
+              <span className="pill" style={{ background: 'var(--paper)', border: '1px solid var(--line)', fontSize: 12, padding: '6px 12px' }}>
+                🔒 <strong>Table PIN defense</strong> · Separate bill safety
+              </span>
+              <span className="pill" style={{ background: 'var(--paper)', border: '1px solid var(--line)', fontSize: 12, padding: '6px 12px' }}>
+                📱 <strong>Hardware independent</strong> · Any phone or tablet
+              </span>
+            </div>
+            <div style={{ fontSize: 12, color: 'var(--muted)' }}>
+              14 day unrestricted trial · Cancel anytime
+            </div>
+          </div>
+
           {/* Main Footer Grid */}
           <div className="site-footer-grid">
             {/* Column 1: Brand & Operational Identity */}
@@ -161,8 +195,9 @@ export function SiteFooter() {
               <ThemeToggle variant="compact" />
             </div>
           </div>
-        </div>
-      </footer>
+        </ScrollReveal>
+      </div>
+    </footer>
 
       {/* Privacy Policy Modal */}
       {legalModal === 'privacy' && (
