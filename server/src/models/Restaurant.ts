@@ -14,6 +14,13 @@ const restaurantSchema = new Schema({
   gstin: { type: String, trim: true, uppercase: true, default: '' },
   gstPercentage: { type: Number, min: 0, max: 28, default: 5 },
   upiId: { type: String, trim: true, maxlength: 100, default: '' },
+  googleReviewUrl: { type: String, trim: true, default: '' },
+  autoConfirmPayments: { type: Boolean, default: true },
+  paymentGateway: { type: String, enum: ['direct_upi', 'razorpay', 'cashfree', 'custom'], default: 'direct_upi' },
+  gatewayKeyId: { type: String, trim: true, default: '' },
+  gatewayKeySecret: { type: String, trim: true, default: '' },
+  webhookSecret: { type: String, trim: true, default: '' },
+  enableDishReviews: { type: Boolean, default: true },
   requireCustomerOtp: { type: Boolean, default: false },
   active: { type: Boolean, default: true }
 }, { timestamps: true });
@@ -30,6 +37,13 @@ export interface RestaurantDoc {
   gstin?: string;
   gstPercentage?: number;
   upiId?: string;
+  googleReviewUrl?: string;
+  autoConfirmPayments?: boolean;
+  paymentGateway?: 'direct_upi' | 'razorpay' | 'cashfree' | 'custom';
+  gatewayKeyId?: string;
+  gatewayKeySecret?: string;
+  webhookSecret?: string;
+  enableDishReviews?: boolean;
   requireCustomerOtp?: boolean;
   active: boolean;
 }

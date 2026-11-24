@@ -15,6 +15,7 @@ import TablesPage from './pages/dashboard/TablesPage';
 import OrdersPage from './pages/dashboard/OrdersPage';
 import DayClosePage from './pages/dashboard/DayClosePage';
 import SettingsPage from './pages/dashboard/SettingsPage';
+import ReviewsPage from './pages/dashboard/ReviewsPage';
 
 function NotFoundPage() {
   return <main className="page-wrap" style={{ paddingTop: 70 }}><span className="eyebrow">Page not found</span><h1 style={{ letterSpacing: '-.05em' }}>We couldn’t find that page.</h1><Link className="btn" to="/">Go to ProjectQR</Link></main>;
@@ -42,6 +43,7 @@ export default function App() {
         <Route path="orders" element={<OrdersPage />} />
         <Route path="kitchen" element={<OrdersPage kitchen />} />
         <Route path="day-close" element={<ManagementOnly><DayClosePage /></ManagementOnly>} />
+        <Route path="reviews" element={<ManagementOnly><ReviewsPage /></ManagementOnly>} />
         <Route path="settings" element={<ManagementOnly><SettingsPage /></ManagementOnly>} />
       </Route>
     </Route>

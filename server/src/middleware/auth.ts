@@ -53,7 +53,7 @@ export async function requireCustomer(req: Request, _res: Response, next: NextFu
 }
 
 export async function requireCustomerQr(req: Request, _res: Response, next: NextFunction): Promise<void> {
-  const token = req.method === 'GET' ? req.query.token : req.body?.token;
+  const token = typeof req.body?.token === 'string' ? req.body.token : (typeof req.query.token === 'string' ? req.query.token : undefined);
   if (!req.customer || typeof token !== 'string') return next(new AppError(400, 'TABLE_TOKEN_REQUIRED', 'Reopen this page from your table QR code.'));
   const table = await DiningTable.exists({ _id: req.customer.tableId, restaurantId: req.customer.restaurantId, qrToken: token });
   if (!table) return next(new AppError(403, 'CUSTOMER_SESSION_TABLE_MISMATCH', 'This session belongs to a different table. Verify your phone for this table to continue.'));

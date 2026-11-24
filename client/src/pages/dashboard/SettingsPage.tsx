@@ -20,6 +20,11 @@ interface SettingsForm {
   gstPercentage: number;
   upiId: string;
   requireCustomerOtp: boolean;
+  googleReviewUrl: string;
+  autoConfirmPayments: boolean;
+  paymentGateway: 'direct_upi' | 'razorpay' | 'cashfree' | 'custom';
+  webhookSecret: string;
+  enableDishReviews: boolean;
 }
 
 const colorPresets = [
@@ -56,7 +61,12 @@ export default function SettingsPage() {
     gstin: overrides.gstin ?? restaurant?.gstin ?? '',
     gstPercentage: overrides.gstPercentage ?? restaurant?.gstPercentage ?? 5,
     upiId: overrides.upiId ?? restaurant?.upiId ?? '',
-    requireCustomerOtp: overrides.requireCustomerOtp ?? restaurant?.requireCustomerOtp ?? false
+    requireCustomerOtp: overrides.requireCustomerOtp ?? restaurant?.requireCustomerOtp ?? false,
+    googleReviewUrl: overrides.googleReviewUrl ?? restaurant?.googleReviewUrl ?? '',
+    autoConfirmPayments: overrides.autoConfirmPayments ?? restaurant?.autoConfirmPayments ?? false,
+    paymentGateway: overrides.paymentGateway ?? restaurant?.paymentGateway ?? 'direct_upi',
+    webhookSecret: overrides.webhookSecret ?? restaurant?.webhookSecret ?? '',
+    enableDishReviews: overrides.enableDishReviews ?? restaurant?.enableDishReviews ?? true
   };
 
   const handleLogoChange = (file: File | null) => {
@@ -107,7 +117,16 @@ export default function SettingsPage() {
         welcomeTagline: response.restaurant.welcomeTagline ?? '',
         address: response.restaurant.address ?? '',
         contactPhone: response.restaurant.contactPhone ?? '',
-        contactEmail: response.restaurant.contactEmail ?? ''
+        contactEmail: response.restaurant.contactEmail ?? '',
+        gstin: response.restaurant.gstin ?? '',
+        gstPercentage: response.restaurant.gstPercentage ?? 5,
+        upiId: response.restaurant.upiId ?? '',
+        requireCustomerOtp: response.restaurant.requireCustomerOtp ?? false,
+        googleReviewUrl: response.restaurant.googleReviewUrl ?? '',
+        autoConfirmPayments: response.restaurant.autoConfirmPayments ?? false,
+        paymentGateway: response.restaurant.paymentGateway ?? 'direct_upi',
+        webhookSecret: response.restaurant.webhookSecret ?? '',
+        enableDishReviews: response.restaurant.enableDishReviews ?? true
       });
       setMessage('Restaurant settings, logo and branding saved successfully!');
       setError('');
@@ -420,17 +439,17 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      {/* Dynamic UPI Payment Settings */}
+      {/* Dynamic UPI Payment Settings & Auto-Confirm */}
       <div style={{ padding: 18, background: '#f0fdf4', borderRadius: 14, border: '1px solid #86efac', margin: '18px 0' }}>
         <div>
           <strong style={{ fontSize: 15, display: 'flex', alignItems: 'center', gap: 6, color: '#166534' }}>
-            📱 UPI Payment Integration (Instant Bank Transfer)
+            📱 UPI Payment Integration & Rush-Hour Auto-Confirm
           </strong>
           <p className="muted" style={{ margin: '4px 0 14px', fontSize: 13, color: '#14532d' }}>
-            Enter your restaurant's business UPI ID (VPA). When diners settle their bill or choose UPI, a dynamic QR code will be generated with the exact bill amount for instant scanning via GPay, PhonePe, Paytm, or BHIM.
+            Configure your business UPI ID and automated payment verification so staff never have to stand around checking diner phone screens during busy rush hours.
           </p>
         </div>
-        <div className="field">
+        <div className="field" style={{ marginBottom: 14 }}>
           <label htmlFor="restaurant-upi-id" style={{ color: '#166534', fontWeight: 650 }}>
             Restaurant UPI ID / VPA <span className="muted">(e.g. cafe@okaxis, 9876543210@paytm, business@hdfcbank)</span>
           </label>
@@ -444,9 +463,126 @@ export default function SettingsPage() {
             onChange={(e) => setOverrides((current) => ({ ...current, upiId: e.target.value.trim() }))}
           />
           <span className="muted" style={{ fontSize: 11, marginTop: 4, display: 'block' }}>
-            100% direct settlement: payments go straight from customer bank account to your merchant bank account with zero platform commission.
+            Direct settlement: payments go straight from customer bank account to your merchant bank account with zero platform commission.
           </span>
         </div>
+
+        <div style={{ padding: 12, background: '#ffffff', borderRadius: 10, border: '1px solid #bbf7d0', marginBottom: 14 }}>
+          <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: canEdit ? 'pointer' : 'default' }}>
+            <input
+              type="checkbox"
+              disabled={!canEdit}
+              checked={Boolean(form.autoConfirmPayments)}
+              onChange={(e) => setOverrides((current) => ({ ...current, autoConfirmPayments: e.target.checked }))}
+              style={{ marginTop: 3 }}
+            />
+            <div>
+              <strong style={{ fontSize: 13, color: '#166534', display: 'block' }}>
+                ⚡ Enable 1-Tap UPI Auto-Confirmation
+              </strong>
+              <span className="muted" style={{ fontSize: 12 }}>
+                Allows diners to tap "I've Paid via UPI" with optional UTR / Reference ID. Automatically settles the order and updates kitchen and floor maps instantly with pleasant chimes.
+              </span>
+            </div>
+          </label>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12 }}>
+          <div className="field">
+            <label htmlFor="payment-gateway" style={{ fontSize: 12, fontWeight: 600, color: '#166534' }}>
+              Payment Mode / Gateway
+            </label>
+            <select
+              id="payment-gateway"
+              className="select"
+              disabled={!canEdit}
+              value={form.paymentGateway}
+              onChange={(e) => setOverrides((current) => ({ ...current, paymentGateway: e.target.value as SettingsForm['paymentGateway'] }))}
+            >
+              <option value="direct_upi">Direct UPI (Dynamic QR & Intent)</option>
+              <option value="razorpay">Razorpay UPI Webhook</option>
+              <option value="cashfree">Cashfree UPI Webhook</option>
+              <option value="custom">Soundbox / Custom Gateway</option>
+            </select>
+          </div>
+
+          <div className="field">
+            <label htmlFor="webhook-secret" style={{ fontSize: 12, fontWeight: 600, color: '#166534' }}>
+              Webhook Secret <span className="muted">(Optional HMAC key)</span>
+            </label>
+            <input
+              id="webhook-secret"
+              className="input"
+              disabled={!canEdit}
+              placeholder="e.g. whsec_..."
+              value={form.webhookSecret}
+              onChange={(e) => setOverrides((current) => ({ ...current, webhookSecret: e.target.value.trim() }))}
+            />
+          </div>
+        </div>
+
+        <div style={{ marginTop: 10, padding: '8px 12px', background: '#ecfdf5', borderRadius: 8, fontSize: 11, color: '#065f46', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 6 }}>
+          <span>Universal Webhook URL: <code>{typeof window !== 'undefined' ? `${window.location.origin}/api/webhooks/payment` : '/api/webhooks/payment'}</code></span>
+          <button
+            type="button"
+            className="btn ghost small"
+            style={{ fontSize: 10, padding: '2px 6px' }}
+            onClick={() => {
+              if (typeof window !== 'undefined') {
+                void navigator.clipboard.writeText(`${window.location.origin}/api/webhooks/payment`);
+              }
+            }}
+          >
+            📋 Copy URL
+          </button>
+        </div>
+      </div>
+
+      {/* Google Reviews Booster & Human Psychology Feedback */}
+      <div style={{ padding: 18, background: '#eff6ff', borderRadius: 14, border: '1px solid #bfdbfe', margin: '18px 0' }}>
+        <div>
+          <strong style={{ fontSize: 15, display: 'flex', alignItems: 'center', gap: 6, color: '#1e40af' }}>
+            ⭐ Google Reviews Booster & Behavioral Psychology Feedback
+          </strong>
+          <p className="muted" style={{ margin: '4px 0 14px', fontSize: 13, color: '#1e3a8a' }}>
+            Rooted in Daniel Kahneman's Peak-End Rule: Delighted 4-5 star diners are gently guided directly into your Google Maps 5-star review page with 1 tap, while unhappy 1-3 star diners are caught table-side with diagnostic chips and alert the floor manager before leaving.
+          </p>
+        </div>
+
+        <div className="field" style={{ marginBottom: 14 }}>
+          <label htmlFor="restaurant-google-review-url" style={{ color: '#1e40af', fontWeight: 650 }}>
+            Google Maps Review Link / Shortlink <span className="muted">(e.g. https://g.page/r/your-id/review or https://maps.app.goo.gl/...)</span>
+          </label>
+          <input
+            className="input"
+            id="restaurant-google-review-url"
+            maxLength={2048}
+            disabled={!canEdit}
+            placeholder="https://g.page/r/YOUR_RESTAURANT/review"
+            value={form.googleReviewUrl}
+            onChange={(e) => setOverrides((current) => ({ ...current, googleReviewUrl: e.target.value.trim() }))}
+          />
+          <span className="muted" style={{ fontSize: 11, marginTop: 4, display: 'block' }}>
+            Obtain this link from your Google Business Profile &gt; "Ask for reviews".
+          </span>
+        </div>
+
+        <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: canEdit ? 'pointer' : 'default', padding: '6px 0' }}>
+          <input
+            type="checkbox"
+            disabled={!canEdit}
+            checked={Boolean(form.enableDishReviews)}
+            onChange={(e) => setOverrides((current) => ({ ...current, enableDishReviews: e.target.checked }))}
+          />
+          <div>
+            <strong style={{ fontSize: 13, color: '#1e3a8a', display: 'block' }}>
+              Enable Dish-Level Sentiment Feedback (Yumpingo Style)
+            </strong>
+            <span className="muted" style={{ fontSize: 11 }}>
+              Customers can give 1-tap 👍/👎 on individual dishes they ordered to diagnose kitchen taste & consistency.
+            </span>
+          </div>
+        </label>
       </div>
 
       <div className="notice">Table QR codes use the public app URL configured by the restaurant operator.</div>

@@ -103,3 +103,59 @@ export function playWaiterCallAlert(): void {
     console.warn('AudioContext waiter alert blocked by browser gesture policy:', error);
   }
 }
+
+/**
+ * Pleasant, uplifting cash-register / success chime when a UPI auto-confirmation or webhook payment settles.
+ * Notes: C6 (1046Hz) -> E6 (1318Hz) -> G6 (1567Hz) -> C7 (2093Hz) upward arpeggio
+ */
+export function playPaymentSuccessChime(): void {
+  try {
+    const ctx = getAudioContext();
+    if (!ctx) return;
+    const now = ctx.currentTime;
+    const notes = [1046.5, 1318.5, 1567.98, 2093.0];
+    notes.forEach((freq, i) => {
+      const start = now + i * 0.08;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, start);
+      gain.gain.setValueAtTime(0.3, start);
+      gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.4);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(start);
+      osc.stop(start + 0.4);
+    });
+  } catch (error) {
+    console.warn('AudioContext payment chime blocked:', error);
+  }
+}
+
+/**
+ * Immediate, urgent soft double-pulse chime for floor managers when an unhappy customer review (rating <= 3) is submitted.
+ * High priority, non-startling warning tone: F5 (698Hz) -> D5 (587Hz)
+ */
+export function playComplaintAlertChime(): void {
+  try {
+    const ctx = getAudioContext();
+    if (!ctx) return;
+    const now = ctx.currentTime;
+    const notes = [698.46, 587.33];
+    notes.forEach((freq, i) => {
+      const start = now + i * 0.16;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(freq, start);
+      gain.gain.setValueAtTime(0.4, start);
+      gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.45);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(start);
+      osc.stop(start + 0.45);
+    });
+  } catch (error) {
+    console.warn('AudioContext complaint alert blocked:', error);
+  }
+}

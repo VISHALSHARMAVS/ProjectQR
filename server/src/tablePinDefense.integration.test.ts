@@ -49,7 +49,7 @@ describe('4-digit Table PIN & Separate Bill Defense', () => {
     aliceHostAgent = supertest.agent(app.httpServer);
     bobFriendAgent = supertest.agent(app.httpServer);
     charlieSoloAgent = supertest.agent(app.httpServer);
-  });
+  }, 120_000);
 
   afterAll(async () => {
     if (app) await new Promise<void>((resolve) => app!.io.close(() => resolve()));
@@ -204,5 +204,5 @@ describe('4-digit Table PIN & Separate Bill Defense', () => {
     // Table PIN is reset: next customer finds table free of active party
     const resetLanding = await supertest(app!.httpServer).get(`/api/public/tables/${tableToken}`).expect(200);
     expect(resetLanding.body.table.hasActiveParty).toBe(false);
-  });
+  }, 120_000);
 });

@@ -5,6 +5,7 @@ import { api, ApiError } from '../../lib/api';
 import { formatTableLabel, money } from '../../lib/format';
 import { DietaryBadge, EmptyState, ErrorPanel, Loading, Modal } from '../../components/ui';
 import { CustomerAssistanceModal } from '../../components/CustomerAssistanceModal';
+import { ReviewModal } from '../../components/ReviewModal';
 import { useOrderSocket } from '../../hooks/useOrderSocket';
 import type { Category, CustomerHistory, DietaryType, MenuItem, MenuItemAddon, MenuItemVariant, RestaurantInfo, TableCartLine } from '../../types';
 
@@ -31,6 +32,7 @@ export default function CustomerMenuPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const cartKey = `projectqr-cart:${token}`;
+  const [reviewOpen, setReviewOpen] = useState(false);
   useOrderSocket(true);
   const session = useQuery({ queryKey: ['customer-session', token], queryFn: () => api.get<CustomerSession>(`/customer/session?token=${encodeURIComponent(token)}`), retry: false });
   const hasValidSession = Boolean(session.data && !session.data.tableMismatch);
@@ -240,6 +242,15 @@ export default function CustomerMenuPage() {
           </div>
         </div>
         <div className="customer-header-actions">
+          <button
+            type="button"
+            className="btn secondary small"
+            onClick={() => setReviewOpen(true)}
+            title="Rate your dining experience"
+            style={{ color: '#b45309', borderColor: '#fde68a' }}
+          >
+            ⭐ Review
+          </button>
           <button
             type="button"
             className="btn secondary small"
@@ -727,6 +738,15 @@ export default function CustomerMenuPage() {
         onClose={() => setAssistanceOpen(false)}
         token={token}
         tableLabel={formatTableLabel(table.label)}
+      />
+
+      <ReviewModal
+        isOpen={reviewOpen}
+        onClose={() => setReviewOpen(false)}
+        token={token}
+        tableLabel={formatTableLabel(table.label)}
+        googleReviewUrl={session.data?.restaurant?.googleReviewUrl}
+        enableDishReviews={session.data?.restaurant?.enableDishReviews ?? true}
       />
     </main>
   );

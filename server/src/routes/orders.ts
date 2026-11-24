@@ -79,6 +79,8 @@ function serializeOrder(order: OrderDoc, tableInfo: { label: string; needsCleari
     discountReason: order.discountReason ?? '',
     finalPaidPaise: order.finalPaidPaise ?? (order.paymentStatus === 'PAID' ? order.totalPaise : 0),
     settledAt: order.settledAt ?? null,
+    autoConfirmed: Boolean(order.autoConfirmed),
+    transactionReference: order.transactionReference || '',
     notes: order.notes,
     rejectionReason: order.rejectionReason,
     createdAt: order.createdAt,
@@ -210,6 +212,44 @@ customerOrders.get('/:id', async (req, res) => {
   res.json({ order: serializeOrder(order, { label: table?.label ?? 'Table', needsClearing: Boolean(table?.needsClearing) }) });
 });
 
+const autoConfirmSchema = z.object({
+  token: z.string().optional(),
+  transactionReference: z.string().trim().max(100).optional(),
+  paymentMethod: z.enum(['UPI', 'CARD']).default('UPI')
+});
+
+customerOrders.post('/:id/auto-confirm', async (req, res) => {
+  if (!objectIdSchema.safeParse(req.params.id).success) throw new AppError(400, 'INVALID_ID', 'Invalid order identifier.');
+  const parsed = autoConfirmSchema.safeParse(req.body);
+  if (!parsed.success) throw new AppError(400, 'INVALID_INPUT', 'Invalid payment confirmation data.');
+
+  const order = await Order.findOne({
+    _id: req.params.id,
+    tableId: req.customer!.tableId,
+    restaurantId: req.customer!.restaurantId
+  }) as unknown as OrderDoc | null;
+
+  if (!order) throw new AppError(404, 'NOT_FOUND', 'Order not found.');
+  if (order.paymentStatus === 'PAID') {
+    const table = await DiningTable.findOne({ _id: order.tableId, restaurantId: order.restaurantId }).select('label needsClearing');
+    return res.json({ order: serializeOrder(order, { label: table?.label ?? 'Table', needsClearing: Boolean(table?.needsClearing) }) });
+  }
+
+  const result = await settleOrderRecord({
+    orderId: order._id,
+    restaurantId: req.customer!.restaurantId,
+    paymentMethod: parsed.data.paymentMethod,
+    autoConfirmed: true,
+    transactionReference: parsed.data.transactionReference || `UPI-${Date.now().toString(36).toUpperCase()}`
+  });
+
+  res.json({
+    success: true,
+    order: result.order,
+    message: 'Payment verified and settled successfully!'
+  });
+});
+
 restaurantOrders.use(requireStaff);
 restaurantOrders.get('/', async (req, res) => {
   const parsedStatus = z.enum(orderStatuses).safeParse(req.query.status);
@@ -324,35 +364,48 @@ const settleSchema = z.object({
   discountReason: z.string().trim().max(100).default('')
 });
 
-restaurantOrders.patch('/:id/settle', async (req, res) => {
-  if (!objectIdSchema.safeParse(req.params.id).success) throw new AppError(400, 'INVALID_ID', 'Invalid order identifier.');
-  const parsed = settleSchema.safeParse(req.body);
-  if (!parsed.success) throw new AppError(400, 'INVALID_INPUT', parsed.error.issues[0]?.message ?? 'Invalid settlement details.');
-
-  const current = await Order.findOne(tenantFilter(req.staff!.restaurantId, { _id: req.params.id })) as unknown as OrderDoc | null;
+export async function settleOrderRecord(params: {
+  orderId: string | import('mongoose').Types.ObjectId;
+  restaurantId: string | import('mongoose').Types.ObjectId;
+  paymentMethod: 'CASH' | 'UPI' | 'CARD' | 'OTHER';
+  settledBy?: import('mongoose').Types.ObjectId | null;
+  autoConfirmed?: boolean;
+  transactionReference?: string;
+  gatewayOrderId?: string;
+  gatewayPaymentId?: string;
+  discountPaise?: number;
+  discountReason?: string;
+}): Promise<{ order: ReturnType<typeof serializeOrder> }> {
+  const current = await Order.findOne({ _id: params.orderId, restaurantId: params.restaurantId }) as unknown as OrderDoc | null;
   if (!current) throw new AppError(404, 'NOT_FOUND', 'Order not found.');
   if (current.status === 'REJECTED') throw new AppError(400, 'INVALID_STATE', 'Cannot settle a rejected order.');
-  if (parsed.data.discountPaise > current.totalPaise) throw new AppError(400, 'INVALID_DISCOUNT', 'Discount cannot exceed order total.');
 
-  const finalPaidPaise = Math.max(0, current.totalPaise - parsed.data.discountPaise);
+  const discountPaise = params.discountPaise ?? 0;
+  if (discountPaise > current.totalPaise) throw new AppError(400, 'INVALID_DISCOUNT', 'Discount cannot exceed order total.');
+
+  const finalPaidPaise = Math.max(0, current.totalPaise - discountPaise);
   const now = new Date();
-
   const updatedStatus = current.status === 'DELIVERED' ? current.status : 'DELIVERED';
+  const methodLabel = params.autoConfirmed ? `${params.paymentMethod} (Auto-Confirmed)` : params.paymentMethod;
   const statusHistoryEntry = updatedStatus !== current.status
-    ? [{ status: updatedStatus, at: now, note: `Settled via ${parsed.data.paymentMethod}` }]
+    ? [{ status: updatedStatus, at: now, note: `Settled via ${methodLabel}` }]
     : [];
 
   const updated = await Order.findOneAndUpdate(
-    tenantFilter(req.staff!.restaurantId, { _id: current._id }),
+    { _id: current._id, restaurantId: params.restaurantId },
     {
       $set: {
         paymentStatus: 'PAID',
-        paymentMethod: parsed.data.paymentMethod,
-        discountPaise: parsed.data.discountPaise,
-        discountReason: parsed.data.discountReason,
+        paymentMethod: params.paymentMethod,
+        discountPaise,
+        discountReason: params.discountReason ?? '',
         finalPaidPaise,
         settledAt: now,
-        settledBy: req.staff!.id,
+        settledBy: params.settledBy ?? null,
+        autoConfirmed: Boolean(params.autoConfirmed),
+        ...(params.transactionReference ? { transactionReference: params.transactionReference } : {}),
+        ...(params.gatewayOrderId ? { gatewayOrderId: params.gatewayOrderId } : {}),
+        ...(params.gatewayPaymentId ? { gatewayPaymentId: params.gatewayPaymentId } : {}),
         status: updatedStatus
       },
       ...(statusHistoryEntry.length > 0 ? { $push: { statusHistory: { $each: statusHistoryEntry } } } : {})
@@ -362,7 +415,6 @@ restaurantOrders.patch('/:id/settle', async (req, res) => {
 
   if (!updated) throw new AppError(409, 'ORDER_CHANGED', 'This order could not be updated.');
 
-  // Automatically mark the dining table as needing clearing upon settlement
   await DiningTable.updateOne(
     { _id: updated.tableId, restaurantId: updated.restaurantId },
     { $set: { needsClearing: true } }
@@ -374,24 +426,28 @@ restaurantOrders.patch('/:id/settle', async (req, res) => {
   ]);
   const response = serializeOrder(updated, { label: table?.label ?? 'Table', needsClearing: true });
 
-  orderSocket?.to(`restaurant:${req.staff!.restaurantId}`).emit('order:settled', response);
-  orderSocket?.to(`restaurant:${req.staff!.restaurantId}`).emit('table:clearing_needed', {
+  orderSocket?.to(`restaurant:${params.restaurantId}`).emit('order:settled', response);
+  orderSocket?.to(`restaurant:${params.restaurantId}`).emit('table:clearing_needed', {
     tableId: String(updated.tableId),
     tableLabel: table?.label ?? 'Table',
     needsClearing: true
   });
-  orderSocket?.to(`restaurant:${req.staff!.restaurantId}`).emit('order:status', {
+  orderSocket?.to(`restaurant:${params.restaurantId}`).emit('order:status', {
     id: response.id,
     orderNumber: response.orderNumber,
     status: response.status,
     updatedAt: response.updatedAt
   });
-  if (customerSession) orderSocket?.to(`customer:${customerSession._id}`).emit('order:status', {
-    id: response.id,
-    orderNumber: response.orderNumber,
-    status: response.status,
-    updatedAt: response.updatedAt
-  });
+  if (customerSession) {
+    orderSocket?.to(`customer:${customerSession._id}`).emit('order:settled', response);
+    orderSocket?.to(`customer:${customerSession._id}`).emit('order:status', {
+      id: response.id,
+      orderNumber: response.orderNumber,
+      status: response.status,
+      updatedAt: response.updatedAt
+    });
+  }
+  orderSocket?.to(`table:${updated.tableId}`).emit('order:settled', response);
   orderSocket?.to(`table:${updated.tableId}`).emit('order:status', {
     id: response.id,
     orderNumber: response.orderNumber,
@@ -399,7 +455,25 @@ restaurantOrders.patch('/:id/settle', async (req, res) => {
     updatedAt: response.updatedAt
   });
 
-  res.json({ order: response });
+  return { order: response };
+}
+
+restaurantOrders.patch('/:id/settle', async (req, res) => {
+  if (!objectIdSchema.safeParse(req.params.id).success) throw new AppError(400, 'INVALID_ID', 'Invalid order identifier.');
+  const parsed = settleSchema.safeParse(req.body);
+  if (!parsed.success) throw new AppError(400, 'INVALID_INPUT', parsed.error.issues[0]?.message ?? 'Invalid settlement details.');
+
+  const result = await settleOrderRecord({
+    orderId: req.params.id,
+    restaurantId: req.staff!.restaurantId,
+    paymentMethod: parsed.data.paymentMethod,
+    discountPaise: parsed.data.discountPaise,
+    discountReason: parsed.data.discountReason,
+    settledBy: req.staff!.id,
+    autoConfirmed: false
+  });
+
+  res.json(result);
 });
 
 export function mountOrderRoutes(app: import('express').Express, io: Server): void {

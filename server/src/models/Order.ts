@@ -47,6 +47,10 @@ const orderSchema = new Schema({
   finalPaidPaise: { type: Number, min: 0, default: 0 },
   settledAt: { type: Date, default: null },
   settledBy: { type: Schema.Types.ObjectId, ref: 'User', default: null },
+  autoConfirmed: { type: Boolean, default: false },
+  gatewayOrderId: { type: String, trim: true, default: '' },
+  gatewayPaymentId: { type: String, trim: true, default: '' },
+  transactionReference: { type: String, trim: true, default: '' },
   notes: { type: String, trim: true, maxlength: 500, default: '' },
   rejectionReason: { type: String, trim: true, maxlength: 300, default: '' }
 }, { timestamps: true });
@@ -88,6 +92,10 @@ export interface OrderDoc {
   finalPaidPaise?: number;
   settledAt?: Date | null;
   settledBy?: Types.ObjectId | null;
+  autoConfirmed?: boolean;
+  gatewayOrderId?: string;
+  gatewayPaymentId?: string;
+  transactionReference?: string;
   notes: string;
   rejectionReason: string;
   createdAt: Date;

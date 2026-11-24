@@ -5,7 +5,7 @@ import { EmptyState, ErrorPanel, Loading, Modal, StatusPill } from '../../compon
 import { ManualOrderModal } from '../../components/ManualOrderModal';
 import { useOrderSocket } from '../../hooks/useOrderSocket';
 import { api } from '../../lib/api';
-import { playKitchenChime, playWaiterCallAlert } from '../../lib/audio';
+import { playComplaintAlertChime, playKitchenChime, playPaymentSuccessChime, playWaiterCallAlert } from '../../lib/audio';
 import { elapsedSince, formatTableLabel, money } from '../../lib/format';
 import type { LiveTableInfo, TableLiveState } from '../../types';
 
@@ -77,6 +77,8 @@ export default function FloorMapPage() {
   const [selectedTable, setSelectedTable] = useState<LiveTableInfo | null>(null);
   const [punchOrderTableId, setPunchOrderTableId] = useState<string | null>(null);
   const [filterState, setFilterState] = useState<string>('ALL');
+  const [reviewAlertToast, setReviewAlertToast] = useState<{ tableLabel: string; rating: number; comment?: string } | null>(null);
+  const [paymentSettledToast, setPaymentSettledToast] = useState<{ tableLabel?: string; finalPaidPaise?: number } | null>(null);
 
   const onNewOrder = useCallback(() => {
     void queryClient.invalidateQueries({ queryKey: ['floor-map'] });
@@ -93,7 +95,29 @@ export default function FloorMapPage() {
     void queryClient.invalidateQueries({ queryKey: ['floor-map'] });
   }, [queryClient]);
 
-  useOrderSocket(true, onNewOrder, onServiceRequest);
+  const onReviewAlert = useCallback((payload: unknown) => {
+    const data = payload as { tableLabel?: string; rating?: number; comment?: string };
+    playComplaintAlertChime();
+    setReviewAlertToast({
+      tableLabel: data.tableLabel || 'Table',
+      rating: data.rating || 1,
+      comment: data.comment
+    });
+    void queryClient.invalidateQueries({ queryKey: ['floor-map'] });
+  }, [queryClient]);
+
+  const onOrderSettled = useCallback((payload: unknown) => {
+    const data = payload as { tableLabel?: string; finalPaidPaise?: number; autoConfirmed?: boolean };
+    playPaymentSuccessChime();
+    setPaymentSettledToast({
+      tableLabel: data.tableLabel,
+      finalPaidPaise: data.finalPaidPaise
+    });
+    setTimeout(() => setPaymentSettledToast(null), 6000);
+    void queryClient.invalidateQueries({ queryKey: ['floor-map'] });
+  }, [queryClient]);
+
+  useOrderSocket(true, onNewOrder, onServiceRequest, undefined, onOrderSettled, onReviewAlert);
 
   const query = useQuery({
     queryKey: ['floor-map'],
@@ -168,6 +192,79 @@ export default function FloorMapPage() {
           </button>
         </div>
       </div>
+
+      {/* Real-time Review Complaint Alert Banner */}
+      {reviewAlertToast && (
+        <div
+          style={{
+            margin: '16px 0',
+            padding: '14px 18px',
+            background: '#fef2f2',
+            border: '2px solid #ef4444',
+            borderRadius: 12,
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            boxShadow: '0 4px 16px rgba(239, 68, 68, 0.18)'
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span style={{ fontSize: 24 }}>🚨</span>
+            <div>
+              <strong style={{ color: '#991b1b', fontSize: 14, display: 'block' }}>
+                Table-Side Alert: {reviewAlertToast.tableLabel} ({reviewAlertToast.rating}★ Rating)
+              </strong>
+              <span style={{ fontSize: 12, color: '#7f1d1d' }}>
+                Guest needs immediate manager attention before leaving! {reviewAlertToast.comment ? `"${reviewAlertToast.comment}"` : ''}
+              </span>
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <Link to="/dashboard/reviews" className="btn small" style={{ background: '#b91c1c', color: '#fff', fontSize: 12 }}>
+              View & Recover →
+            </Link>
+            <button
+              type="button"
+              className="icon-button"
+              onClick={() => setReviewAlertToast(null)}
+              aria-label="Dismiss alert"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Real-time UPI Auto-Confirm Settlement Toast */}
+      {paymentSettledToast && (
+        <div
+          style={{
+            margin: '16px 0',
+            padding: '12px 16px',
+            background: '#f0fdf4',
+            border: '1.5px solid #86efac',
+            borderRadius: 10,
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center'
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontSize: 20 }}>💰</span>
+            <span style={{ fontSize: 13, color: '#166534', fontWeight: 650 }}>
+              Payment Settled: {paymentSettledToast.tableLabel || 'Table'} · {paymentSettledToast.finalPaidPaise ? money(paymentSettledToast.finalPaidPaise) : 'Paid'} (UPI Auto-Confirmed)
+            </span>
+          </div>
+          <button
+            type="button"
+            className="icon-button"
+            onClick={() => setPaymentSettledToast(null)}
+            aria-label="Dismiss notification"
+          >
+            ×
+          </button>
+        </div>
+      )}
 
       {/* Responsive Floor Summary Banner */}
       <div

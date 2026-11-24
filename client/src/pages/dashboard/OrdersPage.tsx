@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, ApiError } from '../../lib/api';
 import { elapsedSince, formatTableLabel, money } from '../../lib/format';
-import { playKitchenChime, playWaiterCallAlert } from '../../lib/audio';
+import { playComplaintAlertChime, playKitchenChime, playPaymentSuccessChime, playWaiterCallAlert } from '../../lib/audio';
 import { EmptyState, ErrorPanel, Loading, Modal, StatusPill } from '../../components/ui';
 import { useOrderSocket } from '../../hooks/useOrderSocket';
 import { printOrderReceipt } from '../../lib/printer';
@@ -108,7 +108,23 @@ export default function OrdersPage({ kitchen = false }: { kitchen?: boolean }) {
     window.setTimeout(() => setNotice(''), 6000);
   }, [soundEnabled]);
 
-  useOrderSocket(true, onNewOrder, onServiceRequest);
+  const onOrderSettled = useCallback((payload: unknown) => {
+    const data = payload as { tableLabel?: string; finalPaidPaise?: number; autoConfirmed?: boolean };
+    if (soundEnabled) playPaymentSuccessChime();
+    setNotice(`💰 ${data.tableLabel || 'Table'} settled: ${data.autoConfirmed ? 'Auto-Confirmed UPI' : 'Paid'}`);
+    window.setTimeout(() => setNotice(''), 6000);
+    void queryClient.invalidateQueries({ queryKey: ['staff-orders'] });
+  }, [soundEnabled, queryClient]);
+
+  const onReviewAlert = useCallback((payload: unknown) => {
+    const data = payload as { tableLabel?: string; rating?: number; comment?: string };
+    if (soundEnabled) playComplaintAlertChime();
+    setNotice(`🚨 Alert: ${data.tableLabel || 'Table'} submitted ${data.rating || 1}★ feedback. Immediate recovery recommended!`);
+    window.setTimeout(() => setNotice(''), 8000);
+    void queryClient.invalidateQueries({ queryKey: ['restaurant-reviews'] });
+  }, [soundEnabled, queryClient]);
+
+  useOrderSocket(true, onNewOrder, onServiceRequest, undefined, onOrderSettled, onReviewAlert);
 
   const query = useQuery({ queryKey: ['staff-orders', filter], queryFn: () => api.get<OrderList>(`/restaurant/orders${filter ? `?status=${filter}` : ''}`), refetchInterval: 30_000 });
   const serviceRequests = useQuery({ queryKey: ['service-requests'], queryFn: () => api.get<{ requests: ServiceRequestItem[] }>('/restaurant/service-requests'), refetchInterval: 15_000 });
@@ -383,7 +399,7 @@ export default function OrdersPage({ kitchen = false }: { kitchen?: boolean }) {
             <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
               {order.paymentStatus === 'PAID' ? (
                 <span className="pill" style={{ background: '#dcfce7', color: '#15803d', fontWeight: 700, fontSize: 11, padding: '2px 8px' }}>
-                  ✓ PAID ({order.paymentMethod})
+                  ✓ {order.autoConfirmed ? '⚡ AUTO-PAID (UPI)' : `PAID (${order.paymentMethod})`}
                 </span>
               ) : order.status !== 'REJECTED' ? (
                 <span className="pill" style={{ background: '#fef3c7', color: '#b45309', fontWeight: 700, fontSize: 11, padding: '2px 8px' }}>

@@ -14,6 +14,13 @@ export interface RestaurantInfo {
   gstPercentage?: number;
   upiId?: string;
   requireCustomerOtp?: boolean;
+  googleReviewUrl?: string;
+  autoConfirmPayments?: boolean;
+  paymentGateway?: 'direct_upi' | 'razorpay' | 'cashfree' | 'custom';
+  gatewayKeyId?: string;
+  gatewayKeySecret?: string;
+  webhookSecret?: string;
+  enableDishReviews?: boolean;
   active?: boolean;
 }
 
@@ -137,6 +144,8 @@ export interface OrderRecord {
   discountReason?: string;
   finalPaidPaise?: number;
   settledAt?: string | null;
+  autoConfirmed?: boolean;
+  transactionReference?: string | null;
   notes: string;
   rejectionReason: string;
   createdAt: string;
@@ -204,4 +213,74 @@ export interface CustomerHistory {
     totalPaise: number;
     items: { name: string; quantity: number; pricePaise: number }[];
   }[];
+}
+
+export type ReviewSentiment = 'POSITIVE' | 'NEUTRAL' | 'NEGATIVE';
+
+export type ReviewRootCauseTag =
+  | 'FOOD_QUALITY'
+  | 'SLOW_SERVICE'
+  | 'WRONG_ITEM'
+  | 'CLEANLINESS'
+  | 'STAFF_BEHAVIOR'
+  | 'PORTION_SIZE'
+  | 'PRICING'
+  | 'AMBIENCE'
+  | 'OTHER';
+
+export interface DishRatingPayload {
+  menuItemId?: string;
+  dishName: string;
+  liked: boolean;
+  comment?: string;
+}
+
+export interface SubmitReviewPayload {
+  orderId?: string;
+  tableId?: string;
+  rating: number; // 1 to 5
+  tags?: ReviewRootCauseTag[];
+  comment?: string;
+  dishRatings?: DishRatingPayload[];
+}
+
+export interface ReviewRecord {
+  id: string;
+  orderId?: string;
+  tableLabel?: string;
+  customerName?: string;
+  rating: number;
+  sentiment: ReviewSentiment;
+  tags: ReviewRootCauseTag[];
+  comment: string;
+  dishRatings: {
+    menuItemId?: string;
+    dishName: string;
+    liked: boolean;
+    comment: string;
+  }[];
+  googleReviewClicked: boolean;
+  resolved: boolean;
+  resolvedBy?: { id: string; name: string };
+  resolvedAt?: string;
+  resolutionNote?: string;
+  createdAt: string;
+}
+
+export interface ReviewSummary {
+  averageRating: number;
+  totalReviews: number;
+  ratingDistribution: Record<number, number>;
+  sentimentCounts: Record<ReviewSentiment, number>;
+  unresolvedComplaints: number;
+  googleClicks: number;
+  googleClickConversionRate: number;
+}
+
+export interface DishLeaderboardItem {
+  dishName: string;
+  thumbsUp: number;
+  thumbsDown: number;
+  totalVotes: number;
+  satisfactionRate: number;
 }

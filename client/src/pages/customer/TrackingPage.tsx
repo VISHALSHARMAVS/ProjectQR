@@ -5,10 +5,16 @@ import { api, ApiError } from '../../lib/api';
 import { elapsedSince, formatTableLabel, money } from '../../lib/format';
 import { Loading, StatusPill } from '../../components/ui';
 import { CustomerAssistanceModal } from '../../components/CustomerAssistanceModal';
+import { ReviewModal } from '../../components/ReviewModal';
 import { useOrderSocket } from '../../hooks/useOrderSocket';
-import type { OrderRecord, OrderStatus } from '../../types';
+import { playPaymentSuccessChime } from '../../lib/audio';
+import type { OrderRecord, OrderStatus, RestaurantInfo } from '../../types';
 
 interface OrderResponse { order: OrderRecord }
+interface SessionResponse {
+  restaurant: RestaurantInfo;
+  table: { label: string };
+}
 const progress: { status: OrderStatus; label: string; description: string }[] = [
   { status: 'NEW', label: 'Order received', description: 'Your order is with the restaurant.' },
   { status: 'ACCEPTED', label: 'Accepted', description: 'The kitchen is getting ready.' },
@@ -22,9 +28,20 @@ export default function TrackingPage() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [assistanceOpen, setAssistanceOpen] = useState(false);
+  const [reviewOpen, setReviewOpen] = useState(false);
   const [restoring, setRestoring] = useState(false);
   const [restoreError, setRestoreError] = useState('');
   const [tableVacated, setTableVacated] = useState(false);
+  const [upiConfirming, setUpiConfirming] = useState(false);
+  const [upiRef, setUpiRef] = useState('');
+  const [showUpiInput, setShowUpiInput] = useState(false);
+  const [autoConfirmError, setAutoConfirmError] = useState('');
+
+  const sessionQuery = useQuery({
+    queryKey: ['customer-session', token],
+    queryFn: () => api.get<SessionResponse>(`/customer/session?token=${encodeURIComponent(token)}`),
+    retry: false
+  });
 
   const orderQuery = useQuery({
     queryKey: ['customer-order', orderId, token],
@@ -33,7 +50,37 @@ export default function TrackingPage() {
     refetchInterval: false,
     retry: false
   });
-  useOrderSocket(true, undefined, undefined, () => setTableVacated(true));
+
+  useOrderSocket(
+    true,
+    undefined,
+    undefined,
+    () => setTableVacated(true),
+    (settledData: unknown) => {
+      const settled = settledData as { orderId?: string } | undefined;
+      if (!settled?.orderId || settled.orderId === orderId) {
+        playPaymentSuccessChime();
+        setReviewOpen(true);
+      }
+    }
+  );
+
+  const handleAutoConfirmPayment = async () => {
+    setAutoConfirmError('');
+    setUpiConfirming(true);
+    try {
+      await api.post(`/customer/orders/${encodeURIComponent(orderId)}/auto-confirm?token=${encodeURIComponent(token)}`, {
+        transactionReference: upiRef.trim() || undefined
+      });
+      playPaymentSuccessChime();
+      await queryClient.invalidateQueries({ queryKey: ['customer-order', orderId, token] });
+      setTimeout(() => setReviewOpen(true), 600);
+    } catch (err: unknown) {
+      setAutoConfirmError(err instanceof ApiError ? err.message : 'Could not confirm payment. Please ask staff for assistance.');
+    } finally {
+      setUpiConfirming(false);
+    }
+  };
 
   if (!orderId) {
     return (
@@ -248,26 +295,161 @@ export default function TrackingPage() {
           </div>
         )}
 
-        {/* Paid & Settled confirmation or Bill request */}
+        {/* Paid & Settled confirmation or UPI Auto-Confirm / Bill request */}
         {order.paymentStatus === 'PAID' ? (
-          <div style={{ marginTop: 16, padding: '12px 14px', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 10, textAlign: 'center' }}>
-            <span style={{ fontSize: 13, fontWeight: 700, color: '#15803d' }}>
-              ✓ Bill Paid & Settled ({order.paymentMethod})
+          <div style={{ marginTop: 16, padding: '16px', background: '#f0fdf4', border: '1.5px solid #86efac', borderRadius: 12, textAlign: 'center' }}>
+            <span style={{ fontSize: 15, fontWeight: 750, color: '#15803d', display: 'block' }}>
+              ✓ Bill Paid & Settled {order.autoConfirmed ? '(Auto-Confirmed UPI)' : `(${order.paymentMethod || 'PAID'})`}
             </span>
-            <p className="muted" style={{ margin: '4px 0 0', fontSize: 11 }}>
-              Thank you for dining with us! Hope you enjoyed your meal.
+            {order.transactionReference && (
+              <small style={{ display: 'block', color: '#166534', fontSize: 11, marginTop: 2 }}>
+                Ref / UTR: {order.transactionReference}
+              </small>
+            )}
+            <p className="muted" style={{ margin: '6px 0 14px', fontSize: 12 }}>
+              Thank you for dining with us! How was your experience today?
             </p>
-          </div>
-        ) : !rejected ? (
-          <div style={{ marginTop: 16, paddingTop: 14, borderTop: '1px dashed var(--line)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span className="muted" style={{ fontSize: 13 }}>Need water, cutlery or bill?</span>
             <button
               type="button"
-              className="btn secondary small"
-              onClick={() => setAssistanceOpen(true)}
+              className="btn full"
+              style={{
+                background: '#f59e0b',
+                color: '#78350f',
+                fontWeight: 750,
+                fontSize: 14,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 8,
+                boxShadow: '0 4px 12px rgba(245, 158, 11, 0.25)'
+              }}
+              onClick={() => setReviewOpen(true)}
             >
-              🔔 Request Help / Bill
+              <span>⭐</span>
+              <span>Rate Your Dining Experience</span>
             </button>
+          </div>
+        ) : !rejected ? (
+          <div style={{ marginTop: 16, padding: '16px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 12 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+              <div>
+                <strong style={{ fontSize: 14, display: 'block', color: 'var(--ink)' }}>
+                  📱 Pay with UPI (Zero Wait Time)
+                </strong>
+                <span className="muted" style={{ fontSize: 11 }}>
+                  Auto-confirms instantly · Staff won't ask to check your screen
+                </span>
+              </div>
+              <span className="pill green" style={{ fontSize: 10, fontWeight: 700 }}>
+                AUTO-CONFIRM
+              </span>
+            </div>
+
+            {sessionQuery.data?.restaurant?.upiId && (
+              <div style={{ marginBottom: 12 }}>
+                <a
+                  href={`upi://pay?pa=${encodeURIComponent(sessionQuery.data.restaurant.upiId)}&pn=${encodeURIComponent(sessionQuery.data.restaurant.name)}&am=${(order.totalPaise / 100).toFixed(2)}&tn=${encodeURIComponent(`Order ${order.orderNumber}`)}&cu=INR`}
+                  className="btn full"
+                  style={{
+                    background: '#16a34a',
+                    color: '#ffffff',
+                    fontWeight: 750,
+                    fontSize: 14,
+                    marginBottom: 8,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 8,
+                    textDecoration: 'none'
+                  }}
+                >
+                  <span>⚡</span>
+                  <span>Open UPI App to Pay {money(order.totalPaise)}</span>
+                </a>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 11, color: '#475569', padding: '2px 4px' }}>
+                  <span>UPI ID: <strong>{sessionQuery.data.restaurant.upiId}</strong></span>
+                  <button
+                    type="button"
+                    className="btn ghost small"
+                    style={{ fontSize: 10, padding: '2px 6px' }}
+                    onClick={() => {
+                      if (sessionQuery.data?.restaurant?.upiId) {
+                        void navigator.clipboard.writeText(sessionQuery.data.restaurant.upiId);
+                      }
+                    }}
+                  >
+                    📋 Copy UPI ID
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {showUpiInput && (
+              <div style={{ marginBottom: 10 }}>
+                <label htmlFor="upi-ref" style={{ fontSize: 11, fontWeight: 600, display: 'block', marginBottom: 4 }}>
+                  UPI Reference / UTR Number (optional)
+                </label>
+                <input
+                  id="upi-ref"
+                  className="input"
+                  placeholder="e.g. 423456789012"
+                  value={upiRef}
+                  onChange={(e) => setUpiRef(e.target.value)}
+                  maxLength={50}
+                  style={{ fontSize: 13 }}
+                />
+              </div>
+            )}
+
+            <div style={{ display: 'grid', gap: 8 }}>
+              <button
+                type="button"
+                className="btn full"
+                style={{
+                  background: 'var(--green, #315b43)',
+                  color: '#ffffff',
+                  fontWeight: 750,
+                  fontSize: 14,
+                  minHeight: 44,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 8,
+                  boxShadow: '0 4px 12px rgba(49, 91, 67, 0.2)'
+                }}
+                onClick={handleAutoConfirmPayment}
+                disabled={upiConfirming}
+              >
+                <span>✓</span>
+                <span>{upiConfirming ? 'Auto-Confirming Payment…' : "I've Paid via UPI · Auto-Confirm"}</span>
+              </button>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 2 }}>
+                <button
+                  type="button"
+                  className="btn ghost small"
+                  style={{ fontSize: 11, padding: '2px 4px', color: '#64748b' }}
+                  onClick={() => setShowUpiInput((prev) => !prev)}
+                >
+                  {showUpiInput ? '− Hide UTR input' : '+ Add UTR / Reference number'}
+                </button>
+
+                <button
+                  type="button"
+                  className="btn ghost small"
+                  style={{ fontSize: 11, padding: '2px 4px', color: '#64748b' }}
+                  onClick={() => setAssistanceOpen(true)}
+                >
+                  🔔 Request Cash / Card Bill
+                </button>
+              </div>
+            </div>
+
+            {autoConfirmError && (
+              <div className="form-error" style={{ marginTop: 8, fontSize: 12 }}>
+                {autoConfirmError}
+              </div>
+            )}
           </div>
         ) : null}
       </section>
@@ -295,6 +477,17 @@ export default function TrackingPage() {
         onClose={() => setAssistanceOpen(false)}
         token={token}
         tableLabel={formatTableLabel(order.table.label)}
+      />
+
+      <ReviewModal
+        isOpen={reviewOpen}
+        onClose={() => setReviewOpen(false)}
+        token={token}
+        orderId={order.id}
+        tableLabel={formatTableLabel(order.table.label)}
+        googleReviewUrl={sessionQuery.data?.restaurant?.googleReviewUrl}
+        enableDishReviews={sessionQuery.data?.restaurant?.enableDishReviews ?? true}
+        orderedDishes={order.items.map((it) => ({ menuItemId: it.menuItemId, name: it.name }))}
       />
     </main>
   );

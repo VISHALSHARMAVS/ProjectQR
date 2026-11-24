@@ -17,6 +17,8 @@ import { categoryRouter, menuRouter } from './routes/catalog.js';
 import { customerRouter, publicRouter } from './routes/customer.js';
 import { mountOrderRoutes } from './routes/orders.js';
 import { restaurantRouter, staffRouter, tablesRouter } from './routes/restaurant.js';
+import { customerReviewRouter, restaurantReviewRouter } from './routes/reviews.js';
+import { webhooksRouter } from './routes/webhooks.js';
 import { AppError } from './utils/errors.js';
 
 export interface ProjectQrApplication {
@@ -61,6 +63,7 @@ export function createApplication(sessionStore?: Store): ProjectQrApplication {
   app.use(cors({ origin: env.CLIENT_ORIGIN, credentials: true, methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'] }));
   app.use((req, _res, next) => {
     if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) return next();
+    if (req.path.startsWith('/api/webhooks')) return next();
     const origin = req.get('origin');
     if (origin && origin !== env.CLIENT_ORIGIN) return next(new AppError(403, 'ORIGIN_REJECTED', 'Request origin is not allowed.'));
     next();
@@ -73,13 +76,16 @@ export function createApplication(sessionStore?: Store): ProjectQrApplication {
     uptime: Math.round(process.uptime()),
     timestamp: new Date().toISOString()
   }));
+  app.use('/api/webhooks', webhooksRouter);
   app.use('/api/auth', authRouter);
   app.use('/api/public', publicRouter);
   app.use('/api/customer', customerRouter);
+  app.use('/api/customer/reviews', customerReviewRouter);
   app.use('/api/categories', categoryRouter);
   app.use('/api/menu', menuRouter);
   app.use('/api/tables', tablesRouter);
   app.use('/api/restaurant', restaurantRouter);
+  app.use('/api/restaurant/reviews', restaurantReviewRouter);
   app.use('/api/restaurant/staff', staffRouter);
 
   const httpServer = createServer(app);
