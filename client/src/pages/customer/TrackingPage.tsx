@@ -6,6 +6,7 @@ import { elapsedSince, formatTableLabel, money } from '../../lib/format';
 import { Loading, StatusPill } from '../../components/ui';
 import { CustomerAssistanceModal } from '../../components/CustomerAssistanceModal';
 import { ReviewModal } from '../../components/ReviewModal';
+import { ThemeToggle } from '../../components/ThemeToggle';
 import { useOrderSocket } from '../../hooks/useOrderSocket';
 import { playPaymentSuccessChime } from '../../lib/audio';
 import type { OrderRecord, OrderStatus, RestaurantInfo } from '../../types';
@@ -145,23 +146,26 @@ export default function TrackingPage() {
       <header className="customer-header">
         <div
           className="restaurant-logo"
-          style={rejected ? { background: '#fee2e2', color: '#b91c1c' } : {}}
+          style={rejected ? { background: 'var(--soft-orange)', color: 'var(--red)' } : {}}
         >
           {rejected ? '✕' : '✓'}
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <h1 style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {rejected ? 'Order Cancelled' : 'Order Placed'}
+            {rejected ? 'Order cancelled' : 'Order placed'}
           </h1>
           <p>{formatTableLabel(order.table.label)}</p>
         </div>
-        <button
-          type="button"
-          className="btn secondary small"
-          onClick={() => setAssistanceOpen(true)}
-        >
-          🔔 Call Staff
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <ThemeToggle variant="compact" />
+          <button
+            type="button"
+            className="btn secondary small"
+            onClick={() => setAssistanceOpen(true)}
+          >
+            🔔 Call staff
+          </button>
+        </div>
       </header>
 
       <section className="customer-intro" style={{ paddingTop: 28 }}>

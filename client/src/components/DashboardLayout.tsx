@@ -4,6 +4,7 @@ import { Link, Navigate, NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useStaff } from '../hooks/useStaff';
 import { api } from '../lib/api';
 import { Loading } from './ui';
+import { ThemeToggle } from './ThemeToggle';
 import type { UserRole } from '../types';
 
 function OverviewIcon() {
@@ -309,38 +310,45 @@ export default function DashboardLayout() {
               <strong style={{ fontSize: 14, display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</strong>
             </div>
           </div>
-          <div style={{ position: 'relative' }}>
-            <button
-              type="button"
-              className="profile-chip-btn"
-              onClick={() => setProfileDropdownOpen((prev) => !prev)}
-              aria-label="User profile and quick actions"
-              aria-expanded={profileDropdownOpen}
-            >
-              <div className="profile-chip-avatar">{initials}</div>
-              <div className="profile-chip-info">
-                <span className="profile-chip-name">{userName}</span>
-                <span className={`profile-role-badge ${roleBadgeClass}`}>{roleLabel}</span>
-              </div>
-              <span className="profile-chip-caret" aria-hidden="true">{profileDropdownOpen ? '▲' : '▼'}</span>
-            </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <ThemeToggle variant="compact" />
+            <div style={{ position: 'relative' }}>
+              <button
+                type="button"
+                className="profile-chip-btn"
+                onClick={() => setProfileDropdownOpen((prev) => !prev)}
+                aria-label="User profile and quick actions"
+                aria-expanded={profileDropdownOpen}
+              >
+                <div className="profile-chip-avatar">{initials}</div>
+                <div className="profile-chip-info">
+                  <span className="profile-chip-name">{userName}</span>
+                  <span className={`profile-role-badge ${roleBadgeClass}`}>{roleLabel}</span>
+                </div>
+                <span className="profile-chip-caret" aria-hidden="true">{profileDropdownOpen ? '▲' : '▼'}</span>
+              </button>
 
-            {profileDropdownOpen && (
-              <>
-                <div className="profile-dropdown-scrim" onClick={() => setProfileDropdownOpen(false)} />
-                <div className="profile-dropdown-menu">
-                  <div className="profile-dropdown-header">
-                    <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink)' }}>{userName}</div>
-                    {userEmail && (
-                      <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {userEmail}
+              {profileDropdownOpen && (
+                <>
+                  <div className="profile-dropdown-scrim" onClick={() => setProfileDropdownOpen(false)} />
+                  <div className="profile-dropdown-menu">
+                    <div className="profile-dropdown-header">
+                      <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink)' }}>{userName}</div>
+                      {userEmail && (
+                        <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {userEmail}
+                        </div>
+                      )}
+                      <div style={{ marginTop: 6 }}>
+                        <span className={`profile-role-badge ${roleBadgeClass}`}>{roleLabel}</span>
                       </div>
-                    )}
-                    <div style={{ marginTop: 6 }}>
-                      <span className={`profile-role-badge ${roleBadgeClass}`}>{roleLabel}</span>
                     </div>
-                  </div>
-                  <div className="profile-dropdown-divider" />
+                    <div className="profile-dropdown-divider" />
+                    <div style={{ padding: '8px 12px' }}>
+                      <div className="caption-3" style={{ marginBottom: 6, color: 'var(--muted)' }}>Theme mode</div>
+                      <ThemeToggle variant="segmented" />
+                    </div>
+                    <div className="profile-dropdown-divider" />
                   <div className="profile-dropdown-links">
                     {isLinkVisible('/dashboard/reviews') && (
                       <Link
@@ -413,6 +421,7 @@ export default function DashboardLayout() {
                 </div>
               </>
             )}
+            </div>
           </div>
         </header>
 

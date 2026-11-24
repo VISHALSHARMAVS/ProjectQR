@@ -5,6 +5,7 @@ import { api, ApiError } from '../../lib/api';
 import { formatTableLabel, money } from '../../lib/format';
 import { createIdempotencyKey } from '../../lib/idempotency';
 import { EmptyState, Loading } from '../../components/ui';
+import { ThemeToggle } from '../../components/ThemeToggle';
 import { useOrderSocket } from '../../hooks/useOrderSocket';
 import type { MenuItem, OrderStatus, RestaurantInfo, TableCartLine } from '../../types';
 
@@ -175,37 +176,52 @@ export default function CheckoutPage() {
     '--green-dark': restaurant.brandColor
   } as CSSProperties) : undefined;
 
-  if (cart.length === 0) return <main className="customer-wrap customer-page" style={brandStyle}><header className="customer-header"><div className="restaurant-logo">{restaurant.logoUrl ? <img src={restaurant.logoUrl} alt="" /> : restaurant.name.slice(0, 1).toUpperCase()}</div><div><h1>{restaurant.name}</h1><p>{formatTableLabel(table.label)}</p></div></header><div className="surface" style={{ marginTop: 28 }}><EmptyState title="Table cart is empty" description="Add delicious items from the menu to build your table's order." action={<Link className="btn" to={`/order/${encodeURIComponent(token)}/menu`}>Browse menu</Link>} /></div></main>;
-
-  return <main className="customer-wrap customer-page" style={brandStyle}>
-    <header className="customer-header">
-      <div className="customer-header-brand">
-        <Link
-          to={`/order/${encodeURIComponent(token)}/menu`}
-          className="btn secondary small"
-          style={{ padding: '6px 12px', fontSize: 12, fontWeight: 650, flexShrink: 0 }}
-          title="Back to menu"
-        >
-          ← Menu
-        </Link>
-        <div className="restaurant-logo">
-          {restaurant.logoUrl ? <img src={restaurant.logoUrl} alt="" /> : restaurant.name.slice(0, 1).toUpperCase()}
+  if (cart.length === 0) return (
+    <main className="customer-wrap customer-page" style={brandStyle}>
+      <header className="customer-header">
+        <div className="customer-header-brand">
+          <div className="restaurant-logo">{restaurant.logoUrl ? <img src={restaurant.logoUrl} alt="" /> : restaurant.name.slice(0, 1).toUpperCase()}</div>
+          <div><h1>{restaurant.name}</h1><p>{formatTableLabel(table.label)}</p></div>
         </div>
-        <div style={{ minWidth: 0 }}>
-          <h1 style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{restaurant.name}</h1>
-          <p>{formatTableLabel(table.label)} · Guest: {customer.name}</p>
-        </div>
+        <ThemeToggle variant="compact" />
+      </header>
+      <div className="surface" style={{ marginTop: 24, padding: 24 }}>
+        <EmptyState title="Table cart is empty" description="Add delicious items from the menu to build your table’s order." action={<Link className="btn" to={`/order/${encodeURIComponent(token)}/menu`}>Browse menu</Link>} />
       </div>
-    </header>
-    <div style={{ paddingTop: 22 }}>
-      <span className="eyebrow">Table order</span>
-      <h1 style={{ margin: '4px 0 17px', fontSize: 31, letterSpacing: '-.05em' }}>Review table order</h1>
-    </div>
+    </main>
+  );
 
-    <section className="customer-card surface">
-      <div className="notice success" style={{ marginBottom: 16 }}>
-        👥 <strong>Shared Table Cart</strong>: Items added by everyone at {formatTableLabel(table.label)} are combined here in real time.
+  return (
+    <main className="customer-wrap customer-page" style={brandStyle}>
+      <header className="customer-header">
+        <div className="customer-header-brand">
+          <Link
+            to={`/order/${encodeURIComponent(token)}/menu`}
+            className="btn secondary small"
+            style={{ padding: '6px 12px', fontSize: 12, fontWeight: 600, flexShrink: 0 }}
+            title="Back to menu"
+          >
+            ← Menu
+          </Link>
+          <div className="restaurant-logo">
+            {restaurant.logoUrl ? <img src={restaurant.logoUrl} alt="" /> : restaurant.name.slice(0, 1).toUpperCase()}
+          </div>
+          <div style={{ minWidth: 0 }}>
+            <h1 style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{restaurant.name}</h1>
+            <p>{formatTableLabel(table.label)} · Guest: {customer.name}</p>
+          </div>
+        </div>
+        <ThemeToggle variant="compact" />
+      </header>
+      <div style={{ paddingTop: 16 }}>
+        <span className="eyebrow">Table order</span>
+        <h1 className="heading-4" style={{ margin: '4px 0 16px' }}>Review table order</h1>
       </div>
+
+      <section className="customer-card surface">
+        <div className="notice success" style={{ marginBottom: 16 }}>
+          👥 <strong>Shared table cart</strong>: Items added by everyone at {formatTableLabel(table.label)} are combined here in real time.
+        </div>
 
       <div className="cart-list">
         {cart.map((line) => (
@@ -409,5 +425,6 @@ export default function CheckoutPage() {
     <p className="muted" style={{ fontSize: 11, textAlign: 'center', lineHeight: 1.5, marginTop: 12 }}>
       Once placed, your order is sent directly to the kitchen display board.
     </p>
-  </main>;
+  </main>
+  );
 }

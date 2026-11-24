@@ -10,6 +10,7 @@ import { printOrderReceipt } from '../../lib/printer';
 import { useStaff } from '../../hooks/useStaff';
 import { ItemStockModal } from '../../components/ItemStockModal';
 import { ManualOrderModal } from '../../components/ManualOrderModal';
+import { ThemeToggle } from '../../components/ThemeToggle';
 import type { OrderRecord, OrderStatus } from '../../types';
 
 interface OrderList { orders: OrderRecord[] }
@@ -231,6 +232,7 @@ export default function OrdersPage({ kitchen = false }: { kitchen?: boolean }) {
         >
           📦 Item Stock
         </button>
+        <ThemeToggle variant="compact" />
         <button
           type="button"
           className={`btn small ${soundEnabled ? 'secondary' : 'ghost'}`}

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AppHeader } from '../components/ui';
+import { ThemeToggle } from '../components/ThemeToggle';
 
 interface FaqItem {
   question: string;
@@ -38,11 +39,12 @@ export default function LandingPage() {
   const [openFaq, setOpenFaq] = useState<number | null>(0);
 
   return (
-    <div className="app-shell" style={{ background: '#f8fafc', color: '#0f172a' }}>
+    <div className="app-shell" style={{ background: 'var(--bg)', color: 'var(--ink)' }}>
       {/* Top Floating Navigation */}
       <AppHeader
         action={
           <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+            <ThemeToggle variant="compact" />
             <Link className="btn secondary small" to="/login">
               Sign in
             </Link>
@@ -61,9 +63,9 @@ export default function LandingPage() {
               <span
                 className="pill"
                 style={{
-                  background: '#ecfdf5',
-                  color: '#12372c',
-                  border: '1px solid #a7f3d0',
+                  background: 'var(--soft-green)',
+                  color: 'var(--green-dark)',
+                  border: '1px solid var(--line)',
                   padding: '4px 12px',
                   fontSize: 12,
                   fontWeight: 600
@@ -74,14 +76,11 @@ export default function LandingPage() {
             </div>
 
             <h1
-              className="heading-1"
+              className="heading-1 hero-heading-gradient"
               style={{
                 margin: '0 0 16px',
                 fontSize: 'clamp(36px, 6vw, 56px)',
                 lineHeight: 1.05,
-                background: 'linear-gradient(90deg, #0f172a 0%, #475569 100%)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
                 letterSpacing: '-0.035em'
               }}
             >

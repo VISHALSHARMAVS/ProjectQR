@@ -4,6 +4,7 @@ import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
 import type { CSSProperties } from 'react';
 import { ApiError, api } from '../../lib/api';
 import { Loading } from '../../components/ui';
+import { ThemeToggle } from '../../components/ThemeToggle';
 import { formatTableLabel } from '../../lib/format';
 import type { CustomerTabInfo, RestaurantInfo } from '../../types';
 
@@ -104,11 +105,14 @@ export default function VerifyPage() {
 
   return <main className="customer-wrap customer-page" style={brandStyle}>
     <header className="customer-header">
-      <div className="restaurant-logo">{restaurant.logoUrl ? <img src={restaurant.logoUrl} alt="" /> : restaurant.name.slice(0, 1).toUpperCase()}</div>
-      <div>
-        <h1>{restaurant.name}</h1>
-        <p>{formatTableLabel(table.label)}</p>
+      <div className="customer-header-brand">
+        <div className="restaurant-logo">{restaurant.logoUrl ? <img src={restaurant.logoUrl} alt="" /> : restaurant.name.slice(0, 1).toUpperCase()}</div>
+        <div>
+          <h1>{restaurant.name}</h1>
+          <p>{formatTableLabel(table.label)}</p>
+        </div>
       </div>
+      <ThemeToggle variant="compact" />
     </header>
     <section className="customer-intro">
       <span className="eyebrow">Welcome</span>

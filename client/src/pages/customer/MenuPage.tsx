@@ -6,6 +6,7 @@ import { formatTableLabel, money } from '../../lib/format';
 import { DietaryBadge, EmptyState, ErrorPanel, Loading, Modal } from '../../components/ui';
 import { CustomerAssistanceModal } from '../../components/CustomerAssistanceModal';
 import { ReviewModal } from '../../components/ReviewModal';
+import { ThemeToggle } from '../../components/ThemeToggle';
 import { useOrderSocket } from '../../hooks/useOrderSocket';
 import type { Category, CustomerHistory, DietaryType, MenuItem, MenuItemAddon, MenuItemVariant, RestaurantInfo, TableCartLine } from '../../types';
 
@@ -206,18 +207,18 @@ export default function CustomerMenuPage() {
                   style={{
                     display: 'inline-flex',
                     alignItems: 'center',
-                    gap: 3,
-                    background: '#f0fdf4',
-                    color: '#166534',
-                    border: '1px solid #86efac',
+                    gap: 4,
+                    background: 'var(--soft-green)',
+                    color: 'var(--green-dark)',
+                    border: '1px solid var(--line)',
                     padding: '2px 8px',
                     borderRadius: 6,
-                    fontSize: 11,
-                    fontWeight: 700
+                    fontSize: 12,
+                    fontWeight: 600
                   }}
                   title="Share this PIN with friends at your table so they can join your shared cart"
                 >
-                  🔒 PIN: <span style={{ letterSpacing: 1 }}>{table.pin}</span>
+                  🔒 Pin: <span className="font-mono-numbers" style={{ letterSpacing: 1 }}>{table.pin}</span>
                 </span>
               )}
               {session.data.tab?.isSeparateTab && (
@@ -225,29 +226,30 @@ export default function CustomerMenuPage() {
                   style={{
                     display: 'inline-flex',
                     alignItems: 'center',
-                    gap: 3,
-                    background: '#eff6ff',
-                    color: '#1e40af',
-                    border: '1px solid #93c5fd',
+                    gap: 4,
+                    background: 'var(--paper-elevated)',
+                    color: 'var(--muted)',
+                    border: '1px solid var(--line)',
                     padding: '2px 8px',
                     borderRadius: 6,
-                    fontSize: 11,
-                    fontWeight: 700
+                    fontSize: 12,
+                    fontWeight: 600
                   }}
                 >
-                  👤 Solo Tab
+                  👤 Solo tab
                 </span>
               )}
             </div>
           </div>
         </div>
         <div className="customer-header-actions">
+          <ThemeToggle variant="compact" />
           <button
             type="button"
             className="btn secondary small"
             onClick={() => setReviewOpen(true)}
             title="Rate your dining experience"
-            style={{ color: '#b45309', borderColor: '#fde68a' }}
+            style={{ color: '#b45309', borderColor: 'var(--line)' }}
           >
             ⭐ Review
           </button>
@@ -268,22 +270,22 @@ export default function CustomerMenuPage() {
         </div>
       </header>
 
-      <div style={{ paddingTop: 20 }}>
+      <div style={{ paddingTop: 16 }}>
         <span className="eyebrow">Made fresh for you</span>
-        <h1 style={{ margin: '5px 0 10px', fontSize: 31, letterSpacing: '-.05em' }}>The menu</h1>
+        <h1 className="heading-4" style={{ margin: '4px 0 12px' }}>The menu</h1>
 
         {table.pin && session.data?.tab?.isHost && (
           <div style={{
             margin: '0 0 16px',
-            padding: '10px 14px',
-            background: '#f0fdf4',
-            border: '1.5px solid #86efac',
-            borderRadius: 10,
+            padding: '12px 16px',
+            background: 'var(--paper)',
+            border: '1px solid var(--line)',
+            borderRadius: 12,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            fontSize: 12,
-            color: '#14532d',
+            fontSize: 13,
+            color: 'var(--ink)',
             lineHeight: 1.4
           }}>
             <span>
@@ -352,29 +354,28 @@ export default function CustomerMenuPage() {
           <section className="todays-winner-card">
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span style={{ fontSize: 18 }}>🏆</span>
-                <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.08em', color: '#b45309', textTransform: 'uppercase' }}>
-                  Today's Winner
+                <span style={{ fontSize: 16 }}>🏆</span>
+                <span className="caption-3" style={{ color: 'var(--ink)' }}>
+                  Today’s winner
                 </span>
               </div>
-              <span className="pill" style={{ background: '#fef08a', color: '#854d0e', fontSize: 10, fontWeight: 750, padding: '2px 8px' }}>
-                🔥 Most Ordered Today
+              <span className="pill orange" style={{ fontSize: 11, fontWeight: 600 }}>
+                Most ordered today
               </span>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginTop: 8 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginTop: 10 }}>
               <div>
-                <strong style={{ fontSize: 15, color: '#451a03', display: 'block' }}>{todaysWinner.name}</strong>
-                <span style={{ fontSize: 12, color: '#78350f', display: 'block', marginTop: 2 }}>
+                <strong className="title-3" style={{ color: 'var(--ink)', display: 'block' }}>{todaysWinner.name}</strong>
+                <span className="body-6" style={{ color: 'var(--muted)', display: 'block', marginTop: 2 }}>
                   Ordered <strong>{todaysWinner.quantityToday} times</strong> today at {restaurant.name}
                 </span>
               </div>
               <button
                 type="button"
                 className="btn small"
-                style={{ background: '#b45309', borderColor: '#b45309', color: 'white', fontWeight: 700, padding: '0 14px' }}
                 onClick={() => addItemDirect(winnerMenuItem)}
               >
-                + Add ({money(winnerMenuItem.pricePaise)})
+                Add ({money(winnerMenuItem.pricePaise)})
               </button>
             </div>
           </section>
@@ -382,23 +383,23 @@ export default function CustomerMenuPage() {
 
         {/* Quick Reorder Carousel from Previous Visit */}
         {historyQuery.data?.favoriteItems && historyQuery.data.favoriteItems.length > 0 && (
-          <section style={{ marginBottom: 20, padding: '14px 16px', background: '#fdfbf7', border: '1px solid #ebd9c8', borderRadius: 16 }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+          <section style={{ marginBottom: 20, padding: '14px 16px', background: 'var(--paper)', border: '1px solid var(--line)', borderRadius: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
               <div>
-                <span className="eyebrow" style={{ color: '#9a3412', fontSize: 10, letterSpacing: '0.12em' }}>
-                  WELCOME BACK
+                <span className="eyebrow" style={{ color: 'var(--green)', fontSize: 11 }}>
+                  Welcome back
                 </span>
-                <h2 style={{ fontSize: 16, margin: '2px 0 0', fontWeight: 750, color: '#431407' }}>
-                  🕒 Reorder from your last visits
+                <h2 className="title-2" style={{ margin: '2px 0 0', color: 'var(--ink)' }}>
+                  Reorder from your recent visits
                 </h2>
               </div>
               {historyQuery.data.lastVisit && (
-                <span className="muted" style={{ fontSize: 11 }}>
+                <span className="caption-2" style={{ color: 'var(--muted)' }}>
                   Last visited {new Date(historyQuery.data.lastVisit.date).toLocaleDateString([], { month: 'short', day: 'numeric' })}
                 </span>
               )}
             </div>
-            <div style={{ display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 6, WebkitOverflowScrolling: 'touch' }}>
+            <div style={{ display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 6, WebkitOverflowScrolling: 'touch' }}>
               {historyQuery.data.favoriteItems.map((fav) => {
                 const matchedMenuItem = menu.data?.items.find((i) => i._id === fav.menuItemId);
                 return (
@@ -406,35 +407,33 @@ export default function CustomerMenuPage() {
                     key={fav.menuItemId}
                     style={{
                       flex: '0 0 170px',
-                      background: 'white',
-                      padding: 10,
+                      background: 'var(--paper-elevated)',
+                      padding: 12,
                       borderRadius: 12,
                       border: '1px solid var(--line)',
                       display: 'flex',
                       flexDirection: 'column',
-                      justifyContent: 'space-between',
-                      boxShadow: '0 2px 6px rgba(0,0,0,0.03)'
+                      justifyContent: 'space-between'
                     }}
                   >
                     <div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 4 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
                         <DietaryBadge type={fav.dietaryType} />
-                        <strong style={{ fontSize: 13, lineHeight: 1.25, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                        <strong className="title-4" style={{ lineHeight: 1.3, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                           {fav.name}
                         </strong>
                       </div>
-                      <span style={{ fontSize: 12, color: 'var(--muted)', fontWeight: 600 }}>
+                      <span className="font-mono-numbers" style={{ fontSize: 13, color: 'var(--muted)', fontWeight: 600 }}>
                         {money(fav.pricePaise)}
                       </span>
                     </div>
-                    <div style={{ marginTop: 10 }}>
+                    <div style={{ marginTop: 12 }}>
                       <button
                         type="button"
                         className="btn small full"
-                        style={{ minHeight: 32, fontSize: 12, padding: '0 8px' }}
                         onClick={() => matchedMenuItem && addItemDirect(matchedMenuItem)}
                       >
-                        + Add
+                        Add
                       </button>
                     </div>
                   </div>
@@ -486,10 +485,10 @@ export default function CustomerMenuPage() {
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                       <DietaryBadge type={item.dietary || 'VEG'} />
                       {isWinner ? (
-                        <span className="swiggy-social-badge winner">🏆 Today's Winner</span>
+                        <span className="swiggy-social-badge winner">🏆 Today’s winner</span>
                       ) : isBestseller ? (
                         <span className="swiggy-social-badge reordered">
-                          <span className="meter" /> Highly reordered
+                          <span className="meter" /> Frequently reordered
                         </span>
                       ) : null}
                     </div>
@@ -516,7 +515,7 @@ export default function CustomerMenuPage() {
 
                     <div className="swiggy-btn-anchor">
                       {!item.available ? (
-                        <span className="swiggy-sold-out-pill">✕ SOLD OUT</span>
+                        <span className="swiggy-sold-out-pill">Sold out</span>
                       ) : qty === 0 ? (
                         <>
                           <button
@@ -524,10 +523,10 @@ export default function CustomerMenuPage() {
                             className="swiggy-add-btn"
                             onClick={() => addItemDirect(item)}
                           >
-                            ADD <span>+</span>
+                            Add <span>+</span>
                           </button>
                           {hasCustomizations && (
-                            <span className="swiggy-customisable-hint">customisable</span>
+                            <span className="swiggy-customisable-hint">Customisable</span>
                           )}
                         </>
                       ) : (
@@ -550,7 +549,7 @@ export default function CustomerMenuPage() {
                             </button>
                           </div>
                           {hasCustomizations && (
-                            <span className="swiggy-customisable-hint">customisable</span>
+                            <span className="swiggy-customisable-hint">Customisable</span>
                           )}
                         </>
                       )}
@@ -581,7 +580,7 @@ export default function CustomerMenuPage() {
             {customizingItem.variants && customizingItem.variants.length > 0 && (
               <div style={{ marginBottom: 20 }}>
                 <span className="eyebrow" style={{ display: 'block', marginBottom: 8, color: 'var(--ink)' }}>
-                  Choose Portion Size (Required)
+                  Choose portion size (required)
                 </span>
                 <div style={{ display: 'grid', gap: 8 }}>
                   {customizingItem.variants.map((v) => (
@@ -594,7 +593,7 @@ export default function CustomerMenuPage() {
                         padding: '12px 14px',
                         border: selectedVariant?.name === v.name ? '2px solid var(--green)' : '1px solid var(--line)',
                         borderRadius: 12,
-                        background: selectedVariant?.name === v.name ? 'var(--soft-green)' : 'white',
+                        background: selectedVariant?.name === v.name ? 'var(--soft-green)' : 'var(--paper)',
                         cursor: 'pointer'
                       }}
                     >
@@ -605,9 +604,9 @@ export default function CustomerMenuPage() {
                           checked={selectedVariant?.name === v.name}
                           onChange={() => setSelectedVariant(v)}
                         />
-                        <strong style={{ fontSize: 14 }}>{v.name}</strong>
+                        <strong className="title-4">{v.name}</strong>
                       </div>
-                      <span style={{ fontWeight: 700, fontSize: 14 }}>{money(v.pricePaise)}</span>
+                      <span className="font-mono-numbers" style={{ fontWeight: 600, fontSize: 14 }}>{money(v.pricePaise)}</span>
                     </label>
                   ))}
                 </div>
@@ -618,7 +617,7 @@ export default function CustomerMenuPage() {
             {customizingItem.addons && customizingItem.addons.length > 0 && (
               <div style={{ marginBottom: 20 }}>
                 <span className="eyebrow" style={{ display: 'block', marginBottom: 8, color: 'var(--ink)' }}>
-                  Add Extras (Optional)
+                  Add extras (optional)
                 </span>
                 <div style={{ display: 'grid', gap: 8 }}>
                   {customizingItem.addons.map((addon) => {
@@ -633,7 +632,7 @@ export default function CustomerMenuPage() {
                           padding: '11px 14px',
                           border: isChecked ? '1.5px solid var(--green)' : '1px solid var(--line)',
                           borderRadius: 12,
-                          background: isChecked ? '#f0fdf4' : 'white',
+                          background: isChecked ? 'var(--soft-green)' : 'var(--paper)',
                           cursor: 'pointer'
                         }}
                       >
@@ -649,9 +648,9 @@ export default function CustomerMenuPage() {
                               }
                             }}
                           />
-                          <span style={{ fontSize: 14, fontWeight: 550 }}>{addon.name}</span>
+                          <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--ink)' }}>{addon.name}</span>
                         </div>
-                        <span style={{ fontWeight: 650, color: 'var(--muted)', fontSize: 13 }}>
+                        <span className="font-mono-numbers" style={{ fontWeight: 600, color: 'var(--muted)', fontSize: 13 }}>
                           +{money(addon.pricePaise)}
                         </span>
                       </label>
@@ -664,7 +663,7 @@ export default function CustomerMenuPage() {
 
           {/* Bottom Add Action */}
           <div style={{ borderTop: '1px solid var(--line)', paddingTop: 14, marginTop: 10 }}>
-            <div style={{ fontSize: 11, color: 'var(--muted)', textAlign: 'center', marginBottom: 8 }}>
+            <div style={{ fontSize: 12, color: 'var(--muted)', textAlign: 'center', marginBottom: 8 }}>
               Inclusive of all taxes (GST)
             </div>
             <button
@@ -680,7 +679,7 @@ export default function CustomerMenuPage() {
                 });
               }}
             >
-              {updateItemMutation.isPending ? 'Adding…' : `Add to Order · ${money(modalUnitPrice)}`}
+              {updateItemMutation.isPending ? 'Adding…' : `Add to order · ${money(modalUnitPrice)}`}
             </button>
           </div>
         </Modal>
@@ -712,22 +711,22 @@ export default function CustomerMenuPage() {
         onClick={() => setAssistanceOpen(true)}
         title="Request water, cutlery, bill or call a waiter"
       >
-        <span>🔔</span> Call Staff
+        <span>🔔</span> Call staff
       </button>
 
-      {/* Floating Swiggy Bottom Table Cart Bar */}
+      {/* Floating Bottom Table Cart Bar */}
       {cart.length > 0 && (
         <Link className="swiggy-floating-cart-bar" to={`/order/${encodeURIComponent(token)}/checkout`}>
           <div>
-            <div style={{ fontSize: 13, fontWeight: 750 }}>
+            <div className="font-mono-numbers" style={{ fontSize: 13, fontWeight: 600 }}>
               {totalQuantity} {totalQuantity === 1 ? 'item' : 'items'} · {money(subtotal)}
             </div>
             <div style={{ fontSize: 11, opacity: 0.9, marginTop: 1 }}>
               Shared with {formatTableLabel(table.label)}
             </div>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 750, fontSize: 13 }}>
-            <span>View Cart</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 600, fontSize: 13 }}>
+            <span>View cart</span>
             <span aria-hidden="true">→</span>
           </div>
         </Link>

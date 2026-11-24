@@ -3,6 +3,7 @@ import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
 import type { CSSProperties } from 'react';
 import { api, ApiError } from '../../lib/api';
 import { Loading } from '../../components/ui';
+import { ThemeToggle } from '../../components/ThemeToggle';
 import { formatTableLabel } from '../../lib/format';
 import type { RestaurantInfo } from '../../types';
 
@@ -54,11 +55,14 @@ export default function ScanPage() {
       </div>
     )}
     <header className="customer-header">
-      <div className="restaurant-logo">{restaurant.logoUrl ? <img src={restaurant.logoUrl} alt="" /> : restaurant.name.slice(0, 1).toUpperCase()}</div>
-      <div>
-        <h1>{restaurant.name}</h1>
-        <p>{formatTableLabel(table.label)}</p>
+      <div className="customer-header-brand">
+        <div className="restaurant-logo">{restaurant.logoUrl ? <img src={restaurant.logoUrl} alt="" /> : restaurant.name.slice(0, 1).toUpperCase()}</div>
+        <div>
+          <h1>{restaurant.name}</h1>
+          <p>{formatTableLabel(table.label)}</p>
+        </div>
       </div>
+      <ThemeToggle variant="compact" />
     </header>
     <section className="customer-intro">
       <span className="eyebrow">{restaurant.welcomeTagline ? 'Welcome' : 'Welcome in'}</span>
