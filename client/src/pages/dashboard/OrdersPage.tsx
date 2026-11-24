@@ -546,7 +546,7 @@ export default function OrdersPage({ kitchen = false }: { kitchen?: boolean }) {
         </div>
 
         {/* Discount Section */}
-        <div style={{ padding: 12, background: '#f8fafc', borderRadius: 10, border: '1px solid var(--line)', marginBottom: 14 }}>
+        <div style={{ padding: 12, background: 'var(--paper-elevated)', borderRadius: 10, border: '1px solid var(--line)', marginBottom: 14 }}>
           <label style={{ fontSize: 12, fontWeight: 700, display: 'block', marginBottom: 6 }}>
             Discount / Courtesy (Optional)
           </label>

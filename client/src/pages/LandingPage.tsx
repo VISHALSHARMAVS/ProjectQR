@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { AppHeader } from '../components/ui';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { ProductShowcase } from '../components/ProductShowcase';
+import { TaglineReveal } from '../components/TaglineReveal';
 
 interface FaqItem {
   question: string;
@@ -98,7 +99,7 @@ export default function LandingPage() {
                 margin: '0 auto 28px',
                 fontSize: 16,
                 lineHeight: 1.6,
-                color: '#475569'
+                color: 'var(--muted)'
               }}
             >
               Guests scan their table QR, order together with 4 digit PIN protection, and auto confirm UPI payments. Your kitchen prepares tickets immediately while your staff stays focused on hospitality.
@@ -127,9 +128,9 @@ export default function LandingPage() {
               marginTop: 48,
               borderRadius: 20,
               padding: 16,
-              background: '#ffffff',
-              boxShadow: '0 20px 45px -10px rgba(15, 23, 42, 0.12)',
-              border: '1px solid #cbd5e1'
+              background: 'var(--paper)',
+              boxShadow: 'var(--shadow)',
+              border: '1px solid var(--line)'
             }}
           >
             <div
@@ -141,50 +142,50 @@ export default function LandingPage() {
               }}
             >
               {/* Card 1: Guest Table Screen */}
-              <div style={{ background: '#f8fafc', borderRadius: 14, padding: 18, border: '1px solid #e2e8f0' }}>
+              <div style={{ background: 'var(--paper-elevated)', borderRadius: 14, padding: 18, border: '1px solid var(--line)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                   <span className="pill green" style={{ fontSize: 11 }}>📱 Guest Experience</span>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: '#166534' }}>Table 4 · PIN Active</span>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--green)' }}>Table 4 · PIN Active</span>
                 </div>
-                <strong style={{ fontSize: 16, display: 'block', marginBottom: 6 }}>1 Tap UPI Auto Confirm</strong>
+                <strong style={{ fontSize: 16, display: 'block', marginBottom: 6, color: 'var(--ink)' }}>1 Tap UPI Auto Confirm</strong>
                 <p className="muted" style={{ fontSize: 13, margin: '0 0 14px', lineHeight: 1.5 }}>
                   Guests scan, order dishes together, and pay using Google Pay or PhonePe. Payment settles automatically in seconds.
                 </p>
-                <div style={{ background: '#ffffff', borderRadius: 10, padding: 10, border: '1px solid #cbd5e1', fontSize: 12, display: 'flex', justifyContent: 'space-between' }}>
+                <div style={{ background: 'var(--paper)', borderRadius: 10, padding: 10, border: '1px solid var(--line)', fontSize: 12, display: 'flex', justifyContent: 'space-between', color: 'var(--ink)' }}>
                   <span>✓ Dal Makhani, 2x Garlic Naan</span>
-                  <strong style={{ color: '#15803d' }}>₹480 · Paid</strong>
+                  <strong style={{ color: 'var(--green)' }}>₹480 · Paid</strong>
                 </div>
               </div>
 
               {/* Card 2: Kitchen KDS Preparation */}
-              <div style={{ background: '#f8fafc', borderRadius: 14, padding: 18, border: '1px solid #e2e8f0' }}>
+              <div style={{ background: 'var(--paper-elevated)', borderRadius: 14, padding: 18, border: '1px solid var(--line)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                  <span className="pill orange" style={{ fontSize: 11, background: '#ffedd5', color: '#c2410c' }}>🍳 Kitchen KDS</span>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: '#ea580c' }}>Ticket #104 · Cooking</span>
+                  <span className="pill orange" style={{ fontSize: 11 }}>🍳 Kitchen KDS</span>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--orange)' }}>Ticket #104 · Cooking</span>
                 </div>
-                <strong style={{ fontSize: 16, display: 'block', marginBottom: 6 }}>Real Time Cooking Queue</strong>
+                <strong style={{ fontSize: 16, display: 'block', marginBottom: 6, color: 'var(--ink)' }}>Real Time Cooking Queue</strong>
                 <p className="muted" style={{ fontSize: 13, margin: '0 0 14px', lineHeight: 1.5 }}>
                   Orders appear instantly with acoustic chimes and dish notes. Chefs mark food accepted, preparing, and ready.
                 </p>
-                <div style={{ background: '#ffffff', borderRadius: 10, padding: 10, border: '1px solid #cbd5e1', fontSize: 12, display: 'flex', justifyContent: 'space-between' }}>
+                <div style={{ background: 'var(--paper)', borderRadius: 10, padding: 10, border: '1px solid var(--line)', fontSize: 12, display: 'flex', justifyContent: 'space-between', color: 'var(--ink)' }}>
                   <span>Table 4 · Special Note: Mild spice</span>
-                  <span className="pill" style={{ background: '#fef3c7', color: '#854d0e', fontSize: 11 }}>4 min in kitchen</span>
+                  <span className="pill orange" style={{ fontSize: 11 }}>4 min in kitchen</span>
                 </div>
               </div>
 
               {/* Card 3: Manager Incident Recovery & Google Booster */}
-              <div style={{ background: '#f8fafc', borderRadius: 14, padding: 18, border: '1px solid #e2e8f0' }}>
+              <div style={{ background: 'var(--paper-elevated)', borderRadius: 14, padding: 18, border: '1px solid var(--line)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                  <span className="pill" style={{ fontSize: 11, background: '#fef3c7', color: '#854d0e' }}>⭐ Table Side Recovery</span>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: '#f59e0b' }}>Psychology Survey</span>
+                  <span className="pill" style={{ fontSize: 11 }}>⭐ Table Side Recovery</span>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--orange)' }}>Psychology Survey</span>
                 </div>
-                <strong style={{ fontSize: 16, display: 'block', marginBottom: 6 }}>Google 5 Star Booster</strong>
+                <strong style={{ fontSize: 16, display: 'block', marginBottom: 6, color: 'var(--ink)' }}>Google 5 Star Booster</strong>
                 <p className="muted" style={{ fontSize: 13, margin: '0 0 14px', lineHeight: 1.5 }}>
                   Delighted guests are boosted straight to Google Maps. Unhappy tables trigger instant manager chimes for table side recovery.
                 </p>
-                <div style={{ background: '#ffffff', borderRadius: 10, padding: 10, border: '1px solid #cbd5e1', fontSize: 12, display: 'flex', justifyContent: 'space-between' }}>
+                <div style={{ background: 'var(--paper)', borderRadius: 10, padding: 10, border: '1px solid var(--line)', fontSize: 12, display: 'flex', justifyContent: 'space-between', color: 'var(--ink)' }}>
                   <span>Table 2 rated 5 stars</span>
-                  <span style={{ color: '#0284c7', fontWeight: 700 }}>Posted to Google ✓</span>
+                  <span style={{ color: 'var(--green)', fontWeight: 700 }}>Posted to Google ✓</span>
                 </div>
               </div>
             </div>
@@ -192,10 +193,10 @@ export default function LandingPage() {
         </section>
 
         {/* Section 2: Problem to Solution (A2 #6) */}
-        <section style={{ background: '#ffffff', borderTop: '1px solid #e2e8f0', borderBottom: '1px solid #e2e8f0', padding: '64px 0' }}>
+        <section style={{ background: 'var(--paper)', borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)', padding: '64px 0' }}>
           <div className="page-wrap">
             <div style={{ maxWidth: 640, margin: '0 auto', textAlign: 'center', marginBottom: 40 }}>
-              <span className="eyebrow" style={{ color: '#ea580c' }}>The dining room bottleneck</span>
+              <span className="eyebrow" style={{ color: 'var(--orange)' }}>The dining room bottleneck</span>
               <h2 className="heading-3" style={{ margin: '8px 0 12px' }}>
                 Traditional billing wastes 18 minutes per table
               </h2>
@@ -205,10 +206,10 @@ export default function LandingPage() {
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 20 }}>
-              <div className="surface" style={{ padding: 24, borderRadius: 16, border: '1px solid #fecdd3', background: '#fff1f2' }}>
+              <div className="surface comparison-card-old">
                 <span style={{ fontSize: 24, display: 'block', marginBottom: 12 }}>❌</span>
-                <strong style={{ fontSize: 16, color: '#991b1b', display: 'block', marginBottom: 6 }}>The Old Paper Way</strong>
-                <ul style={{ paddingLeft: 18, margin: 0, fontSize: 13, lineHeight: 1.8, color: '#7f1d1d' }}>
+                <strong style={{ fontSize: 16, display: 'block', marginBottom: 6 }}>The Old Paper Way</strong>
+                <ul style={{ paddingLeft: 18, margin: 0, fontSize: 13, lineHeight: 1.8 }}>
                   <li>Guests wait 10 minutes just to request the bill</li>
                   <li>Staff squint at tiny phone screens to check UPI confirmations</li>
                   <li>4% average revenue loss from manual voids and cash skimming</li>
@@ -216,10 +217,10 @@ export default function LandingPage() {
                 </ul>
               </div>
 
-              <div className="surface" style={{ padding: 24, borderRadius: 16, border: '1px solid #bbf7d0', background: '#f0fdf4' }}>
+              <div className="surface comparison-card-new">
                 <span style={{ fontSize: 24, display: 'block', marginBottom: 12 }}>✅</span>
-                <strong style={{ fontSize: 16, color: '#14532d', display: 'block', marginBottom: 6 }}>The ProjectQR Way</strong>
-                <ul style={{ paddingLeft: 18, margin: 0, fontSize: 13, lineHeight: 1.8, color: '#166534' }}>
+                <strong style={{ fontSize: 16, display: 'block', marginBottom: 6 }}>The ProjectQR Way</strong>
+                <ul style={{ paddingLeft: 18, margin: 0, fontSize: 13, lineHeight: 1.8 }}>
                   <li>Guests scan, order, and pay instantly from any phone browser</li>
                   <li>Webhook soundbox listener auto confirms UPI payments in real time</li>
                   <li>Role gated permissions shield revenue and menu pricing from unauthorized edits</li>
@@ -236,7 +237,7 @@ export default function LandingPage() {
         {/* Section 3: Benefits (A2 #7 & A5) */}
         <section className="page-wrap" style={{ padding: '72px 0' }}>
           <div style={{ maxWidth: 640, marginBottom: 44 }}>
-            <span className="eyebrow" style={{ color: '#15803d' }}>Outcome driven results</span>
+            <span className="eyebrow" style={{ color: 'var(--green)' }}>Outcome driven results</span>
             <h2 className="heading-3" style={{ margin: '8px 0 12px' }}>
               Built for speed, accuracy, and hospitality
             </h2>
@@ -281,7 +282,7 @@ export default function LandingPage() {
         </section>
 
         {/* Section 4: How It Works in 3 Steps (A2 #8) */}
-        <section style={{ background: '#ffffff', borderTop: '1px solid #e2e8f0', borderBottom: '1px solid #e2e8f0', padding: '64px 0' }}>
+        <section style={{ background: 'var(--paper)', borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)', padding: '64px 0' }}>
           <div className="page-wrap">
             <div style={{ maxWidth: 640, margin: '0 auto 40px', textAlign: 'center' }}>
               <span className="eyebrow">Simple three step flow</span>
@@ -292,7 +293,7 @@ export default function LandingPage() {
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 20 }}>
               <div className="surface" style={{ padding: 24, borderRadius: 16 }}>
-                <span style={{ fontSize: 14, fontWeight: 800, color: '#16a34a', display: 'block', marginBottom: 8 }}>STEP 01</span>
+                <span style={{ fontSize: 14, fontWeight: 800, color: 'var(--green)', display: 'block', marginBottom: 8 }}>STEP 01</span>
                 <strong style={{ fontSize: 16, display: 'block', marginBottom: 8 }}>Guest scans table QR stand</strong>
                 <p className="muted" style={{ fontSize: 13, lineHeight: 1.6, margin: 0 }}>
                   Diner sits at Table 4 and scans the QR stand with their smartphone camera. No app download or account creation needed.
@@ -300,7 +301,7 @@ export default function LandingPage() {
               </div>
 
               <div className="surface" style={{ padding: 24, borderRadius: 16 }}>
-                <span style={{ fontSize: 14, fontWeight: 800, color: '#16a34a', display: 'block', marginBottom: 8 }}>STEP 02</span>
+                <span style={{ fontSize: 14, fontWeight: 800, color: 'var(--green)', display: 'block', marginBottom: 8 }}>STEP 02</span>
                 <strong style={{ fontSize: 16, display: 'block', marginBottom: 8 }}>Select dishes and auto pay via UPI</strong>
                 <p className="muted" style={{ fontSize: 13, lineHeight: 1.6, margin: 0 }}>
                   Guests browse real time menu items, add spice instructions, and pay via any UPI app. Webhook verifies payment in 2 seconds.
@@ -308,7 +309,7 @@ export default function LandingPage() {
               </div>
 
               <div className="surface" style={{ padding: 24, borderRadius: 16 }}>
-                <span style={{ fontSize: 14, fontWeight: 800, color: '#16a34a', display: 'block', marginBottom: 8 }}>STEP 03</span>
+                <span style={{ fontSize: 14, fontWeight: 800, color: 'var(--green)', display: 'block', marginBottom: 8 }}>STEP 03</span>
                 <strong style={{ fontSize: 16, display: 'block', marginBottom: 8 }}>Kitchen prepares and waiter serves</strong>
                 <p className="muted" style={{ fontSize: 13, lineHeight: 1.6, margin: 0 }}>
                   Kitchen display sounds an alert chime with table number and ticket items. Waiter delivers fresh food to the table.
@@ -319,36 +320,13 @@ export default function LandingPage() {
         </section>
 
         {/* Section 5: Mandatory Tagline Reveal Section (B11) */}
-        <section
-          className="page-wrap"
-          style={{
-            padding: '80px 0',
-            textAlign: 'center',
-            maxWidth: 680,
-            margin: '0 auto'
-          }}
-        >
-          <span className="eyebrow" style={{ color: '#0284c7', display: 'block', marginBottom: 14 }}>
-            The hospitality philosophy
-          </span>
-          <h2
-            className="heading-2"
-            style={{
-              fontSize: 'clamp(28px, 4.5vw, 42px)',
-              lineHeight: 1.25,
-              letterSpacing: '-0.03em',
-              color: '#0f172a'
-            }}
-          >
-            Hospitality belongs at the dining table, not at the billing counter. Give your staff their time back while every table turns faster.
-          </h2>
-        </section>
+        <TaglineReveal />
 
         {/* Section 6: Social Proof & Testimonials (A2 #9 & B8) */}
-        <section style={{ background: '#ffffff', borderTop: '1px solid #e2e8f0', borderBottom: '1px solid #e2e8f0', padding: '64px 0' }}>
+        <section style={{ background: 'var(--paper)', borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)', padding: '64px 0' }}>
           <div className="page-wrap">
             <div style={{ maxWidth: 640, marginBottom: 36 }}>
-              <span className="eyebrow" style={{ color: '#7c3aed' }}>Real restaurateur experiences</span>
+              <span className="eyebrow" style={{ color: 'var(--orange)' }}>Real restaurateur experiences</span>
               <h2 className="heading-3" style={{ margin: '8px 0 10px' }}>
                 Trusted by high volume dining rooms
               </h2>
@@ -356,20 +334,20 @@ export default function LandingPage() {
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 20 }}>
               <div className="surface" style={{ padding: 24, borderRadius: 16 }}>
-                <div style={{ color: '#f59e0b', fontSize: 15, marginBottom: 10 }}>★★★★★</div>
-                <p style={{ fontSize: 14, lineHeight: 1.6, color: '#334155', margin: '0 0 14px' }}>
+                <div style={{ color: 'var(--orange)', fontSize: 15, marginBottom: 10 }}>★★★★★</div>
+                <p style={{ fontSize: 14, lineHeight: 1.6, color: 'var(--ink)', margin: '0 0 14px' }}>
                   "We cut our table turnaround time from 44 minutes to 29 minutes during Friday dinner rush. Our floor captains now focus on guest hospitality instead of delivering paper bills."
                 </p>
-                <strong style={{ fontSize: 13, display: 'block' }}>Rajesh Singhania</strong>
+                <strong style={{ fontSize: 13, display: 'block', color: 'var(--ink)' }}>Rajesh Singhania</strong>
                 <span className="muted" style={{ fontSize: 12 }}>Founder, The Clay Oven Bistro · Bangalore</span>
               </div>
 
               <div className="surface" style={{ padding: 24, borderRadius: 16 }}>
-                <div style={{ color: '#f59e0b', fontSize: 15, marginBottom: 10 }}>★★★★★</div>
-                <p style={{ fontSize: 14, lineHeight: 1.6, color: '#334155', margin: '0 0 14px' }}>
+                <div style={{ color: 'var(--orange)', fontSize: 15, marginBottom: 10 }}>★★★★★</div>
+                <p style={{ fontSize: 14, lineHeight: 1.6, color: 'var(--ink)', margin: '0 0 14px' }}>
                   "The table side complaint recovery saved us at least 18 bad Google reviews in our first month. The manager gets a chime before the guest even asks for the check."
                 </p>
-                <strong style={{ fontSize: 13, display: 'block' }}>Ananya Deshmukh</strong>
+                <strong style={{ fontSize: 13, display: 'block', color: 'var(--ink)' }}>Ananya Deshmukh</strong>
                 <span className="muted" style={{ fontSize: 12 }}>Operations Director, Spice and Hearth · Pune</span>
               </div>
             </div>
@@ -397,16 +375,16 @@ export default function LandingPage() {
                   borderRadius: 14,
                   padding: '16px 20px',
                   cursor: 'pointer',
-                  border: openFaq === idx ? '1px solid #94a3b8' : '1px solid #e2e8f0'
+                  border: openFaq === idx ? '1px solid var(--green)' : '1px solid var(--line)'
                 }}
                 onClick={() => setOpenFaq(openFaq === idx ? null : idx)}
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <strong style={{ fontSize: 15, color: '#0f172a' }}>{faq.question}</strong>
-                  <span style={{ fontSize: 16, color: '#64748b' }}>{openFaq === idx ? '−' : '+'}</span>
+                  <strong style={{ fontSize: 15, color: 'var(--ink)' }}>{faq.question}</strong>
+                  <span style={{ fontSize: 16, color: 'var(--muted)' }}>{openFaq === idx ? '−' : '+'}</span>
                 </div>
                 {openFaq === idx && (
-                  <p style={{ margin: '12px 0 0', fontSize: 14, lineHeight: 1.6, color: '#475569' }}>
+                  <p style={{ margin: '12px 0 0', fontSize: 14, lineHeight: 1.6, color: 'var(--muted)' }}>
                     {faq.answer}
                   </p>
                 )}
@@ -416,19 +394,19 @@ export default function LandingPage() {
         </section>
 
         {/* Section 8: Risk Reversal & Final CTA (A2 #11 & #12) */}
-        <section style={{ background: '#12372c', color: '#ffffff', padding: '72px 0', textAlign: 'center' }}>
+        <section className="landing-cta-banner" style={{ padding: '72px 0', textAlign: 'center' }}>
           <div className="page-wrap" style={{ maxWidth: 680 }}>
             <h2
               className="heading-2"
               style={{
-                color: '#ffffff',
+                color: 'var(--ink-on-dark, #ffffff)',
                 margin: '0 0 14px',
                 fontSize: 'clamp(30px, 5vw, 44px)'
               }}
             >
               Start serving faster tables today
             </h2>
-            <p style={{ color: '#dcfce7', fontSize: 16, lineHeight: 1.6, margin: '0 auto 28px', maxWidth: 540 }}>
+            <p style={{ color: 'var(--muted-on-dark, #dcfce7)', fontSize: 16, lineHeight: 1.6, margin: '0 auto 28px', maxWidth: 540 }}>
               Turn your dining tables into seamless checkouts in under 10 minutes. No specialized hardware required.
             </p>
             <div style={{ display: 'flex', justifyContent: 'center', gap: 12, flexWrap: 'wrap' }}>
@@ -436,8 +414,8 @@ export default function LandingPage() {
                 to="/demo"
                 className="btn"
                 style={{
-                  background: '#ffffff',
-                  color: '#12372c',
+                  background: 'var(--cta-btn-bg, #ffffff)',
+                  color: 'var(--cta-btn-color, #12372c)',
                   minHeight: 46,
                   padding: '10px 24px',
                   fontSize: 15,
@@ -462,7 +440,7 @@ export default function LandingPage() {
                 Start 14-day free trial
               </Link>
             </div>
-            <div style={{ marginTop: 20, fontSize: 12, color: '#86efac' }}>
+            <div style={{ marginTop: 20, fontSize: 12, color: 'var(--accent-green, #86efac)' }}>
               No credit card required · Free 14 day trial · Cancel anytime
             </div>
           </div>
@@ -470,10 +448,10 @@ export default function LandingPage() {
       </main>
 
       {/* Semantic Footer (B10) */}
-      <footer style={{ borderTop: '1px solid #e2e8f0', background: '#f8fafc', padding: '40px 0' }}>
+      <footer style={{ borderTop: '1px solid var(--line)', background: 'var(--paper-elevated)', padding: '40px 0' }}>
         <div className="page-wrap" style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: 20 }}>
           <div>
-            <strong style={{ fontSize: 15, color: '#12372c' }}>ProjectQR</strong>
+            <strong style={{ fontSize: 15, color: 'var(--ink)' }}>ProjectQR</strong>
             <p className="muted" style={{ fontSize: 13, margin: '4px 0 0' }}>
               Table side ordering, UPI auto settlement, and restaurant operations.
             </p>

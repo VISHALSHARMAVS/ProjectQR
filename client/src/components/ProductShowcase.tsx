@@ -193,7 +193,7 @@ export function ProductShowcase() {
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18, flexWrap: 'wrap', gap: 10 }}>
               <div>
-                <span className="eyebrow" style={{ color: '#ea580c' }}>Live ticket stream</span>
+                <span className="eyebrow" style={{ color: 'var(--orange)' }}>Live ticket stream</span>
                 <h3 className="heading-5" style={{ margin: '2px 0 0' }}>Kitchen Display System (KDS)</h3>
               </div>
               <span className="pill orange" style={{ fontSize: 12 }}>3 active orders</span>
@@ -201,7 +201,7 @@ export function ProductShowcase() {
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 14 }}>
               {/* Ticket 1 */}
-              <div style={{ padding: 16, borderRadius: 12, border: '2px solid #ea580c', background: 'var(--paper)' }}>
+              <div style={{ padding: 16, borderRadius: 12, border: '2px solid var(--orange)', background: 'var(--paper)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                   <strong style={{ fontSize: 15 }}>TK-104 · Table 4</strong>
                   <span className="pill orange" style={{ fontSize: 10 }}>COOKING</span>
@@ -211,17 +211,17 @@ export function ProductShowcase() {
                 </div>
                 <div style={{ borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)', padding: '8px 0', margin: '8px 0', fontSize: 13 }}>
                   <div><strong>1x</strong> Wild Mushroom Sourdough Pizza</div>
-                  <div style={{ fontSize: 11, color: '#b45309', background: '#fef3c7', padding: '2px 6px', borderRadius: 4, marginTop: 4 }}>
+                  <div style={{ fontSize: 11, color: 'var(--orange)', background: 'var(--soft-orange)', border: '1px solid var(--line)', padding: '2px 6px', borderRadius: 4, marginTop: 4 }}>
                     Note: Extra crispy crust
                   </div>
                 </div>
-                <button type="button" className="btn full small" style={{ background: '#16a34a', marginTop: 10 }}>
+                <button type="button" className="btn full small" style={{ background: 'var(--green)', marginTop: 10 }}>
                   Mark ready to serve ✓
                 </button>
               </div>
 
               {/* Ticket 2 */}
-              <div style={{ padding: 16, borderRadius: 12, border: '2px solid #22c55e', background: 'var(--paper)' }}>
+              <div style={{ padding: 16, borderRadius: 12, border: '2px solid var(--green)', background: 'var(--paper)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                   <strong style={{ fontSize: 15 }}>TK-101 · Table 1</strong>
                   <span className="pill green" style={{ fontSize: 10 }}>READY</span>
@@ -251,7 +251,7 @@ export function ProductShowcase() {
                   <div><strong>1x</strong> Smoked Chicken Flatbread</div>
                   <div><strong>1x</strong> Crispy Truffle Fries</div>
                 </div>
-                <button type="button" className="btn full small" style={{ background: '#ea580c', marginTop: 10 }}>
+                <button type="button" className="btn full small" style={{ background: 'var(--orange)', marginTop: 10 }}>
                   Start preparing →
                 </button>
               </div>
@@ -284,7 +284,7 @@ export function ProductShowcase() {
               <div style={{ padding: 14, borderRadius: 12, border: '1px solid var(--line)', background: 'var(--paper-elevated)' }}>
                 <span style={{ fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', fontWeight: 600 }}>Today's sales</span>
                 <div className="font-mono-numbers" style={{ fontSize: 22, fontWeight: 700, margin: '6px 0 2px' }}>₹24,850.00</div>
-                <span style={{ fontSize: 11, color: '#16a34a' }}>✓ 100% UPI verified</span>
+                <span style={{ fontSize: 11, color: 'var(--green)' }}>✓ 100% UPI verified</span>
               </div>
               <div style={{ padding: 14, borderRadius: 12, border: '1px solid var(--line)', background: 'var(--paper-elevated)' }}>
                 <span style={{ fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', fontWeight: 600 }}>Active tickets</span>
@@ -294,11 +294,11 @@ export function ProductShowcase() {
               <div style={{ padding: 14, borderRadius: 12, border: '1px solid var(--line)', background: 'var(--paper-elevated)' }}>
                 <span style={{ fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', fontWeight: 600 }}>Table capacity</span>
                 <div className="font-mono-numbers" style={{ fontSize: 22, fontWeight: 700, margin: '6px 0 2px' }}>6 / 8 tables</div>
-                <span style={{ fontSize: 11, color: '#16a34a' }}>75% occupied</span>
+                <span style={{ fontSize: 11, color: 'var(--green)' }}>75% occupied</span>
               </div>
               <div style={{ padding: 14, borderRadius: 12, border: '1px solid var(--line)', background: 'var(--paper-elevated)' }}>
                 <span style={{ fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', fontWeight: 600 }}>Staff RBAC</span>
-                <div style={{ fontSize: 18, fontWeight: 700, margin: '8px 0 2px', color: '#16a34a' }}>Shielded</div>
+                <div style={{ fontSize: 18, fontWeight: 700, margin: '8px 0 2px', color: 'var(--green)' }}>Shielded</div>
                 <span style={{ fontSize: 11, color: 'var(--muted)' }}>Turnover hidden</span>
               </div>
             </div>
@@ -319,9 +319,9 @@ export function ProductShowcase() {
                         borderRadius: 8,
                         fontSize: 11,
                         fontWeight: 600,
-                        border: isReady ? '1.5px solid #22c55e' : isAvailable ? '1px solid #86efac' : '1px solid #fdba74',
-                        background: isReady ? '#f0fdf4' : isAvailable ? '#f0fdf4' : '#fff7ed',
-                        color: isAvailable ? '#15803d' : '#9a3412'
+                        border: isReady ? '1.5px solid var(--green)' : isAvailable ? '1px solid var(--line)' : '1px solid var(--orange)',
+                        background: isReady || isAvailable ? 'var(--soft-green)' : 'var(--soft-orange)',
+                        color: isReady || isAvailable ? 'var(--green)' : 'var(--orange)'
                       }}
                     >
                       {t}

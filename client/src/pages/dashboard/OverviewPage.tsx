@@ -166,33 +166,33 @@ export default function OverviewPage() {
         </div>
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12 }}>
-        <Link to="/dashboard/orders" className="surface" style={{ padding: '16px 14px', borderRadius: 14, textDecoration: 'none', color: 'inherit', border: '1px solid #e2e8f0', background: '#ffffff', display: 'block', transition: 'all 0.15s' }}>
-          <div style={{ fontSize: 22, marginBottom: 8, color: '#ea580c' }}>🔔</div>
+        <Link to="/dashboard/orders" className="surface" style={{ padding: '16px 14px', borderRadius: 14, textDecoration: 'none', color: 'inherit', display: 'block', transition: 'all 0.15s' }}>
+          <div style={{ fontSize: 22, marginBottom: 8, color: 'var(--orange)' }}>🔔</div>
           <strong style={{ fontSize: 14, display: 'block' }}>Live Orders</strong>
           <span className="muted" style={{ fontSize: 12 }}>Kitchen queue & tickets</span>
         </Link>
-        <Link to="/dashboard/floor-map" className="surface" style={{ padding: '16px 14px', borderRadius: 14, textDecoration: 'none', color: 'inherit', border: '1px solid #e2e8f0', background: '#ffffff', display: 'block', transition: 'all 0.15s' }}>
-          <div style={{ fontSize: 22, marginBottom: 8, color: '#1b4d3e' }}>🗺️</div>
+        <Link to="/dashboard/floor-map" className="surface" style={{ padding: '16px 14px', borderRadius: 14, textDecoration: 'none', color: 'inherit', display: 'block', transition: 'all 0.15s' }}>
+          <div style={{ fontSize: 22, marginBottom: 8, color: 'var(--green)' }}>🗺️</div>
           <strong style={{ fontSize: 14, display: 'block' }}>Floor Map</strong>
           <span className="muted" style={{ fontSize: 12 }}>Real-time table states</span>
         </Link>
-        <Link to="/dashboard/reviews" className="surface" style={{ padding: '16px 14px', borderRadius: 14, textDecoration: 'none', color: 'inherit', border: '1px solid #e2e8f0', background: '#ffffff', display: 'block', transition: 'all 0.15s' }}>
-          <div style={{ fontSize: 22, marginBottom: 8, color: '#f59e0b' }}>⭐</div>
+        <Link to="/dashboard/reviews" className="surface" style={{ padding: '16px 14px', borderRadius: 14, textDecoration: 'none', color: 'inherit', display: 'block', transition: 'all 0.15s' }}>
+          <div style={{ fontSize: 22, marginBottom: 8, color: 'var(--orange)' }}>⭐</div>
           <strong style={{ fontSize: 14, display: 'block' }}>Reviews & Alerts</strong>
           <span className="muted" style={{ fontSize: 12 }}>Table recovery & Google rating</span>
         </Link>
-        <Link to="/dashboard/menu" className="surface" style={{ padding: '16px 14px', borderRadius: 14, textDecoration: 'none', color: 'inherit', border: '1px solid #e2e8f0', background: '#ffffff', display: 'block', transition: 'all 0.15s' }}>
-          <div style={{ fontSize: 22, marginBottom: 8, color: '#0284c7' }}>🍽️</div>
+        <Link to="/dashboard/menu" className="surface" style={{ padding: '16px 14px', borderRadius: 14, textDecoration: 'none', color: 'inherit', display: 'block', transition: 'all 0.15s' }}>
+          <div style={{ fontSize: 22, marginBottom: 8, color: 'var(--green)' }}>🍽️</div>
           <strong style={{ fontSize: 14, display: 'block' }}>Menu Items</strong>
           <span className="muted" style={{ fontSize: 12 }}>{metrics.menuItems} dishes active</span>
         </Link>
-        <Link to="/dashboard/tables" className="surface" style={{ padding: '16px 14px', borderRadius: 14, textDecoration: 'none', color: 'inherit', border: '1px solid #e2e8f0', background: '#ffffff', display: 'block', transition: 'all 0.15s' }}>
-          <div style={{ fontSize: 22, marginBottom: 8, color: '#7c3aed' }}>🪑</div>
+        <Link to="/dashboard/tables" className="surface" style={{ padding: '16px 14px', borderRadius: 14, textDecoration: 'none', color: 'inherit', display: 'block', transition: 'all 0.15s' }}>
+          <div style={{ fontSize: 22, marginBottom: 8, color: 'var(--ink)' }}>🪑</div>
           <strong style={{ fontSize: 14, display: 'block' }}>Tables & QR</strong>
           <span className="muted" style={{ fontSize: 12 }}>{metrics.activeTables} tables configured</span>
         </Link>
-        <Link to="/dashboard/day-close" className="surface" style={{ padding: '16px 14px', borderRadius: 14, textDecoration: 'none', color: 'inherit', border: '1px solid #e2e8f0', background: '#ffffff', display: 'block', transition: 'all 0.15s' }}>
-          <div style={{ fontSize: 22, marginBottom: 8, color: '#16a34a' }}>📋</div>
+        <Link to="/dashboard/day-close" className="surface" style={{ padding: '16px 14px', borderRadius: 14, textDecoration: 'none', color: 'inherit', display: 'block', transition: 'all 0.15s' }}>
+          <div style={{ fontSize: 22, marginBottom: 8, color: 'var(--green)' }}>📋</div>
           <strong style={{ fontSize: 14, display: 'block' }}>Day Close</strong>
           <span className="muted" style={{ fontSize: 12 }}>Z-Report register ledger</span>
         </Link>
@@ -312,11 +312,10 @@ export default function OverviewPage() {
               <div
                 key={rev.id}
                 style={{
-                  border: '1px solid #e2e8f0',
+                  border: rev.rating <= 2 && !rev.resolved ? '1px solid var(--red)' : '1px solid var(--line)',
                   borderRadius: 12,
                   padding: 16,
-                  background: rev.rating <= 2 && !rev.resolved ? '#fff1f2' : '#ffffff',
-                  borderColor: rev.rating <= 2 && !rev.resolved ? '#fecdd3' : '#e2e8f0'
+                  background: rev.rating <= 2 && !rev.resolved ? 'var(--soft-orange)' : 'var(--paper)'
                 }}
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>

@@ -16,7 +16,7 @@ interface LiveStatusResponse {
 const statusConfig: Record<TableLiveState, { label: string; bg: string; border: string; text: string; badge: string; icon: string }> = {
   VACANT: {
     label: 'Vacant',
-    bg: '#ffffff',
+    bg: 'var(--paper)',
     border: 'var(--line)',
     text: 'var(--muted)',
     badge: 'gray',
@@ -24,49 +24,49 @@ const statusConfig: Record<TableLiveState, { label: string; bg: string; border: 
   },
   NEEDS_CLEARING: {
     label: 'Needs Clearing',
-    bg: '#fef3c7',
-    border: '#f59e0b',
-    text: '#b45309',
+    bg: 'var(--soft-orange)',
+    border: 'var(--orange)',
+    text: 'var(--orange)',
     badge: 'orange',
     icon: '🧹'
   },
   SEATED: {
     label: 'Seated / Browsing',
-    bg: '#f0fdf4',
-    border: '#86efac',
-    text: '#15803d',
+    bg: 'var(--soft-green)',
+    border: 'var(--green)',
+    text: 'var(--green)',
     badge: '',
     icon: '🟢'
   },
   PREPARING: {
     label: 'Cooking / In Kitchen',
-    bg: '#fffbeb',
-    border: '#fcd34d',
-    text: '#b45309',
+    bg: 'var(--soft-orange)',
+    border: 'var(--orange)',
+    text: 'var(--orange)',
     badge: 'orange',
     icon: '🍳'
   },
   READY: {
     label: 'Food Ready',
-    bg: '#ecfdf5',
-    border: '#6ee7b7',
-    text: '#047857',
+    bg: 'var(--soft-green)',
+    border: 'var(--green)',
+    text: 'var(--green)',
     badge: '',
     icon: '🛎️'
   },
   HELP_NEEDED: {
     label: 'Help Needed',
-    bg: '#fff7ed',
-    border: '#fb923c',
-    text: '#c2410c',
+    bg: 'var(--soft-orange)',
+    border: 'var(--red)',
+    text: 'var(--red)',
     badge: 'orange',
     icon: '🙋'
   },
   BILL_REQUESTED: {
     label: 'Bill Requested',
-    bg: '#fdf2f8',
-    border: '#f472b6',
-    text: '#be185d',
+    bg: 'var(--soft-orange)',
+    border: 'var(--red)',
+    text: 'var(--red)',
     badge: 'red',
     icon: '🧾'
   }
@@ -455,7 +455,7 @@ export default function FloorMapPage() {
           width={500}
         >
           <div style={{ marginBottom: 16 }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: '#f8fafc', borderRadius: 12, border: '1px solid var(--line)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: 'var(--paper-elevated)', borderRadius: 12, border: '1px solid var(--line)' }}>
               <div>
                 <span className="eyebrow">Table Status</span>
                 <div style={{ fontWeight: 750, fontSize: 16, marginTop: 2, color: statusConfig[selectedTable.state].text }}>
@@ -473,13 +473,13 @@ export default function FloorMapPage() {
 
           {/* Table Clearing / Reset Action */}
           {selectedTable.state !== 'VACANT' && (
-            <div style={{ padding: 14, background: selectedTable.state === 'NEEDS_CLEARING' ? '#fef3c7' : '#f8fafc', border: `1.5px solid ${selectedTable.state === 'NEEDS_CLEARING' ? '#fde047' : 'var(--line)'}`, borderRadius: 12, marginBottom: 16 }}>
+            <div style={{ padding: 14, background: selectedTable.state === 'NEEDS_CLEARING' ? 'var(--soft-orange)' : 'var(--paper-elevated)', border: `1.5px solid ${selectedTable.state === 'NEEDS_CLEARING' ? 'var(--orange)' : 'var(--line)'}`, borderRadius: 12, marginBottom: 16 }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
                 <div style={{ flex: '1 1 180px' }}>
-                  <strong style={{ color: selectedTable.state === 'NEEDS_CLEARING' ? '#854d0e' : 'var(--ink)', display: 'block', fontSize: 13 }}>
+                  <strong style={{ color: selectedTable.state === 'NEEDS_CLEARING' ? 'var(--orange)' : 'var(--ink)', display: 'block', fontSize: 13 }}>
                     {selectedTable.state === 'NEEDS_CLEARING' ? '🧹 Table Awaiting Cleaning & Cutlery' : 'Reset Table for Next Guests'}
                   </strong>
-                  <span style={{ fontSize: 11, color: selectedTable.state === 'NEEDS_CLEARING' ? '#a16207' : 'var(--muted)', display: 'block', marginTop: 2 }}>
+                  <span style={{ fontSize: 11, color: selectedTable.state === 'NEEDS_CLEARING' ? 'var(--orange)' : 'var(--muted)', display: 'block', marginTop: 2 }}>
                     Marks table Vacant, revokes guest phone sessions, and clears table cart.
                   </span>
                 </div>

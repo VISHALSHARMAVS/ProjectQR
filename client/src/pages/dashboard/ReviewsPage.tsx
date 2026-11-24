@@ -289,8 +289,8 @@ export default function ReviewsPage() {
                 style={{
                   padding: '10px 14px',
                   borderRadius: 10,
-                  background: '#f8fafc',
-                  border: item.satisfactionRate < 70 && item.thumbsDown > 0 ? '1.5px solid #fecaca' : '1px solid #e2e8f0'
+                  background: 'var(--paper-elevated)',
+                  border: item.satisfactionRate < 70 && item.thumbsDown > 0 ? '1.5px solid var(--red)' : '1px solid var(--line)'
                 }}
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
@@ -457,7 +457,8 @@ export default function ReviewsPage() {
                       fontSize: 13,
                       lineHeight: 1.5,
                       color: 'var(--ink)',
-                      background: '#f8fafc',
+                      background: 'var(--paper-elevated)',
+                      border: '1px solid var(--line)',
                       padding: '10px 14px',
                       borderRadius: 8
                     }}

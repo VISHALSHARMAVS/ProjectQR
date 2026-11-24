@@ -169,13 +169,13 @@ export default function TrackingPage() {
       </header>
 
       <section className="customer-intro" style={{ paddingTop: 28 }}>
-        <span className="eyebrow" style={rejected ? { color: '#b91c1c' } : {}}>
+        <span className="eyebrow" style={rejected ? { color: 'var(--red)' } : {}}>
           {order.orderNumber} {rejected ? '· DECLINED' : ''}
         </span>
-        <h2 style={rejected ? { color: '#991b1b' } : {}}>
+        <h2 style={rejected ? { color: 'var(--red)' } : {}}>
           {rejected ? 'Order was not accepted.' : order.status === 'DELIVERED' ? 'Enjoy your meal.' : 'We’re on it.'}
         </h2>
-        <p style={rejected ? { color: '#7f1d1d' } : {}}>
+        <p style={rejected ? { color: 'var(--muted)' } : {}}>
           {rejected
             ? (order.rejectionReason || 'The restaurant was unable to prepare this order at this time.')
             : 'Your order status updates here as the kitchen works on it.'}
@@ -189,14 +189,14 @@ export default function TrackingPage() {
         </div>
 
         {rejected ? (
-          <div style={{ padding: 14, background: '#fef2f2', border: '1.5px solid #fecaca', borderRadius: 12, marginBottom: 12 }}>
-            <strong style={{ color: '#991b1b', display: 'block', fontSize: 14 }}>
+          <div style={{ padding: 14, background: 'var(--soft-orange)', border: '1.5px solid var(--red)', borderRadius: 12, marginBottom: 12 }}>
+            <strong style={{ color: 'var(--red)', display: 'block', fontSize: 14 }}>
               ❌ Order Cancelled by Restaurant
             </strong>
-            <p style={{ color: '#7f1d1d', margin: '4px 0 0', fontSize: 13 }}>
+            <p style={{ color: 'var(--ink)', margin: '4px 0 0', fontSize: 13 }}>
               <strong>Reason:</strong> {order.rejectionReason || 'Item unavailable or kitchen closed.'}
             </p>
-            <div style={{ marginTop: 8, fontSize: 12, color: '#15803d', fontWeight: 650 }}>
+            <div style={{ marginTop: 8, fontSize: 12, color: 'var(--green)', fontWeight: 650 }}>
               ✓ No charge applied. Amount payable for this order is ₹0.00.
             </div>
           </div>
@@ -236,7 +236,7 @@ export default function TrackingPage() {
               <span>
                 {item.quantity} × {item.name}
                 {item.selectedVariant && (
-                  <span className="pill" style={{ fontSize: 10, marginLeft: 6, background: '#f1f5f9', color: '#475569' }}>
+                  <span className="pill" style={{ fontSize: 10, marginLeft: 6, background: 'var(--paper-elevated)', color: 'var(--muted)' }}>
                     {item.selectedVariant.name}
                   </span>
                 )}
@@ -259,11 +259,11 @@ export default function TrackingPage() {
             )}
           </div>
           <div style={{ textAlign: 'right' }}>
-            <strong style={rejected ? { color: '#16a34a', fontSize: 20 } : {}}>
+            <strong style={rejected ? { color: 'var(--green)', fontSize: 20 } : {}}>
               {rejected ? '₹0.00' : money(order.totalPaise)}
             </strong>
             {rejected && (
-              <span style={{ display: 'block', fontSize: 11, color: '#15803d', fontWeight: 650 }}>
+              <span style={{ display: 'block', fontSize: 11, color: 'var(--green)', fontWeight: 650 }}>
                 Cancelled (No Charge)
               </span>
             )}
@@ -301,12 +301,12 @@ export default function TrackingPage() {
 
         {/* Paid & Settled confirmation or UPI Auto-Confirm / Bill request */}
         {order.paymentStatus === 'PAID' ? (
-          <div style={{ marginTop: 16, padding: '16px', background: '#f0fdf4', border: '1.5px solid #86efac', borderRadius: 12, textAlign: 'center' }}>
-            <span style={{ fontSize: 15, fontWeight: 750, color: '#15803d', display: 'block' }}>
+          <div style={{ marginTop: 16, padding: '16px', background: 'var(--soft-green)', border: '1.5px solid var(--green)', borderRadius: 12, textAlign: 'center' }}>
+            <span style={{ fontSize: 15, fontWeight: 750, color: 'var(--green)', display: 'block' }}>
               ✓ Bill Paid & Settled {order.autoConfirmed ? '(Auto-Confirmed UPI)' : `(${order.paymentMethod || 'PAID'})`}
             </span>
             {order.transactionReference && (
-              <small style={{ display: 'block', color: '#166534', fontSize: 11, marginTop: 2 }}>
+              <small style={{ display: 'block', color: 'var(--green)', fontSize: 11, marginTop: 2 }}>
                 Ref / UTR: {order.transactionReference}
               </small>
             )}
@@ -317,8 +317,8 @@ export default function TrackingPage() {
               type="button"
               className="btn full"
               style={{
-                background: '#f59e0b',
-                color: '#78350f',
+                background: 'var(--orange)',
+                color: '#ffffff',
                 fontWeight: 750,
                 fontSize: 14,
                 display: 'flex',
@@ -334,7 +334,7 @@ export default function TrackingPage() {
             </button>
           </div>
         ) : !rejected ? (
-          <div style={{ marginTop: 16, padding: '16px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 12 }}>
+          <div style={{ marginTop: 16, padding: '16px', background: 'var(--paper-elevated)', border: '1px solid var(--line)', borderRadius: 12 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
               <div>
                 <strong style={{ fontSize: 14, display: 'block', color: 'var(--ink)' }}>
@@ -355,7 +355,7 @@ export default function TrackingPage() {
                   href={`upi://pay?pa=${encodeURIComponent(sessionQuery.data.restaurant.upiId)}&pn=${encodeURIComponent(sessionQuery.data.restaurant.name)}&am=${(order.totalPaise / 100).toFixed(2)}&tn=${encodeURIComponent(`Order ${order.orderNumber}`)}&cu=INR`}
                   className="btn full"
                   style={{
-                    background: '#16a34a',
+                    background: 'var(--green)',
                     color: '#ffffff',
                     fontWeight: 750,
                     fontSize: 14,
@@ -370,7 +370,7 @@ export default function TrackingPage() {
                   <span>⚡</span>
                   <span>Open UPI App to Pay {money(order.totalPaise)}</span>
                 </a>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 11, color: '#475569', padding: '2px 4px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 11, color: 'var(--muted)', padding: '2px 4px' }}>
                   <span>UPI ID: <strong>{sessionQuery.data.restaurant.upiId}</strong></span>
                   <button
                     type="button"
@@ -432,7 +432,7 @@ export default function TrackingPage() {
                 <button
                   type="button"
                   className="btn ghost small"
-                  style={{ fontSize: 11, padding: '2px 4px', color: '#64748b' }}
+                  style={{ fontSize: 11, padding: '2px 4px', color: 'var(--muted)' }}
                   onClick={() => setShowUpiInput((prev) => !prev)}
                 >
                   {showUpiInput ? '− Hide UTR input' : '+ Add UTR / Reference number'}
@@ -441,7 +441,7 @@ export default function TrackingPage() {
                 <button
                   type="button"
                   className="btn ghost small"
-                  style={{ fontSize: 11, padding: '2px 4px', color: '#64748b' }}
+                  style={{ fontSize: 11, padding: '2px 4px', color: 'var(--muted)' }}
                   onClick={() => setAssistanceOpen(true)}
                 >
                   🔔 Request Cash / Card Bill
@@ -460,11 +460,11 @@ export default function TrackingPage() {
 
       {/* Table Vacated Notification Banner */}
       {tableVacated && (
-        <div style={{ padding: 14, background: '#f0fdf4', border: '1.5px solid #86efac', borderRadius: 12, marginTop: 14, textAlign: 'center' }}>
-          <strong style={{ color: '#15803d', display: 'block', fontSize: 14 }}>
+        <div style={{ padding: 14, background: 'var(--soft-green)', border: '1.5px solid var(--green)', borderRadius: 12, marginTop: 14, textAlign: 'center' }}>
+          <strong style={{ color: 'var(--green)', display: 'block', fontSize: 14 }}>
             👋 Table Cleared · Visit Complete
           </strong>
-          <p style={{ margin: '4px 0 0', fontSize: 12, color: '#166534' }}>
+          <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--ink)' }}>
             This table is now cleared for the next guests. Thank you for dining with us!
           </p>
         </div>

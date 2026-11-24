@@ -344,7 +344,7 @@ export default function MenuPage() {
             </div>
 
             {/* Portion Sizes / Variants Section */}
-            <div style={{ padding: 14, background: '#f8fafc', borderRadius: 12, border: '1px solid var(--line)' }}>
+            <div style={{ padding: 14, background: 'var(--paper-elevated)', borderRadius: 12, border: '1px solid var(--line)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, flexWrap: 'wrap', gap: 8 }}>
                 <div>
                   <strong style={{ fontSize: 14 }}>Portion Sizes / Variants</strong>
@@ -378,7 +378,7 @@ export default function MenuPage() {
             </div>
 
             {/* Optional Extras / Add-ons Section */}
-            <div style={{ padding: 14, background: '#f8fafc', borderRadius: 12, border: '1px solid var(--line)' }}>
+            <div style={{ padding: 14, background: 'var(--paper-elevated)', borderRadius: 12, border: '1px solid var(--line)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, flexWrap: 'wrap', gap: 8 }}>
                 <div>
                   <strong style={{ fontSize: 14 }}>Custom Extras / Add-ons</strong>

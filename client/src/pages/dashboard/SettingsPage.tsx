@@ -159,7 +159,7 @@ export default function SettingsPage() {
               height: 58,
               borderRadius: 14,
               border: '1px solid var(--line)',
-              background: '#ffffff',
+              background: 'var(--paper)',
               display: 'grid',
               placeItems: 'center',
               overflow: 'hidden',
@@ -317,7 +317,7 @@ export default function SettingsPage() {
       </div>
 
       {/* Customer Verification Mode (Zero-SMS Guest vs Strict OTP) */}
-      <div style={{ padding: 18, background: '#f8fafc', borderRadius: 14, border: '1px solid var(--line)', margin: '18px 0' }}>
+      <div style={{ padding: 18, background: 'var(--paper-elevated)', borderRadius: 14, border: '1px solid var(--line)', margin: '18px 0' }}>
         <div>
           <strong style={{ fontSize: 15, display: 'flex', alignItems: 'center', gap: 6 }}>
             🛡️ Customer Dine-In Ordering Mode
@@ -398,7 +398,7 @@ export default function SettingsPage() {
       </div>
 
       {/* GST & Tax Compliance Section */}
-      <div style={{ padding: 18, background: '#f8fafc', borderRadius: 14, border: '1px solid var(--line)', margin: '18px 0' }}>
+      <div style={{ padding: 18, background: 'var(--paper-elevated)', borderRadius: 14, border: '1px solid var(--line)', margin: '18px 0' }}>
         <div>
           <strong style={{ fontSize: 15, display: 'flex', alignItems: 'center', gap: 6 }}>
             🧾 GST & Tax Settings (Prices are Inclusive of GST)
@@ -440,17 +440,17 @@ export default function SettingsPage() {
       </div>
 
       {/* Dynamic UPI Payment Settings & Auto-Confirm */}
-      <div style={{ padding: 18, background: '#f0fdf4', borderRadius: 14, border: '1px solid #86efac', margin: '18px 0' }}>
+      <div style={{ padding: 18, background: 'var(--soft-green)', borderRadius: 14, border: '1px solid var(--green)', margin: '18px 0' }}>
         <div>
-          <strong style={{ fontSize: 15, display: 'flex', alignItems: 'center', gap: 6, color: '#166534' }}>
+          <strong style={{ fontSize: 15, display: 'flex', alignItems: 'center', gap: 6, color: 'var(--green)' }}>
             📱 UPI Payment Integration & Rush-Hour Auto-Confirm
           </strong>
-          <p className="muted" style={{ margin: '4px 0 14px', fontSize: 13, color: '#14532d' }}>
+          <p className="muted" style={{ margin: '4px 0 14px', fontSize: 13 }}>
             Configure your business UPI ID and automated payment verification so staff never have to stand around checking diner phone screens during busy rush hours.
           </p>
         </div>
         <div className="field" style={{ marginBottom: 14 }}>
-          <label htmlFor="restaurant-upi-id" style={{ color: '#166534', fontWeight: 650 }}>
+          <label htmlFor="restaurant-upi-id" style={{ color: 'var(--green)', fontWeight: 650 }}>
             Restaurant UPI ID / VPA <span className="muted">(e.g. cafe@okaxis, 9876543210@paytm, business@hdfcbank)</span>
           </label>
           <input
@@ -467,7 +467,7 @@ export default function SettingsPage() {
           </span>
         </div>
 
-        <div style={{ padding: 12, background: '#ffffff', borderRadius: 10, border: '1px solid #bbf7d0', marginBottom: 14 }}>
+        <div style={{ padding: 12, background: 'var(--paper)', borderRadius: 10, border: '1px solid var(--line)', marginBottom: 14 }}>
           <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: canEdit ? 'pointer' : 'default' }}>
             <input
               type="checkbox"
@@ -477,7 +477,7 @@ export default function SettingsPage() {
               style={{ marginTop: 3 }}
             />
             <div>
-              <strong style={{ fontSize: 13, color: '#166534', display: 'block' }}>
+              <strong style={{ fontSize: 13, color: 'var(--green)', display: 'block' }}>
                 ⚡ Enable 1-Tap UPI Auto-Confirmation
               </strong>
               <span className="muted" style={{ fontSize: 12 }}>
@@ -936,7 +936,7 @@ function StaffAccess() {
             </div>
 
             {/* Power Customization Section */}
-            <div style={{ border: '1px solid var(--line)', borderRadius: 12, padding: 14, background: '#f8fafc' }}>
+            <div style={{ border: '1px solid var(--line)', borderRadius: 12, padding: 14, background: 'var(--paper-elevated)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
                   <strong style={{ fontSize: 13, display: 'block' }}>Operational Powers for this Account</strong>
@@ -962,8 +962,8 @@ function StaffAccess() {
                         alignItems: 'center',
                         justifyContent: 'space-between',
                         padding: '8px 12px',
-                        background: '#ffffff',
-                        border: '1px solid #e2e8f0',
+                        background: 'var(--paper)',
+                        border: '1px solid var(--line)',
                         borderRadius: 8,
                         cursor: 'pointer'
                       }}
@@ -1044,8 +1044,8 @@ function StaffAccess() {
                       alignItems: 'center',
                       justifyContent: 'space-between',
                       padding: '10px 12px',
-                      background: '#ffffff',
-                      border: '1px solid #e2e8f0',
+                      background: 'var(--paper)',
+                      border: '1px solid var(--line)',
                       borderRadius: 8,
                       cursor: 'pointer'
                     }}

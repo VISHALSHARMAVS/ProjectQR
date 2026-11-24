@@ -132,12 +132,12 @@ export default function VerifyPage() {
 
     <section className="customer-card surface">
       {sessionQuery.data?.tableMismatch && (
-        <div style={{ marginBottom: 16, padding: 14, background: '#f0fdf4', borderRadius: 12, border: '1.5px solid #86efac' }}>
+        <div style={{ marginBottom: 16, padding: 14, background: 'var(--soft-green)', borderRadius: 12, border: '1.5px solid var(--green)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
             <span style={{ fontSize: 18 }}>🪑</span>
-            <strong style={{ fontSize: 14, color: '#166534' }}>Switch Dining Table?</strong>
+            <strong style={{ fontSize: 14, color: 'var(--green)' }}>Switch Dining Table?</strong>
           </div>
-          <p style={{ margin: '0 0 12px', fontSize: 13, color: '#14532d', lineHeight: 1.4 }}>
+          <p style={{ margin: '0 0 12px', fontSize: 13, color: 'var(--ink)', lineHeight: 1.4 }}>
             You are active at <strong>{formatTableLabel(sessionQuery.data.tableMismatch.currentTable.label)}</strong>. Click below to move your session to <strong>{formatTableLabel(table.label)}</strong>.
           </p>
           <button
@@ -186,8 +186,8 @@ export default function VerifyPage() {
           </div>
 
           {table.hasActiveParty && (
-            <div style={{ background: '#f9fafb', borderRadius: 12, padding: 12, border: '1px solid #e5e7eb' }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: '#374151', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div style={{ background: 'var(--paper-elevated)', borderRadius: 12, padding: 12, border: '1px solid var(--line)' }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
                 <span>👥</span> Someone is already dining at {formatTableLabel(table.label)}
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 10 }}>
@@ -197,15 +197,15 @@ export default function VerifyPage() {
                   style={{
                     padding: '10px 8px',
                     borderRadius: 8,
-                    border: joinMode === 'join' ? '2px solid var(--green, #16a34a)' : '1px solid #d1d5db',
-                    background: joinMode === 'join' ? '#f0fdf4' : '#ffffff',
+                    border: joinMode === 'join' ? '2px solid var(--green)' : '1px solid var(--line)',
+                    background: joinMode === 'join' ? 'var(--soft-green)' : 'var(--paper)',
                     cursor: 'pointer',
                     textAlign: 'center'
                   }}
                 >
                   <div style={{ fontSize: 16 }}>👥</div>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: joinMode === 'join' ? '#166534' : '#374151' }}>Join Party</div>
-                  <div style={{ fontSize: 10, color: '#6b7280' }}>Needs 4-digit PIN</div>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: joinMode === 'join' ? 'var(--green)' : 'var(--ink)' }}>Join Party</div>
+                  <div style={{ fontSize: 10, color: 'var(--muted)' }}>Needs 4-digit PIN</div>
                 </button>
                 <button
                   type="button"
@@ -213,15 +213,15 @@ export default function VerifyPage() {
                   style={{
                     padding: '10px 8px',
                     borderRadius: 8,
-                    border: joinMode === 'separate' ? '2px solid var(--green, #16a34a)' : '1px solid #d1d5db',
-                    background: joinMode === 'separate' ? '#f0fdf4' : '#ffffff',
+                    border: joinMode === 'separate' ? '2px solid var(--green)' : '1px solid var(--line)',
+                    background: joinMode === 'separate' ? 'var(--soft-green)' : 'var(--paper)',
                     cursor: 'pointer',
                     textAlign: 'center'
                   }}
                 >
                   <div style={{ fontSize: 16 }}>👤</div>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: joinMode === 'separate' ? '#166534' : '#374151' }}>Separate Bill</div>
-                  <div style={{ fontSize: 10, color: '#6b7280' }}>Solo / private tab</div>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: joinMode === 'separate' ? 'var(--green)' : 'var(--ink)' }}>Separate Bill</div>
+                  <div style={{ fontSize: 10, color: 'var(--muted)' }}>Solo / private tab</div>
                 </button>
               </div>
 
@@ -245,7 +245,7 @@ export default function VerifyPage() {
                   </span>
                 </div>
               ) : (
-                <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 6, padding: '8px 10px', fontSize: 11, color: '#1e40af' }}>
+                <div style={{ background: 'var(--paper)', border: '1px solid var(--line)', borderRadius: 6, padding: '8px 10px', fontSize: 11, color: 'var(--ink)' }}>
                   ✓ <strong>Separate Tab:</strong> Your orders and bill will be kept completely separate from other guests at this table.
                 </div>
               )}
@@ -353,8 +353,8 @@ export default function VerifyPage() {
           </>}
 
           {table.hasActiveParty && (
-            <div style={{ background: '#f9fafb', borderRadius: 12, padding: 12, border: '1px solid #e5e7eb' }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: '#374151', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div style={{ background: 'var(--paper-elevated)', borderRadius: 12, padding: 12, border: '1px solid var(--line)' }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
                 <span>👥</span> Someone is already dining at {formatTableLabel(table.label)}
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 10 }}>
@@ -364,15 +364,15 @@ export default function VerifyPage() {
                   style={{
                     padding: '10px 8px',
                     borderRadius: 8,
-                    border: joinMode === 'join' ? '2px solid var(--green, #16a34a)' : '1px solid #d1d5db',
-                    background: joinMode === 'join' ? '#f0fdf4' : '#ffffff',
+                    border: joinMode === 'join' ? '2px solid var(--green)' : '1px solid var(--line)',
+                    background: joinMode === 'join' ? 'var(--soft-green)' : 'var(--paper)',
                     cursor: 'pointer',
                     textAlign: 'center'
                   }}
                 >
                   <div style={{ fontSize: 16 }}>👥</div>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: joinMode === 'join' ? '#166534' : '#374151' }}>Join Party</div>
-                  <div style={{ fontSize: 10, color: '#6b7280' }}>Needs 4-digit PIN</div>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: joinMode === 'join' ? 'var(--green)' : 'var(--ink)' }}>Join Party</div>
+                  <div style={{ fontSize: 10, color: 'var(--muted)' }}>Needs 4-digit PIN</div>
                 </button>
                 <button
                   type="button"
@@ -380,15 +380,15 @@ export default function VerifyPage() {
                   style={{
                     padding: '10px 8px',
                     borderRadius: 8,
-                    border: joinMode === 'separate' ? '2px solid var(--green, #16a34a)' : '1px solid #d1d5db',
-                    background: joinMode === 'separate' ? '#f0fdf4' : '#ffffff',
+                    border: joinMode === 'separate' ? '2px solid var(--green)' : '1px solid var(--line)',
+                    background: joinMode === 'separate' ? 'var(--soft-green)' : 'var(--paper)',
                     cursor: 'pointer',
                     textAlign: 'center'
                   }}
                 >
                   <div style={{ fontSize: 16 }}>👤</div>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: joinMode === 'separate' ? '#166534' : '#374151' }}>Separate Bill</div>
-                  <div style={{ fontSize: 10, color: '#6b7280' }}>Solo / private tab</div>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: joinMode === 'separate' ? 'var(--green)' : 'var(--ink)' }}>Separate Bill</div>
+                  <div style={{ fontSize: 10, color: 'var(--muted)' }}>Solo / private tab</div>
                 </button>
               </div>
 
@@ -412,7 +412,7 @@ export default function VerifyPage() {
                   </span>
                 </div>
               ) : (
-                <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 6, padding: '8px 10px', fontSize: 11, color: '#1e40af' }}>
+                <div style={{ background: 'var(--paper)', border: '1px solid var(--line)', borderRadius: 6, padding: '8px 10px', fontSize: 11, color: 'var(--ink)' }}>
                   ✓ <strong>Separate Tab:</strong> Your orders and bill will be kept completely separate from other guests at this table.
                 </div>
               )}
