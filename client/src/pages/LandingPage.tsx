@@ -500,7 +500,7 @@ export default function LandingPage() {
               <p style={{ color: 'rgba(255, 255, 255, 0.9)', fontSize: 16, lineHeight: 1.6, margin: '0 auto 28px', maxWidth: 540 }}>
                 Turn your dining tables into seamless checkouts in under 10 minutes. No specialized hardware required.
               </p>
-              <div style={{ display: 'flex', justifyContent: 'center', gap: 12, flexWrap: 'wrap' }}>
+              <div className="landing-cta-actions" style={{ display: 'flex', justifyContent: 'center', gap: 12, flexWrap: 'wrap' }}>
                 <Link
                   to="/demo"
                   className="btn"
@@ -533,7 +533,7 @@ export default function LandingPage() {
                   Start 14 day free trial
                 </Link>
               </div>
-              <div style={{ marginTop: 22, fontSize: 13, color: '#86efac', fontWeight: 500 }}>
+              <div style={{ marginTop: 22, fontSize: 13, color: '#86efac', fontWeight: 500, maxWidth: '100%', lineHeight: 1.5 }}>
                 No credit card required · Free 14 day trial · Cancel anytime
               </div>
             </div>
