@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AppHeader } from '../components/ui';
 import { ThemeToggle } from '../components/ThemeToggle';
+import { ProductShowcase } from '../components/ProductShowcase';
 
 interface FaqItem {
   question: string;
@@ -45,6 +46,9 @@ export default function LandingPage() {
         action={
           <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
             <ThemeToggle variant="compact" />
+            <Link className="btn secondary small" to="/demo">
+              Live demo
+            </Link>
             <Link className="btn secondary small" to="/login">
               Sign in
             </Link>
@@ -101,18 +105,18 @@ export default function LandingPage() {
             </p>
 
             <div style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: 12 }}>
-              <Link to="/register" className="btn" style={{ minHeight: 44, padding: '10px 22px', fontSize: 15 }}>
-                Start 14 day free trial <span aria-hidden="true">→</span>
+              <Link to="/demo" className="btn" style={{ minHeight: 44, padding: '10px 22px', fontSize: 15 }}>
+                Explore interactive demo <span aria-hidden="true">→</span>
               </Link>
-              <Link to="/login" className="btn secondary" style={{ minHeight: 44, padding: '10px 20px', fontSize: 15 }}>
-                Open staff demo
+              <Link to="/register" className="btn secondary" style={{ minHeight: 44, padding: '10px 20px', fontSize: 15 }}>
+                Start free trial
               </Link>
             </div>
 
             {/* Proof Signal (A2 #4) */}
-            <div style={{ marginTop: 24, display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 13, color: '#64748b' }}>
+            <div style={{ marginTop: 24, display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--muted)' }}>
               <span style={{ color: '#f59e0b', fontSize: 14 }}>★★★★★</span>
-              <span>Trusted by 180+ restaurants across India with 240,000+ table orders processed</span>
+              <span>Designed for independent dine-in restaurants, cafes & bars · Zero upfront hardware · 14-day free trial</span>
             </div>
           </div>
 
@@ -225,6 +229,9 @@ export default function LandingPage() {
             </div>
           </div>
         </section>
+
+        {/* Section: Live Product Showcase */}
+        <ProductShowcase />
 
         {/* Section 3: Benefits (A2 #7 & A5) */}
         <section className="page-wrap" style={{ padding: '72px 0' }}>
@@ -422,11 +429,11 @@ export default function LandingPage() {
               Start serving faster tables today
             </h2>
             <p style={{ color: '#dcfce7', fontSize: 16, lineHeight: 1.6, margin: '0 auto 28px', maxWidth: 540 }}>
-              Join 180+ restaurants turning dining tables into seamless checkouts. Set up your digital menu in under 10 minutes.
+              Turn your dining tables into seamless checkouts in under 10 minutes. No specialized hardware required.
             </p>
             <div style={{ display: 'flex', justifyContent: 'center', gap: 12, flexWrap: 'wrap' }}>
               <Link
-                to="/register"
+                to="/demo"
                 className="btn"
                 style={{
                   background: '#ffffff',
@@ -437,7 +444,22 @@ export default function LandingPage() {
                   fontWeight: 700
                 }}
               >
-                Start 14 day free trial <span aria-hidden="true">→</span>
+                Explore interactive demo <span aria-hidden="true">→</span>
+              </Link>
+              <Link
+                to="/register"
+                className="btn secondary"
+                style={{
+                  background: 'transparent',
+                  borderColor: 'rgba(255, 255, 255, 0.4)',
+                  color: '#ffffff',
+                  minHeight: 46,
+                  padding: '10px 24px',
+                  fontSize: 15,
+                  fontWeight: 600
+                }}
+              >
+                Start 14-day free trial
               </Link>
             </div>
             <div style={{ marginTop: 20, fontSize: 12, color: '#86efac' }}>
@@ -456,7 +478,8 @@ export default function LandingPage() {
               Table side ordering, UPI auto settlement, and restaurant operations.
             </p>
           </div>
-          <div style={{ display: 'flex', gap: 20, fontSize: 13 }}>
+          <div style={{ display: 'flex', gap: 20, fontSize: 13, alignItems: 'center' }}>
+            <Link to="/demo" style={{ color: 'var(--green)', fontWeight: 600 }}>Live demo</Link>
             <Link to="/register" style={{ color: 'var(--green)', fontWeight: 600 }}>Get started</Link>
             <Link to="/login" className="muted">Sign in</Link>
             <span className="muted">© {new Date().getFullYear()} ProjectQR. All rights reserved.</span>

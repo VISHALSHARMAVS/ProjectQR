@@ -139,6 +139,7 @@ export interface OrderRecord {
   id: string;
   orderNumber: string;
   table: { id?: string; label: string; needsClearing?: boolean };
+  customer?: { id?: string; name?: string };
   items: {
     menuItemId: string;
     name: string;

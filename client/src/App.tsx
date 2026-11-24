@@ -2,6 +2,7 @@ import { Link, Navigate, Route, Routes } from 'react-router-dom';
 import DashboardLayout, { ManagementOnly, OwnerOnly, ProtectedDashboard } from './components/DashboardLayout';
 import { useStaff } from './hooks/useStaff';
 import AuthPage from './pages/AuthPage';
+import DemoPage from './pages/DemoPage';
 import LandingPage from './pages/LandingPage';
 import ScanPage from './pages/customer/ScanPage';
 import VerifyPage from './pages/customer/VerifyPage';
@@ -34,6 +35,7 @@ function DashboardRedirect() {
 export default function App() {
   return <Routes>
     <Route path="/" element={<LandingPage />} />
+    <Route path="/demo" element={<DemoPage />} />
     <Route path="/login" element={<AuthPage mode="login" />} />
     <Route path="/register" element={<AuthPage mode="register" />} />
     <Route path="/order/:token" element={<ScanPage />} />
