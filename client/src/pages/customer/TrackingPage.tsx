@@ -341,7 +341,7 @@ export default function TrackingPage() {
                   📱 Pay with UPI (Zero Wait Time)
                 </strong>
                 <span className="muted" style={{ fontSize: 11 }}>
-                  Auto-confirms instantly · Staff won't ask to check your screen
+                  Instant UPI payment · Digital order receipt updates in real time
                 </span>
               </div>
               <span className="pill green" style={{ fontSize: 10, fontWeight: 700 }}>

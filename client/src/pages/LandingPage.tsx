@@ -17,7 +17,7 @@ const faqs: FaqItem[] = [
   },
   {
     question: 'How does the UPI auto confirmation work for busy rush hours?',
-    answer: 'When guests pay with Google Pay, PhonePe, Paytm, or CRED, the payment gateway webhook verifies the transaction in milliseconds. The order ticket automatically updates to paid with a joyful register chime so your waiters never have to inspect customer phone screens.'
+    answer: 'When guests pay with Google Pay, PhonePe, Paytm, or CRED, the payment gateway webhook verifies the transaction automatically. The order ticket updates to paid in real time with an acoustic chime so your waiters never have to inspect customer phone screens.'
   },
   {
     question: 'Can friends sitting at the same table order together or split bills?',
@@ -33,7 +33,7 @@ const faqs: FaqItem[] = [
   },
   {
     question: 'What happens when an item runs out of stock during dinner service?',
-    answer: 'Your kitchen chef or floor captain can tap the 86 toggle on any dish. It reflects across all customer table QR menus within 50 milliseconds via real time web sockets, preventing guests from ordering sold out food.'
+    answer: 'Your kitchen chef or floor captain can tap the 86 toggle on any dish. It reflects immediately across customer table QR menus via real-time websockets, preventing guests from ordering sold out food.'
   }
 ];
 
@@ -114,10 +114,10 @@ export default function LandingPage() {
               </Link>
             </div>
 
-            {/* Proof Signal (A2 #4) */}
+            {/* Proof Signal */}
             <div style={{ marginTop: 24, display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--muted)' }}>
-              <span style={{ color: '#f59e0b', fontSize: 14 }}>★★★★★</span>
-              <span>Designed for independent dine-in restaurants, cafes & bars · Zero upfront hardware · 14-day free trial</span>
+              <span style={{ color: 'var(--green)', fontSize: 14, fontWeight: 700 }}>✓</span>
+              <span>Built for independent dine-in restaurants, cafes & bars · Zero upfront hardware · 14-day free trial</span>
             </div>
           </div>
 
@@ -192,39 +192,39 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* Section 2: Problem to Solution (A2 #6) */}
+        {/* Section 2: Problem to Solution */}
         <section style={{ background: 'var(--paper)', borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)', padding: '64px 0' }}>
           <div className="page-wrap">
             <div style={{ maxWidth: 640, margin: '0 auto', textAlign: 'center', marginBottom: 40 }}>
               <span className="eyebrow" style={{ color: 'var(--orange)' }}>The dining room bottleneck</span>
               <h2 className="heading-3" style={{ margin: '8px 0 12px' }}>
-                Traditional billing wastes 18 minutes per table
+                Manual service workflows slow down busy dining rooms
               </h2>
               <p className="muted" style={{ fontSize: 15, lineHeight: 1.6 }}>
-                Waiters spend half their shifts walking back and forth to print bills, verify payment screens, and punch orders into desktop terminals while guests wait.
+                Waiters spend valuable floor time printing paper bills, running card machines, and manually verifying UPI payment screens while other tables wait for service.
               </p>
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 20 }}>
               <div className="surface comparison-card-old">
                 <span style={{ fontSize: 24, display: 'block', marginBottom: 12 }}>❌</span>
-                <strong style={{ fontSize: 16, display: 'block', marginBottom: 6 }}>The Old Paper Way</strong>
+                <strong style={{ fontSize: 16, display: 'block', marginBottom: 6 }}>The Manual Paper Workflow</strong>
                 <ul style={{ paddingLeft: 18, margin: 0, fontSize: 13, lineHeight: 1.8 }}>
-                  <li>Guests wait 10 minutes just to request the bill</li>
-                  <li>Staff squint at tiny phone screens to check UPI confirmations</li>
-                  <li>4% average revenue loss from manual voids and cash skimming</li>
-                  <li>Unhappy diners leave without saying a word and post 1 star on Google</li>
+                  <li>Guests wait repeatedly for staff to bring paper menus, take orders, and deliver bills</li>
+                  <li>Waiters must interrupt service to inspect customer phone screens for UPI messages</li>
+                  <li>Prone to unauthorized bill voids, handwritten ticket errors, and manual tallying mistakes</li>
+                  <li>Dissatisfied diners leave quietly and express their frustration in negative public reviews</li>
                 </ul>
               </div>
 
               <div className="surface comparison-card-new">
                 <span style={{ fontSize: 24, display: 'block', marginBottom: 12 }}>✅</span>
-                <strong style={{ fontSize: 16, display: 'block', marginBottom: 6 }}>The ProjectQR Way</strong>
+                <strong style={{ fontSize: 16, display: 'block', marginBottom: 6 }}>The ProjectQR Architecture</strong>
                 <ul style={{ paddingLeft: 18, margin: 0, fontSize: 13, lineHeight: 1.8 }}>
-                  <li>Guests scan, order, and pay instantly from any phone browser</li>
-                  <li>Webhook soundbox listener auto confirms UPI payments in real time</li>
-                  <li>Role gated permissions shield revenue and menu pricing from unauthorized edits</li>
-                  <li>Peak End micro survey converts 5 star diners into public Google reviews</li>
+                  <li>Guests scan, browse live items, and settle the bill directly from their phone browser</li>
+                  <li>Direct UPI webhook listener confirms payments automatically with real-time audio chime</li>
+                  <li>Role-gated permissions restrict menu pricing, discount overrides, and sales ledgers</li>
+                  <li>Table-side micro survey flags unhappy diners for immediate on-site manager resolution</li>
                 </ul>
               </div>
             </div>
@@ -251,7 +251,7 @@ export default function LandingPage() {
               <div style={{ fontSize: 28, marginBottom: 12 }}>⚡</div>
               <strong style={{ fontSize: 16, display: 'block', marginBottom: 6 }}>Zero verification queues</strong>
               <p className="muted" style={{ fontSize: 13, lineHeight: 1.6, margin: 0 }}>
-                Guests pay with Google Pay, PhonePe, or Paytm and auto confirm without waiting for staff. Turn tables 15 minutes faster on weekend dinner rushes.
+                Guests pay with Google Pay, PhonePe, or Paytm and auto-confirm without waiting for staff. Tables settle instantly as soon as diners finish their meal.
               </p>
             </div>
 
@@ -304,7 +304,7 @@ export default function LandingPage() {
                 <span style={{ fontSize: 14, fontWeight: 800, color: 'var(--green)', display: 'block', marginBottom: 8 }}>STEP 02</span>
                 <strong style={{ fontSize: 16, display: 'block', marginBottom: 8 }}>Select dishes and auto pay via UPI</strong>
                 <p className="muted" style={{ fontSize: 13, lineHeight: 1.6, margin: 0 }}>
-                  Guests browse real time menu items, add spice instructions, and pay via any UPI app. Webhook verifies payment in 2 seconds.
+                  Guests browse real-time menu items, add dish notes, and pay via any UPI app. Webhook listener auto-verifies payment in real time.
                 </p>
               </div>
 
@@ -322,33 +322,50 @@ export default function LandingPage() {
         {/* Section 5: Mandatory Tagline Reveal Section (B11) */}
         <TaglineReveal />
 
-        {/* Section 6: Social Proof & Testimonials (A2 #9 & B8) */}
+        {/* Section 6: Core Architecture & Operational Guarantees */}
         <section style={{ background: 'var(--paper)', borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)', padding: '64px 0' }}>
           <div className="page-wrap">
             <div style={{ maxWidth: 640, marginBottom: 36 }}>
-              <span className="eyebrow" style={{ color: 'var(--orange)' }}>Real restaurateur experiences</span>
+              <span className="eyebrow" style={{ color: 'var(--green)' }}>Architectural integrity</span>
               <h2 className="heading-3" style={{ margin: '8px 0 10px' }}>
-                Trusted by high volume dining rooms
+                Core guarantees built into the system
               </h2>
+              <p className="muted" style={{ fontSize: 15, margin: 0 }}>
+                Every component is engineered around restaurant privacy, operational reliability, and transparent financial settlement.
+              </p>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 20 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 20 }}>
               <div className="surface" style={{ padding: 24, borderRadius: 16 }}>
-                <div style={{ color: 'var(--orange)', fontSize: 15, marginBottom: 10 }}>★★★★★</div>
-                <p style={{ fontSize: 14, lineHeight: 1.6, color: 'var(--ink)', margin: '0 0 14px' }}>
-                  "We cut our table turnaround time from 44 minutes to 29 minutes during Friday dinner rush. Our floor captains now focus on guest hospitality instead of delivering paper bills."
+                <div style={{ fontSize: 24, marginBottom: 12 }}>💳</div>
+                <strong style={{ fontSize: 15, display: 'block', marginBottom: 6, color: 'var(--ink)' }}>Direct UPI Settlement · 0% Platform Fee</strong>
+                <p className="muted" style={{ fontSize: 13, lineHeight: 1.6, margin: 0 }}>
+                  Guest payments route straight to your restaurant's merchant UPI VPA. ProjectQR never acts as a middleman, holds your payouts, or deducts commission.
                 </p>
-                <strong style={{ fontSize: 13, display: 'block', color: 'var(--ink)' }}>Rajesh Singhania</strong>
-                <span className="muted" style={{ fontSize: 12 }}>Founder, The Clay Oven Bistro · Bangalore</span>
               </div>
 
               <div className="surface" style={{ padding: 24, borderRadius: 16 }}>
-                <div style={{ color: 'var(--orange)', fontSize: 15, marginBottom: 10 }}>★★★★★</div>
-                <p style={{ fontSize: 14, lineHeight: 1.6, color: 'var(--ink)', margin: '0 0 14px' }}>
-                  "The table side complaint recovery saved us at least 18 bad Google reviews in our first month. The manager gets a chime before the guest even asks for the check."
+                <div style={{ fontSize: 24, marginBottom: 12 }}>⚡</div>
+                <strong style={{ fontSize: 15, display: 'block', marginBottom: 6, color: 'var(--ink)' }}>Zero App Download or Sign-Up</strong>
+                <p className="muted" style={{ fontSize: 13, lineHeight: 1.6, margin: 0 }}>
+                  Diners open the menu instantly in any standard mobile browser (Safari, Chrome). No mandatory app installations, OTP verifications, or guest login hurdles.
                 </p>
-                <strong style={{ fontSize: 13, display: 'block', color: 'var(--ink)' }}>Ananya Deshmukh</strong>
-                <span className="muted" style={{ fontSize: 12 }}>Operations Director, Spice and Hearth · Pune</span>
+              </div>
+
+              <div className="surface" style={{ padding: 24, borderRadius: 16 }}>
+                <div style={{ fontSize: 24, marginBottom: 12 }}>🛡️</div>
+                <strong style={{ fontSize: 15, display: 'block', marginBottom: 6, color: 'var(--ink)' }}>Strict Multi-Tenant Isolation</strong>
+                <p className="muted" style={{ fontSize: 13, lineHeight: 1.6, margin: 0 }}>
+                  Menus, active tickets, table PIN sessions, and daily ledgers are segregated by tenant ID. Staff accounts are gated by granular role-based permissions.
+                </p>
+              </div>
+
+              <div className="surface" style={{ padding: 24, borderRadius: 16 }}>
+                <div style={{ fontSize: 24, marginBottom: 12 }}>🖥️</div>
+                <strong style={{ fontSize: 15, display: 'block', marginBottom: 6, color: 'var(--ink)' }}>Complete Hardware Independence</strong>
+                <p className="muted" style={{ fontSize: 13, lineHeight: 1.6, margin: 0 }}>
+                  Runs on existing Android tablets, iPads, desktop PCs, kitchen monitors, and smartphones. No proprietary terminal leases or proprietary dongles required.
+                </p>
               </div>
             </div>
           </div>
