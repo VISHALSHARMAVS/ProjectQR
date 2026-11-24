@@ -27,6 +27,20 @@ export default function DemoPage() {
   const [cookingNotes, setCookingNotes] = useState('');
   const [selectedTableId, setSelectedTableId] = useState<string | null>(null);
   const [kdsFilter, setKdsFilter] = useState<string>('');
+  const [showTourTip, setShowTourTip] = useState(() => {
+    try {
+      return sessionStorage.getItem('mesa_demo_tip_dismissed') !== 'true';
+    } catch {
+      return true;
+    }
+  });
+
+  const dismissTourTip = () => {
+    setShowTourTip(false);
+    try {
+      sessionStorage.setItem('mesa_demo_tip_dismissed', 'true');
+    } catch {}
+  };
 
   // Persist state updates
   useEffect(() => {
@@ -199,6 +213,7 @@ export default function DemoPage() {
     <div className="demo-shell" style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--ink)' }}>
       {/* Top Demo Banner */}
       <header
+        className="demo-header"
         style={{
           background: 'var(--paper)',
           borderBottom: '1px solid var(--line)',
@@ -208,99 +223,63 @@ export default function DemoPage() {
           boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
         }}
       >
-        <div
-          className="page-wrap"
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: 12,
-            padding: '10px 16px',
-            flexWrap: 'wrap'
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <Link to="/" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
+        <div className="page-wrap demo-top-bar">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+            <Link to="/" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }} title="Back to home">
               <Brand />
             </Link>
-            <span
-              className="pill"
-              style={{
-                background: 'var(--soft-green)',
-                color: 'var(--green-dark)',
-                fontSize: 11,
-                fontWeight: 600,
-                padding: '3px 8px'
-              }}
-            >
-              Interactive Demo
-            </span>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
             <button
               type="button"
-              className="btn secondary small"
+              className="btn secondary small demo-reset-btn"
               onClick={handleReset}
               title="Reset sample tables and orders"
             >
-              ↻ Reset demo data
+              <span aria-hidden="true" style={{ fontSize: 13, marginRight: 2 }}>↻</span>
+              <span className="demo-reset-label">Reset</span>
             </button>
             <ThemeToggle variant="compact" />
-            <Link to="/register" className="btn small" style={{ fontWeight: 600 }}>
-              Start free trial →
+            <Link
+              to="/register"
+              className="btn small demo-trial-btn"
+            >
+              Try free →
             </Link>
           </div>
         </div>
 
-        {/* View Switcher Tabs */}
+        {/* View Switcher Tabs - Segmented Pill Rail */}
         <div
-          className="page-wrap"
-          style={{
-            display: 'flex',
-            gap: 6,
-            padding: '4px 16px 10px',
-            overflowX: 'auto',
-            scrollbarWidth: 'none'
-          }}
+          className="page-wrap demo-view-switcher"
+          role="tablist"
+          aria-label="Demo perspective selector"
         >
-          <button
-            type="button"
-            className={`btn small ${activeView === 'menu' ? '' : 'secondary'}`}
-            onClick={() => setActiveView('menu')}
-            style={{ borderRadius: 8, fontSize: 13 }}
-          >
-            📱 1. Customer QR Menu
-          </button>
-          <button
-            type="button"
-            className={`btn small ${activeView === 'kitchen' ? '' : 'secondary'}`}
-            onClick={() => setActiveView('kitchen')}
-            style={{ borderRadius: 8, fontSize: 13 }}
-          >
-            🍳 2. Kitchen Display (KDS)
-            {activeOrdersCount > 0 && (
-              <span style={{ marginLeft: 6, background: 'var(--orange)', color: 'white', padding: '1px 6px', borderRadius: 999, fontSize: 11 }}>
-                {activeOrdersCount}
-              </span>
-            )}
-          </button>
-          <button
-            type="button"
-            className={`btn small ${activeView === 'dashboard' ? '' : 'secondary'}`}
-            onClick={() => setActiveView('dashboard')}
-            style={{ borderRadius: 8, fontSize: 13 }}
-          >
-            📊 3. Owner Dashboard
-          </button>
-          <button
-            type="button"
-            className={`btn small ${activeView === 'floormap' ? '' : 'secondary'}`}
-            onClick={() => setActiveView('floormap')}
-            style={{ borderRadius: 8, fontSize: 13 }}
-          >
-            🗺️ 4. Live Floor Map
-          </button>
+          {[
+            { id: 'menu', icon: '📱', label: 'Guest Menu' },
+            { id: 'kitchen', icon: '🍳', label: 'Kitchen', badge: activeOrdersCount },
+            { id: 'dashboard', icon: '📊', label: 'Dashboard' },
+            { id: 'floormap', icon: '🗺️', label: 'Floor Map' }
+          ].map((tab) => {
+            const isActive = activeView === tab.id;
+            return (
+              <button
+                key={tab.id}
+                role="tab"
+                aria-selected={isActive}
+                type="button"
+                onClick={() => setActiveView(tab.id as DemoView)}
+                className={`demo-tab-pill ${isActive ? 'active' : ''}`}
+              >
+                <span aria-hidden="true">{tab.icon}</span>
+                <span>{tab.label}</span>
+                {tab.badge && tab.badge > 0 ? (
+                  <span className="demo-tab-badge">{tab.badge}</span>
+                ) : null}
+              </button>
+            );
+          })}
         </div>
       </header>
 
@@ -310,13 +289,13 @@ export default function DemoPage() {
           role="status"
           style={{
             position: 'fixed',
-            top: 110,
+            top: 96,
             left: '50%',
             transform: 'translateX(-50%)',
             zIndex: 1000,
             background: 'var(--ink)',
             color: 'var(--paper)',
-            padding: '12px 20px',
+            padding: '10px 18px',
             borderRadius: 12,
             boxShadow: '0 8px 24px rgba(0,0,0,0.25)',
             fontSize: 13,
@@ -331,54 +310,125 @@ export default function DemoPage() {
         </div>
       )}
 
-      {/* Guided Tour Helper Banner */}
-      <div
-        className="page-wrap"
-        style={{
-          marginTop: 14,
-          padding: '10px 16px',
-          background: 'var(--paper)',
-          border: '1px solid var(--line)',
-          borderRadius: 12,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: 12,
-          flexWrap: 'wrap',
-          fontSize: 13
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ fontSize: 18 }}>💡</span>
-          <span>
-            <strong>Simulate full restaurant flow:</strong> Add dishes in the <strong>Customer QR Menu</strong>, click <strong>Place demo order</strong>, then switch to <strong>Kitchen Display</strong> to see the ticket arrive live!
-          </span>
+      {/* Dismissible Guided Tour Helper Banner */}
+      {showTourTip && (
+        <div className="page-wrap" style={{ marginTop: 6, padding: '0 16px' }}>
+          <aside
+            role="note"
+            className="demo-tour-banner"
+            style={{
+              padding: '6px 12px',
+              background: 'var(--paper)',
+              border: '1px solid var(--line)',
+              borderRadius: 10,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 8,
+              fontSize: 12,
+              lineHeight: 1.4,
+              color: 'var(--ink)'
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 7, minWidth: 0, overflow: 'hidden' }}>
+              <span style={{ fontSize: 13, flexShrink: 0 }}>💡</span>
+              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                Order dishes here, then switch to <strong>Kitchen</strong> to see tickets arrive live!
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={dismissTourTip}
+              title="Dismiss tip"
+              aria-label="Dismiss tip"
+              style={{
+                background: 'none',
+                border: 'none',
+                color: 'var(--muted)',
+                fontSize: 14,
+                cursor: 'pointer',
+                padding: '2px 6px',
+                flexShrink: 0,
+                borderRadius: 4,
+                lineHeight: 1
+              }}
+            >
+              ✕
+            </button>
+          </aside>
         </div>
-        <span className="caption-3" style={{ color: 'var(--muted)' }}>
-          Table: Table 3 (Dine in) · Mode: Interactive Simulator
-        </span>
-      </div>
+      )}
 
       {/* VIEW 1: CUSTOMER QR MENU */}
       {activeView === 'menu' && (
-        <main className="customer-wrap customer-page" style={{ paddingTop: 16 }}>
-          <header className="customer-header">
+        <main className="customer-wrap customer-page" style={{ paddingTop: 6 }}>
+          <header className="customer-header demo-customer-compact-header">
             <div className="customer-header-brand">
-              <div className="restaurant-logo" style={{ color: 'var(--green)' }}>OT</div>
-              <div style={{ minWidth: 0 }}>
-                <h1>{state.restaurant.name}</h1>
-                <p>Table 3 · PIN: 2049 · Hi, Demo Diner</p>
+              <div
+                className="restaurant-logo"
+                style={{
+                  width: 32,
+                  height: 32,
+                  fontSize: 12,
+                  borderRadius: 8,
+                  fontWeight: 800,
+                  flexShrink: 0
+                }}
+              >
+                OT
+              </div>
+              <div style={{ minWidth: 0, overflow: 'hidden' }}>
+                <h1
+                  style={{
+                    fontSize: 13,
+                    fontWeight: 700,
+                    margin: 0,
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    letterSpacing: '-0.01em'
+                  }}
+                >
+                  {state.restaurant.name}
+                </h1>
+                <p
+                  style={{
+                    margin: '1px 0 0',
+                    fontSize: 11,
+                    color: 'var(--muted)',
+                    fontFamily: 'var(--font-mono, monospace)',
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis'
+                  }}
+                >
+                  Table 3 · PIN 2049
+                </p>
               </div>
             </div>
-            <div className="customer-header-actions">
-              <span className="pill orange" style={{ fontSize: 11 }}>
-                UPI Auto Confirm Active
+            <div className="customer-header-actions" style={{ flexShrink: 0 }}>
+              <span
+                className="pill"
+                style={{
+                  background: 'rgba(22, 163, 74, 0.12)',
+                  color: 'var(--green)',
+                  borderColor: 'rgba(22, 163, 74, 0.25)',
+                  fontSize: 10,
+                  fontWeight: 600,
+                  padding: '2px 7px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 4
+                }}
+              >
+                <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--green)' }} />
+                UPI Ready
               </span>
             </div>
           </header>
 
           {/* Search Bar */}
-          <div className="menu-search-wrap" style={{ marginTop: 14 }}>
+          <div className="menu-search-wrap" style={{ marginTop: 6, marginBottom: 8 }}>
             <span className="menu-search-icon">🔍</span>
             <input
               type="search"
@@ -387,6 +437,7 @@ export default function DemoPage() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               aria-label="Search dishes"
+              style={{ height: 38, fontSize: 13 }}
             />
             {searchQuery && (
               <button
@@ -400,7 +451,7 @@ export default function DemoPage() {
           </div>
 
           {/* Dietary Filters */}
-          <div className="dietary-filter-bar">
+          <div className="dietary-filter-bar" style={{ marginTop: 0, marginBottom: 8 }}>
             <button
               type="button"
               className={`dietary-filter-chip ${dietaryFilter === 'ALL' ? 'active' : ''}`}
