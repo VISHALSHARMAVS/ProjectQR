@@ -184,14 +184,14 @@ export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
           </form>
 
           <p className="muted" style={{ margin: '20px 0 0', textAlign: 'center', fontSize: 13 }}>
-            {isRegister ? 'Already set up?' : 'New to ProjectQR?'}{' '}
+            {isRegister ? 'Already set up?' : 'New to Mesa?'}{' '}
             <Link to={isRegister ? '/login' : '/register'} style={{ color: 'var(--green)', fontWeight: 700 }}>
               {isRegister ? 'Sign in' : 'Create a restaurant'}
             </Link>
           </p>
 
           <div style={{ marginTop: 20, paddingTop: 16, borderTop: '1px solid var(--line)', textAlign: 'center' }}>
-            <span className="muted" style={{ fontSize: 13 }}>Evaluating ProjectQR?</span>{' '}
+            <span className="muted" style={{ fontSize: 13 }}>Evaluating Mesa?</span>{' '}
             <Link to="/demo" style={{ color: 'var(--green)', fontWeight: 600, fontSize: 13 }}>
               Explore the interactive demo →
             </Link>

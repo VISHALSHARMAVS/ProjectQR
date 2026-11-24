@@ -39,7 +39,7 @@ export default function ScanPage() {
   if (query.isLoading) return <div className="customer-wrap"><Loading label="Finding your table…" /></div>;
   if (query.error) {
     const message = query.error instanceof ApiError ? query.error.message : 'This QR code could not be opened.';
-    return <main className="customer-wrap customer-page"><div className="customer-intro"><span className="eyebrow">ProjectQR</span><h2>This table link is unavailable.</h2><p>{message} Please ask a team member for help.</p></div><Link to="/" className="btn secondary">Back to home</Link></main>;
+    return <main className="customer-wrap customer-page"><div className="customer-intro"><span className="eyebrow">Mesa</span><h2>This table link is unavailable.</h2><p>{message} Please ask a team member for help.</p></div><Link to="/" className="btn secondary">Back to home</Link></main>;
   }
   if (!query.data) return <Navigate to="/" replace />;
   const { restaurant, table } = query.data;

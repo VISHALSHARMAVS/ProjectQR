@@ -14,7 +14,7 @@ interface FaqItem {
 
 const faqs: FaqItem[] = [
   {
-    question: 'Does our restaurant need expensive POS hardware to use ProjectQR?',
+    question: 'Does our restaurant need expensive POS hardware to use Mesa?',
     answer: 'No hardware purchase is required. You can print acrylic QR stands for each dining table and your staff can use any existing tablet, smartphone, or kitchen display monitor through a standard web browser.'
   },
   {
@@ -250,7 +250,7 @@ export default function LandingPage() {
               <ScrollReveal delay={160}>
                 <div className="glass-card comparison-card-new" style={{ borderRadius: 16, height: '100%' }}>
                   <span style={{ fontSize: 24, display: 'block', marginBottom: 12 }}>✅</span>
-                  <strong style={{ fontSize: 16, display: 'block', marginBottom: 6 }}>The ProjectQR architecture</strong>
+                  <strong style={{ fontSize: 16, display: 'block', marginBottom: 6 }}>The Mesa architecture</strong>
                   <ul style={{ paddingLeft: 18, margin: 0, fontSize: 13, lineHeight: 1.8 }}>
                     <li>Guests scan, browse live items, and settle the bill directly from their phone browser</li>
                     <li>Direct UPI webhook listener confirms payments automatically with real time audio chime</li>
@@ -327,7 +327,7 @@ export default function LandingPage() {
               <div style={{ maxWidth: 640, margin: '0 auto 40px', textAlign: 'center' }}>
                 <span className="eyebrow">Simple three step flow</span>
                 <h2 className="heading-3" style={{ margin: '8px 0 10px' }}>
-                  How your restaurant operates with ProjectQR
+                  How your restaurant operates with Mesa
                 </h2>
               </div>
             </ScrollReveal>
@@ -387,7 +387,7 @@ export default function LandingPage() {
                 {
                   icon: '💳',
                   title: 'Direct UPI settlement · 0% platform fee',
-                  desc: 'Guest payments route straight to your restaurant merchant UPI VPA. ProjectQR never acts as a middleman, holds your payouts, or deducts commission.'
+                  desc: 'Guest payments route straight to your restaurant merchant UPI VPA. Mesa never acts as a middleman, holds your payouts, or deducts commission.'
                 },
                 {
                   icon: '⚡',

@@ -49,7 +49,7 @@ export function SiteFooter() {
             {/* Column 1: Brand & Operational Identity */}
             <div className="site-footer-brand-col">
               <Link to="/" style={{ textDecoration: 'none', width: 'fit-content' }}>
-                <Brand />
+                <Brand showTagline />
               </Link>
               <p className="site-footer-desc">
                 Table side QR ordering, real time kitchen orchestration, and instant UPI soundbox auto settlement for independent restaurants and cafes.
@@ -159,7 +159,7 @@ export function SiteFooter() {
           {/* Bottom Colophon Bar */}
           <div className="site-footer-bottom">
             <div>
-              <span>© {new Date().getFullYear()} ProjectQR. Built for Indian hospitality.</span>
+              <span>© {new Date().getFullYear()} Mesa · The Table Operating System. Built for Indian hospitality.</span>
             </div>
 
             <div className="site-footer-legal-links">
@@ -209,7 +209,7 @@ export function SiteFooter() {
           <div style={{ padding: '12px 4px', fontSize: 14, lineHeight: 1.6, color: 'var(--ink)' }}>
             <h4 style={{ margin: '0 0 6px', fontSize: 15 }}>1. Zero Diner Data Monetization</h4>
             <p className="muted" style={{ margin: '0 0 16px' }}>
-              ProjectQR never harvests, resells, or shares diner phone numbers, email addresses, or eating habits with advertisers or third party marketing brokers.
+              Mesa never harvests, resells, or shares diner phone numbers, email addresses, or eating habits with advertisers or third party marketing brokers.
             </p>
 
             <h4 style={{ margin: '0 0 6px', fontSize: 15 }}>2. Direct UPI Routing</h4>
@@ -240,12 +240,12 @@ export function SiteFooter() {
           <div style={{ padding: '12px 4px', fontSize: 14, lineHeight: 1.6, color: 'var(--ink)' }}>
             <h4 style={{ margin: '0 0 6px', fontSize: 15 }}>1. Hospitality Platform Scope</h4>
             <p className="muted" style={{ margin: '0 0 16px' }}>
-              ProjectQR delivers cloud based digital QR ordering, real time kitchen display screens, table PIN defense, and payment verification tools for dine in restaurants, cafes, and taprooms.
+              Mesa delivers cloud based digital QR ordering, real time kitchen display screens, table PIN defense, and payment verification tools for dine in restaurants, cafes, and taprooms.
             </p>
 
             <h4 style={{ margin: '0 0 6px', fontSize: 15 }}>2. Zero Platform Transaction Commission</h4>
             <p className="muted" style={{ margin: '0 0 16px' }}>
-              ProjectQR charges zero percent transaction fees on orders. 100 percent of the funds settled by diners arrive directly in the restaurant designated bank account.
+              Mesa charges zero percent transaction fees on orders. 100 percent of the funds settled by diners arrive directly in the restaurant designated bank account.
             </p>
 
             <h4 style={{ margin: '0 0 6px', fontSize: 15 }}>3. 14 Day Free Evaluation</h4>
@@ -271,7 +271,7 @@ export function SiteFooter() {
           <div style={{ padding: '12px 4px', fontSize: 14, lineHeight: 1.6, color: 'var(--ink)' }}>
             <h4 style={{ margin: '0 0 6px', fontSize: 15 }}>1. Instant Direct Payouts</h4>
             <p className="muted" style={{ margin: '0 0 16px' }}>
-              When a guest scans and pays at Table 4, the UPI transfer is credited directly into your restaurant merchant account via your existing bank VPA. ProjectQR is not an escrow holder and never holds your funds.
+              When a guest scans and pays at Table 4, the UPI transfer is credited directly into your restaurant merchant account via your existing bank VPA. Mesa is not an escrow holder and never holds your funds.
             </p>
 
             <h4 style={{ margin: '0 0 6px', fontSize: 15 }}>2. No Payout Cycle Delays</h4>

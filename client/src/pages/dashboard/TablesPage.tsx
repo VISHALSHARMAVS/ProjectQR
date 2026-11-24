@@ -374,6 +374,11 @@ export default function TablesPage() {
           <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 2 }}>
             No app download required · Direct table service
           </div>
+          <div style={{ marginTop: 10, paddingTop: 8, borderTop: '1px dashed var(--line)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: 10, color: 'var(--muted)', letterSpacing: '0.06em', textTransform: 'uppercase', fontWeight: 600 }}>
+            <span>Powered by Mesa</span>
+            <span>·</span>
+            <span>The Table OS</span>
+          </div>
         </div>
 
         <div className="muted" style={{ overflowWrap: 'anywhere', fontSize: 11, textAlign: 'center', marginTop: 10 }}>

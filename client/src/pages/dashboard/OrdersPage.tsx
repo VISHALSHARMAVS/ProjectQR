@@ -80,7 +80,7 @@ export default function OrdersPage({ kitchen = false }: { kitchen?: boolean }) {
   const onNewOrder = useCallback(() => {
     setNotice('New order received! The board has been updated.');
     if (soundEnabled) playKitchenChime();
-    if ('Notification' in window && Notification.permission === 'granted') new Notification('New ProjectQR order', { body: 'A customer order is ready to review.' });
+    if ('Notification' in window && Notification.permission === 'granted') new Notification('New Mesa order', { body: 'A customer order is ready to review.' });
     window.setTimeout(() => setNotice(''), 6000);
   }, [soundEnabled]);
 

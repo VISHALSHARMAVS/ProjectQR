@@ -14,11 +14,11 @@
   --paper: #ffffff;
   --paper-elevated: #f1f5f9;
   --paper-hover: #f8fafc;
-  --green: #1b4d3e;
-  --green-dark: #12372c;
+  --green: #16a34a;
+  --green-dark: #14532d;
   --soft-green: #ecfdf5;
-  --orange: #ea580c;
-  --soft-orange: #fff7ed;
+  --orange: #f59e0b;
+  --soft-orange: #fffbeb;
   --red: #dc2626;
   --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05);
 
@@ -43,23 +43,23 @@
   --duration-interactive: 300ms;
 }
 
-/* Dark Theme Tokens (SKILL.md Section B4 & B5) */
+/* Dark Theme Tokens (Mesa Brand Guidelines: Obsidian Canvas & Slate Container) */
 [data-theme="dark"] {
   color-scheme: dark;
-  --bg: #000000;
+  --bg: #07150e;
   --ink: #f8fafc;
   --muted: #94a3b8;
-  --line: #272727;
-  --paper: #181818;
-  --paper-elevated: #1f1f1f;
-  --paper-hover: #313131;
-  --green: #22c55e;
-  --green-dark: #16a34a;
-  --soft-green: #052e16;
-  --orange: #f97316;
-  --soft-orange: #431407;
+  --line: #163824;
+  --paper: #0b2016;
+  --paper-elevated: #102b1e;
+  --paper-hover: #163824;
+  --green: #16a34a;
+  --green-dark: #14532d;
+  --soft-green: #0d281a;
+  --orange: #f59e0b;
+  --soft-orange: #451a03;
   --red: #ef4444;
-  --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.5), 0 1px 2px -1px rgba(0, 0, 0, 0.5);
+  --shadow: 0 4px 20px 0 rgba(0, 0, 0, 0.6), 0 1px 3px 0 rgba(0, 0, 0, 0.4);
 }
 
 /* Hero Section Heading Gradients (SKILL.md B5) */
@@ -338,8 +338,8 @@ p, body, .body-1, .body-2, .body-3, .body-4, .body-5, .body-6 {
 }
 
 [data-theme="dark"] .glass-surface {
-  background: rgba(24, 24, 24, 0.72);
-  border: 1px solid rgba(255, 255, 255, 0.09);
+  background: rgba(11, 32, 22, 0.72);
+  border: 1px solid rgba(22, 56, 36, 0.85);
   border-top: 1px solid rgba(255, 255, 255, 0.18);
   box-shadow: 0 20px 50px -12px rgba(0, 0, 0, 0.6);
 }
@@ -351,6 +351,12 @@ p, body, .body-1, .body-2, .body-3, .body-4, .body-5, .body-6 {
   border: 1px solid color-mix(in srgb, var(--line) 85%, transparent);
   border-top: 1px solid rgba(255, 255, 255, 0.22);
   transition: transform 300ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 300ms cubic-bezier(0.22, 1, 0.36, 1), border-color 300ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+[data-theme="dark"] .glass-card {
+  background: rgba(16, 43, 30, 0.75);
+  border: 1px solid rgba(22, 56, 36, 0.85);
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
 }
 
 .glass-card:hover {
@@ -1303,8 +1309,8 @@ p, body, .body-1, .body-2, .body-3, .body-4, .body-5, .body-6 {
 }
 
 [data-theme="dark"] .site-footer {
-  background: rgba(18, 18, 18, 0.82);
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(7, 21, 14, 0.88);
+  border-top: 1px solid rgba(22, 56, 36, 0.9);
 }
 
 .site-footer-grid {

@@ -20,7 +20,7 @@ import SettingsPage from './pages/dashboard/SettingsPage';
 import ReviewsPage from './pages/dashboard/ReviewsPage';
 
 function NotFoundPage() {
-  return <main className="page-wrap" style={{ paddingTop: 70 }}><span className="eyebrow">Page not found</span><h1 style={{ letterSpacing: '-.05em' }}>We couldn’t find that page.</h1><Link className="btn" to="/">Go to ProjectQR</Link></main>;
+  return <main className="page-wrap" style={{ paddingTop: 70 }}><span className="eyebrow">Page not found</span><h1 style={{ letterSpacing: '-.05em' }}>We couldn’t find that page.</h1><Link className="btn" to="/">Go to Mesa</Link></main>;
 }
 
 function DashboardRedirect() {

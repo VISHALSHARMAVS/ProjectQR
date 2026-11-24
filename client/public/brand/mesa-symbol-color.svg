@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <linearGradient id="mesaGreenGrad" x1="100" y1="120" x2="412" y2="400" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#22C55E"/>
+      <stop offset="50%" stop-color="#16A34A"/>
+      <stop offset="100%" stop-color="#14532D"/>
+    </linearGradient>
+    <linearGradient id="mesaAmberGrad" x1="220" y1="120" x2="292" y2="200" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FDE047"/>
+      <stop offset="100%" stop-color="#F59E0B"/>
+    </linearGradient>
+    <filter id="mesaAmberGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="0" stdDeviation="6" flood-color="#F59E0B" flood-opacity="0.8"/>
+    </filter>
+  </defs>
+
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Left Outer Table Leg of 'M' -->
+    <path d="M 132 400 L 132 152" stroke="url(#mesaGreenGrad)" stroke-width="36"/>
+
+    <!-- Right Outer Table Leg of 'M' -->
+    <path d="M 380 400 L 380 152" stroke="url(#mesaGreenGrad)" stroke-width="36"/>
+
+    <!-- Inner Chevron meeting at Table Center -->
+    <path d="M 132 152 L 256 256 L 380 152" stroke="url(#mesaGreenGrad)" stroke-width="36"/>
+
+    <!-- The Dining Table Horizon Surface -->
+    <path d="M 172 256 L 340 256" stroke="url(#mesaGreenGrad)" stroke-width="32"/>
+
+    <!-- Hospitality Signal Arc (Acoustic Chime / Soundbox Wave) -->
+    <path d="M 224 140 C 240 126 272 126 288 140" stroke="url(#mesaAmberGrad)" stroke-width="24"/>
+
+    <!-- Table-Side Active Beacon (4-digit PIN access point) -->
+    <circle cx="256" cy="184" r="16" fill="url(#mesaAmberGrad)" stroke="none" filter="url(#mesaAmberGlow)"/>
+  </g>
+</svg>

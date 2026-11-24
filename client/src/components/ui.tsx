@@ -12,52 +12,112 @@ export function DietaryBadge({ type = 'VEG' }: { type?: DietaryType }) {
   return <span className="dietary-badge veg" title="Pure Vegetarian" aria-label="Pure Vegetarian"><span className="dietary-symbol" /></span>;
 }
 
-export function ScanPlateIcon({ size = 20, light = false }: { size?: number; light?: boolean }) {
-  const strokeColor = light ? '#ffffff' : 'currentColor';
-  const accentColor = '#ea580c';
+export function MesaMonogram({ size = 22, light = false }: { size?: number; light?: boolean }) {
   return (
     <svg
       width={size}
       height={size}
-      viewBox="0 0 256 256"
+      viewBox="0 0 512 512"
       fill="none"
       aria-hidden="true"
       style={{ display: 'inline-block', verticalAlign: 'middle', flexShrink: 0 }}
     >
-      <g stroke={strokeColor} strokeWidth="18" strokeLinecap="round" strokeLinejoin="round">
-        <polyline points="28,78 28,28 78,28" />
-        <polyline points="178,28 228,28 228,78" />
-        <polyline points="28,178 28,228 78,228" />
-        <polyline points="178,228 228,228 228,178" />
+      <defs>
+        <linearGradient id="mesaGreenGradInline" x1="100" y1="120" x2="412" y2="400" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stopColor="#22C55E" />
+          <stop offset="50%" stopColor="#16A34A" />
+          <stop offset="100%" stopColor="#14532D" />
+        </linearGradient>
+        <linearGradient id="mesaAmberGradInline" x1="220" y1="120" x2="292" y2="200" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stopColor="#FDE047" />
+          <stop offset="100%" stopColor="#F59E0B" />
+        </linearGradient>
+        <filter id="mesaAmberGlowInline" x="-30%" y="-30%" width="160%" height="160%">
+          <feDropShadow dx="0" dy="0" stdDeviation="6" floodColor="#F59E0B" floodOpacity="0.8" />
+        </filter>
+      </defs>
+
+      <g fill="none" strokeLinecap="round" strokeLinejoin="round">
+        {/* Left Outer Table Leg of 'M' */}
+        <path d="M 132 400 L 132 152" stroke={light ? '#4ade80' : 'url(#mesaGreenGradInline)'} strokeWidth="36" />
+
+        {/* Right Outer Table Leg of 'M' */}
+        <path d="M 380 400 L 380 152" stroke={light ? '#4ade80' : 'url(#mesaGreenGradInline)'} strokeWidth="36" />
+
+        {/* Inner Chevron meeting at Table Center */}
+        <path d="M 132 152 L 256 256 L 380 152" stroke={light ? '#4ade80' : 'url(#mesaGreenGradInline)'} strokeWidth="36" />
+
+        {/* The Dining Table Horizon Surface */}
+        <path d="M 172 256 L 340 256" stroke={light ? '#4ade80' : 'url(#mesaGreenGradInline)'} strokeWidth="32" />
+
+        {/* Hospitality Signal Arc (Acoustic Chime / Soundbox Wave) */}
+        <path d="M 224 140 C 240 126 272 126 288 140" stroke="url(#mesaAmberGradInline)" strokeWidth="24" />
+
+        {/* Table-Side Active Beacon (4-digit PIN access point) */}
+        <circle cx="256" cy="184" r="16" fill="url(#mesaAmberGradInline)" filter="url(#mesaAmberGlowInline)" />
       </g>
-      <line x1="64" y1="156" x2="192" y2="156" stroke={strokeColor} strokeWidth="16" strokeLinecap="round" />
-      <path
-        d="M 74,156 C 74,98 100,78 128,78 C 156,78 182,98 182,156"
-        stroke={strokeColor}
-        strokeWidth="16"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <circle cx="128" cy="66" r="11" fill={accentColor} />
     </svg>
   );
 }
 
-export function Brand({ light = false }: { light?: boolean }) {
+// Backwards-compatible alias for existing components
+export const ScanPlateIcon = MesaMonogram;
+
+export function Brand({ light = false, showTagline = false }: { light?: boolean; showTagline?: boolean }) {
   return (
-    <span className="brand">
+    <span className="brand" style={{ display: 'inline-flex', alignItems: 'center', gap: 10 }}>
       <span
         className="brand-mark"
         style={
           light
-            ? { color: 'white', background: 'rgba(255, 255, 255, 0.15)', border: '1px solid rgba(255, 255, 255, 0.25)' }
-            : { color: 'var(--green)', background: 'var(--soft-green)', border: '1px solid var(--line)' }
+            ? { color: 'white', background: 'rgba(255, 255, 255, 0.12)', border: '1px solid rgba(255, 255, 255, 0.22)', padding: '5px', borderRadius: '10px' }
+            : { color: 'var(--green)', background: 'var(--soft-green)', border: '1px solid var(--line)', padding: '5px', borderRadius: '10px' }
         }
       >
-        <ScanPlateIcon size={20} light={light} />
+        <MesaMonogram size={22} light={light} />
       </span>
-      <span className="brand-name" style={light ? { color: 'white' } : undefined}>
-        Project<span style={{ color: light ? '#a7f3d0' : 'var(--green)' }}>QR</span>
+      <span style={{ display: 'inline-flex', flexDirection: 'column' }}>
+        <span
+          className="brand-name"
+          style={{
+            fontFamily: "'Manrope', -apple-system, sans-serif",
+            fontWeight: 800,
+            fontSize: 20,
+            letterSpacing: '-0.03em',
+            color: light ? '#F8FAFC' : 'var(--ink)',
+            lineHeight: 1.1,
+            display: 'inline-flex',
+            alignItems: 'baseline'
+          }}
+        >
+          Mesa
+          <span
+            style={{
+              display: 'inline-block',
+              width: 5,
+              height: 5,
+              borderRadius: '50%',
+              background: '#F59E0B',
+              marginLeft: 4,
+              boxShadow: '0 0 6px #F59E0B'
+            }}
+            aria-hidden="true"
+          />
+        </span>
+        {showTagline && (
+          <span
+            style={{
+              fontSize: 9.5,
+              letterSpacing: '0.14em',
+              textTransform: 'uppercase',
+              color: 'var(--muted)',
+              fontWeight: 700,
+              marginTop: 2
+            }}
+          >
+            The Table Operating System
+          </span>
+        )}
       </span>
     </span>
   );

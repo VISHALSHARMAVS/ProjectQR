@@ -14,7 +14,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   try {
     response = await fetch(`/api${path}`, { ...options, headers, credentials: 'include' });
   } catch {
-    throw new ApiError(0, 'NETWORK_ERROR', 'Cannot reach ProjectQR. Check your connection and try again.');
+    throw new ApiError(0, 'NETWORK_ERROR', 'Cannot reach Mesa. Check your connection and try again.');
   }
   if (response.status === 204) return undefined as T;
   const body = await response.json().catch(() => ({})) as T & ApiFailure;

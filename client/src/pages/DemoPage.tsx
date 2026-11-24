@@ -8,7 +8,7 @@ import {
 } from '../lib/demoData';
 import { money, formatTableLabel } from '../lib/format';
 import { playKitchenChime, playPaymentSuccessChime } from '../lib/audio';
-import { DietaryBadge, Modal } from '../components/ui';
+import { DietaryBadge, Modal, Brand } from '../components/ui';
 import { ThemeToggle } from '../components/ThemeToggle';
 import type { MenuItem, MenuItemAddon, MenuItemVariant, OrderRecord, OrderStatus } from '../types';
 
@@ -220,9 +220,8 @@ export default function DemoPage() {
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 700, fontSize: 15 }}>
-              <span className="brand-mark" style={{ width: 28, height: 28, fontSize: 13 }}>QR</span>
-              <span>ProjectQR</span>
+            <Link to="/" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
+              <Brand />
             </Link>
             <span
               className="pill"
@@ -1074,11 +1073,11 @@ export default function DemoPage() {
             Ready to bring this speed to your restaurant?
           </h3>
           <p className="muted" style={{ fontSize: 14, margin: '0 0 18px', lineHeight: 1.5 }}>
-            ProjectQR runs directly on your existing phones and tablets with zero upfront hardware costs.
+            Mesa runs directly on your existing phones and tablets with zero upfront hardware costs.
           </p>
           <div style={{ display: 'flex', justifyContent: 'center', gap: 12, flexWrap: 'wrap' }}>
             <Link to="/register" className="btn" style={{ fontWeight: 600 }}>
-              Start 14-day free trial →
+              Start 14 day free trial →
             </Link>
             <Link to="/" className="btn secondary">
               Back to homepage
