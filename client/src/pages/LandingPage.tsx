@@ -117,13 +117,13 @@ export default function LandingPage() {
               style={{
                 margin: '0 0 16px',
                 fontSize: 'clamp(28px, 6.5vw, 56px)',
-                lineHeight: 1.12,
+                lineHeight: 1.15,
                 letterSpacing: '-0.035em',
                 overflowWrap: 'break-word',
                 wordBreak: 'break-word'
               }}
             >
-              Turn every dining table<br />into an instant checkout
+              Turn every dining table into an instant checkout
             </h1>
 
             <p
