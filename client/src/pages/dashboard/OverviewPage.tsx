@@ -1,9 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { api, ApiError } from '../../lib/api';
-import { money } from '../../lib/format';
+import { elapsedSince, money } from '../../lib/format';
 import { EmptyState, ErrorPanel, Loading, StatusPill } from '../../components/ui';
-import type { OrderStatus } from '../../types';
+import type { DishLeaderboardItem, OrderStatus, ReviewRecord, ReviewSummary } from '../../types';
 
 interface TopSeller {
   menuItemId: string;
@@ -27,11 +27,20 @@ interface DashboardData {
 
 export default function OverviewPage() {
   const query = useQuery({ queryKey: ['dashboard'], queryFn: () => api.get<DashboardData>('/restaurant/dashboard') });
+  const reviewsQuery = useQuery({
+    queryKey: ['restaurant-reviews'],
+    queryFn: () => api.get<{ summary: ReviewSummary; reviews: ReviewRecord[]; dishLeaderboard: DishLeaderboardItem[] }>('/restaurant/reviews'),
+    refetchInterval: 15_000
+  });
+
   if (query.isLoading) return <Loading />;
   if (query.error || !query.data) {
     return <ErrorPanel message={query.error instanceof ApiError ? query.error.message : 'Dashboard data could not be loaded.'} retry={() => void query.refetch()} />;
   }
   const { metrics, topSellers, recentlyCompleted } = query.data;
+  const reviewSummary = reviewsQuery.data?.summary;
+  const recentReviews = reviewsQuery.data?.reviews ?? [];
+  const unresolvedAlertCount = reviewSummary?.unresolvedComplaints ?? 0;
 
   return (
     <>
@@ -39,15 +48,54 @@ export default function OverviewPage() {
         <div>
           <span className="eyebrow">Restaurant performance</span>
           <h1>Welcome back.</h1>
-          <p className="muted" style={{ margin: '7px 0 0', fontSize: 13 }}>Here is how your restaurant and menu are performing.</p>
+          <p className="muted" style={{ margin: '7px 0 0', fontSize: 13 }}>Here is how your restaurant, kitchen, and guest satisfaction are performing.</p>
         </div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <Link className="btn secondary" to="/dashboard/reviews">⭐ Reviews & Alerts</Link>
           <Link className="btn secondary" to="/dashboard/day-close">📋 Day Close Report</Link>
           <Link className="btn" to="/dashboard/kitchen">Open kitchen <span aria-hidden="true">→</span></Link>
         </div>
       </div>
 
-      <section className="stat-grid">
+      {/* Real-time Owner Alert for Unresolved Table Complaints */}
+      {unresolvedAlertCount > 0 && (
+        <div
+          className="surface"
+          style={{
+            background: '#fff1f2',
+            border: '2px solid #fecdd3',
+            borderRadius: 14,
+            padding: '16px 20px',
+            marginBottom: 20,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 16,
+            flexWrap: 'wrap',
+            boxShadow: '0 4px 14px rgba(225, 29, 72, 0.08)'
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+            <span style={{ fontSize: 28, background: '#fee2e2', width: 44, height: 44, borderRadius: 10, display: 'grid', placeItems: 'center' }}>🚨</span>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <strong style={{ color: '#991b1b', fontSize: 15 }}>
+                  {unresolvedAlertCount} Table Complaint{unresolvedAlertCount > 1 ? 's' : ''} Awaiting Attention
+                </strong>
+                <span className="pill red" style={{ fontSize: 10, fontWeight: 800 }}>LIVE ALERT</span>
+              </div>
+              <p style={{ margin: '3px 0 0', fontSize: 13, color: '#b91c1c' }}>
+                Unhappy diners reported issues table-side. Take action before guests depart or post negative Google reviews.
+              </p>
+            </div>
+          </div>
+          <Link to="/dashboard/reviews" className="btn danger small" style={{ fontWeight: 700 }}>
+            Inspect & Recover →
+          </Link>
+        </div>
+      )}
+
+      <section className="stat-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))' }}>
         <article className="stat-card">
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <span className="eyebrow" style={{ color: '#15803d' }}>Total Revenue</span>
@@ -82,6 +130,24 @@ export default function OverviewPage() {
           </div>
           <div className="stat-value">{metrics.activeTables}</div>
           <div className="stat-caption">Ready for guest dining</div>
+        </article>
+
+        <article className="stat-card">
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span className="eyebrow" style={{ color: unresolvedAlertCount > 0 ? '#dc2626' : '#d97706' }}>Guest Rating</span>
+            <span style={{ fontSize: 16, background: unresolvedAlertCount > 0 ? '#fee2e2' : '#fef3c7', width: 32, height: 32, borderRadius: 8, display: 'grid', placeItems: 'center' }}>⭐</span>
+          </div>
+          <div className="stat-value" style={{ display: 'flex', alignItems: 'baseline', gap: 6, color: unresolvedAlertCount > 0 ? '#dc2626' : 'inherit' }}>
+            {reviewSummary && reviewSummary.totalReviews > 0 ? reviewSummary.averageRating.toFixed(1) : '5.0'}
+            <span style={{ fontSize: 16, color: '#f59e0b' }}>★</span>
+          </div>
+          <div className="stat-caption">
+            {unresolvedAlertCount > 0 ? (
+              <span style={{ color: '#dc2626', fontWeight: 700 }}>🚨 {unresolvedAlertCount} unresolved alert{unresolvedAlertCount > 1 ? 's' : ''}</span>
+            ) : (
+              `${reviewSummary?.totalReviews ?? 0} reviews (${reviewSummary?.googleClicks ?? 0} to Google)`
+            )}
+          </div>
         </article>
       </section>
 
@@ -213,6 +279,95 @@ export default function OverviewPage() {
               ))}
             </tbody>
           </table>
+        )}
+      </section>
+
+      {/* Real-Time Guest Reviews & Table Sentiment */}
+      <div className="heading-row" style={{ marginTop: 34 }}>
+        <div>
+          <span className="eyebrow">Customer delight & Google reputation</span>
+          <h2>⭐ Guest Reviews & Table Sentiment</h2>
+        </div>
+        <Link className="btn secondary small" to="/dashboard/reviews">
+          Full Reviews & Recovery Center ({recentReviews.length}) <span aria-hidden="true">→</span>
+        </Link>
+      </div>
+
+      <section className="surface" style={{ padding: 20, borderRadius: 14 }}>
+        {recentReviews.length === 0 ? (
+          <EmptyState
+            title="No guest reviews yet"
+            description="When diners complete their meal and rate your food via QR, live feedback and Google Maps conversions will appear here."
+          />
+        ) : (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 14 }}>
+            {recentReviews.slice(0, 3).map((rev) => (
+              <div
+                key={rev.id}
+                style={{
+                  border: '1px solid #e2e8f0',
+                  borderRadius: 12,
+                  padding: 16,
+                  background: rev.rating <= 2 && !rev.resolved ? '#fff1f2' : '#ffffff',
+                  borderColor: rev.rating <= 2 && !rev.resolved ? '#fecdd3' : '#e2e8f0'
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+                  <div>
+                    <strong style={{ fontSize: 14, display: 'block' }}>{rev.tableLabel || 'Table'}</strong>
+                    <span className="muted" style={{ fontSize: 12 }}>{rev.customerName || 'Anonymous guest'} · {elapsedSince(rev.createdAt)}</span>
+                  </div>
+                  <div style={{ textAlign: 'right' }}>
+                    <span style={{ color: '#f59e0b', fontSize: 15, fontWeight: 700 }}>
+                      {'★'.repeat(rev.rating)}{'☆'.repeat(5 - rev.rating)}
+                    </span>
+                  </div>
+                </div>
+
+                {rev.comment && (
+                  <p style={{ margin: '8px 0', fontSize: 13, fontStyle: 'italic', color: '#334155' }}>
+                    "{rev.comment}"
+                  </p>
+                )}
+
+                {rev.tags && rev.tags.length > 0 && (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 8 }}>
+                    {rev.tags.map((tag) => (
+                      <span key={tag} className="pill red" style={{ fontSize: 10, padding: '1px 6px' }}>
+                        #{tag.toLowerCase().replace(/_/g, ' ')}
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                {rev.dishRatings && rev.dishRatings.length > 0 && (
+                  <div style={{ marginTop: 8, fontSize: 12, display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                    {rev.dishRatings.map((dish, idx) => (
+                      <span key={idx} className={`pill ${dish.liked ? 'green' : 'red'}`} style={{ fontSize: 10, padding: '1px 6px' }}>
+                        {dish.liked ? '👍' : '👎'} {dish.dishName}
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                <div style={{ marginTop: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 11 }}>
+                  {rev.googleReviewClicked ? (
+                    <span className="pill green" style={{ fontSize: 10 }}>✓ Posted to Google</span>
+                  ) : rev.rating >= 4 ? (
+                    <span className="pill gray" style={{ fontSize: 10 }}>Positive internal</span>
+                  ) : rev.resolved ? (
+                    <span className="pill green" style={{ fontSize: 10 }}>✓ Recovered</span>
+                  ) : (
+                    <span className="pill red" style={{ fontSize: 10, fontWeight: 700 }}>🚨 Unresolved Alert</span>
+                  )}
+
+                  <Link to="/dashboard/reviews" style={{ color: '#0284c7', textDecoration: 'none', fontWeight: 600 }}>
+                    Details →
+                  </Link>
+                </div>
+              </div>
+            ))}
+          </div>
         )}
       </section>
     </>
