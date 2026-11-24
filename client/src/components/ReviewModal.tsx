@@ -34,11 +34,11 @@ const ROOT_CAUSE_OPTIONS: { tag: ReviewRootCauseTag; label: string; icon: string
 ];
 
 const RATING_LABELS: Record<number, { title: string; subtitle: string; color: string }> = {
-  1: { title: 'Very Disappointed', subtitle: 'We sincerely apologize. Tell us what went wrong so we can fix it table-side right now.', color: '#dc2626' },
-  2: { title: 'Below Expectations', subtitle: 'Not up to our standards. Help our manager make this right for you before you leave.', color: '#ea580c' },
-  3: { title: 'Average Experience', subtitle: 'What could our team have done to make your meal exceptional today?', color: '#d97706' },
-  4: { title: 'Great Experience!', subtitle: 'We are delighted you enjoyed your time with us! Tell us what you loved.', color: '#16a34a' },
-  5: { title: 'Outstanding!', subtitle: 'Thank you! You made our day. Share your 5-star love with other diners!', color: '#15803d' }
+  1: { title: 'Very Disappointed', subtitle: 'We sincerely apologize. Tell us what went wrong so we can fix it table-side right now.', color: 'var(--red)' },
+  2: { title: 'Below Expectations', subtitle: 'Not up to our standards. Help our manager make this right for you before you leave.', color: 'var(--orange)' },
+  3: { title: 'Average Experience', subtitle: 'What could our team have done to make your meal exceptional today?', color: 'var(--orange)' },
+  4: { title: 'Great Experience!', subtitle: 'We are delighted you enjoyed your time with us! Tell us what you loved.', color: 'var(--green)' },
+  5: { title: 'Outstanding!', subtitle: 'Thank you! You made our day. Share your 5-star love with other diners!', color: 'var(--green)' }
 };
 
 export function ReviewModal({
@@ -150,8 +150,8 @@ export function ReviewModal({
             </p>
 
             {isHighRating && googleReviewUrl && (
-              <div style={{ padding: 16, background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 12, marginBottom: 20 }}>
-                <p style={{ margin: '0 0 12px', fontSize: 13, fontWeight: 600, color: '#334155' }}>
+              <div style={{ padding: 16, background: 'var(--paper-elevated)', border: '1px solid var(--line)', borderRadius: 12, marginBottom: 20 }}>
+                <p style={{ margin: '0 0 12px', fontSize: 13, fontWeight: 600, color: 'var(--ink)' }}>
                   Would you take 10 seconds to share this on Google Maps? It helps small restaurants like ours tremendously!
                 </p>
                 <button
@@ -240,8 +240,8 @@ export function ReviewModal({
 
             {/* Low rating branch: Root cause diagnostic tags */}
             {!isHighRating && (
-              <div style={{ marginBottom: 18, background: '#fff7ed', border: '1px solid #fed7aa', padding: 14, borderRadius: 12 }}>
-                <strong style={{ display: 'block', fontSize: 13, color: '#9a3412', marginBottom: 8 }}>
+              <div style={{ marginBottom: 18, background: 'var(--soft-orange)', border: '1px solid var(--line)', padding: 14, borderRadius: 12 }}>
+                <strong style={{ display: 'block', fontSize: 13, color: 'var(--orange)', marginBottom: 8 }}>
                   What caused this issue? (Select all that apply)
                 </strong>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
@@ -256,9 +256,9 @@ export function ReviewModal({
                           fontSize: 12,
                           padding: '6px 10px',
                           borderRadius: 20,
-                          border: active ? '1.5px solid #ea580c' : '1px solid #fdba74',
-                          background: active ? '#ea580c' : '#ffffff',
-                          color: active ? '#ffffff' : '#7c2d12',
+                          border: active ? '1.5px solid var(--orange)' : '1px solid var(--line)',
+                          background: active ? 'var(--orange)' : 'var(--paper)',
+                          color: active ? '#ffffff' : 'var(--ink)',
                           fontWeight: active ? 700 : 500,
                           cursor: 'pointer',
                           display: 'inline-flex',
@@ -277,8 +277,8 @@ export function ReviewModal({
 
             {/* Dish-level feedback: Yumpingo style */}
             {enableDishReviews && orderedDishes.length > 0 && (
-              <div style={{ marginBottom: 18, background: '#f8fafc', border: '1px solid #e2e8f0', padding: 14, borderRadius: 12 }}>
-                <strong style={{ display: 'block', fontSize: 13, color: '#334155', marginBottom: 8 }}>
+              <div style={{ marginBottom: 18, background: 'var(--paper-elevated)', border: '1px solid var(--line)', padding: 14, borderRadius: 12 }}>
+                <strong style={{ display: 'block', fontSize: 13, color: 'var(--ink)', marginBottom: 8 }}>
                   {isHighRating ? '🍲 Which dishes did you love most?' : '🍲 Were any specific dishes an issue?'}
                 </strong>
                 <div style={{ display: 'grid', gap: 8, maxHeight: 160, overflowY: 'auto' }}>
@@ -293,9 +293,9 @@ export function ReviewModal({
                           justifyContent: 'space-between',
                           alignItems: 'center',
                           padding: '6px 10px',
-                          background: '#ffffff',
+                          background: 'var(--paper)',
                           borderRadius: 8,
-                          border: '1px solid #f1f5f9'
+                          border: '1px solid var(--line)'
                         }}
                       >
                         <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink)' }}>
@@ -307,8 +307,8 @@ export function ReviewModal({
                             aria-label={`Like ${dish.name}`}
                             onClick={() => toggleDishLike(key, dish.name, true)}
                             style={{
-                              background: currentRating?.liked === true ? '#dcfce7' : '#f8fafc',
-                              border: currentRating?.liked === true ? '1.5px solid #16a34a' : '1px solid #cbd5e1',
+                              background: currentRating?.liked === true ? 'var(--soft-green)' : 'var(--paper-elevated)',
+                              border: currentRating?.liked === true ? '1.5px solid var(--green)' : '1px solid var(--line)',
                               borderRadius: 6,
                               padding: '4px 8px',
                               cursor: 'pointer',
@@ -322,8 +322,8 @@ export function ReviewModal({
                             aria-label={`Dislike ${dish.name}`}
                             onClick={() => toggleDishLike(key, dish.name, false)}
                             style={{
-                              background: currentRating?.liked === false ? '#fee2e2' : '#f8fafc',
-                              border: currentRating?.liked === false ? '1.5px solid #dc2626' : '1px solid #cbd5e1',
+                              background: currentRating?.liked === false ? 'rgba(239, 68, 68, 0.15)' : 'var(--paper-elevated)',
+                              border: currentRating?.liked === false ? '1.5px solid var(--red)' : '1px solid var(--line)',
                               borderRadius: 6,
                               padding: '4px 8px',
                               cursor: 'pointer',

@@ -295,7 +295,7 @@ export default function CheckoutPage() {
                 <button
                   type="button"
                   className="btn ghost small"
-                  style={{ color: '#b91c1c', fontSize: 12, padding: '4px 10px', display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                  style={{ color: 'var(--red)', fontSize: 12, padding: '4px 10px', display: 'inline-flex', alignItems: 'center', gap: 4 }}
                   onClick={() => updateItem.mutate({
                     menuItemId: line.menuItemId,
                     quantity: 0,
@@ -363,7 +363,7 @@ export default function CheckoutPage() {
     </section>
 
     {stale.length > 0 && (
-      <div className="notice" style={{ marginTop: 14, borderColor: '#fca5a5', background: '#fff1f2', color: '#991b1b' }}>
+      <div className="notice" style={{ marginTop: 14, borderColor: 'var(--red)', background: 'rgba(239, 68, 68, 0.15)', color: 'var(--red)' }}>
         <strong>Price or Availability Update</strong>
         <ul style={{ margin: '7px 0 10px', paddingLeft: 18 }}>
           {stale.map(({ line, reason, latestPricePaise }) => (
@@ -376,7 +376,7 @@ export default function CheckoutPage() {
           <button
             type="button"
             className="btn small"
-            style={{ background: '#b91c1c', borderColor: '#b91c1c', color: 'white' }}
+            style={{ background: 'var(--red)', borderColor: 'transparent', color: 'white' }}
             onClick={() => {
               void tableCartQuery.refetch();
               void menu.refetch();

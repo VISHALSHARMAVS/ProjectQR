@@ -184,7 +184,7 @@ export function ManualOrderModal({ initialTableId, onClose, onOrderCreated }: Ma
     <Modal title="➕ Punch In Walk-in Order (Staff POS)" onClose={onClose} width={760}>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 16 }}>
         {/* Top Controls: Table Selector & Kitchen Notes */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12, padding: 14, background: '#f8fafc', borderRadius: 12, border: '1px solid var(--line)' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12, padding: 14, background: 'var(--paper-elevated)', borderRadius: 12, border: '1px solid var(--line)' }}>
           <div className="field">
             <label htmlFor="punch-table" style={{ fontWeight: 700 }}>Dining Table</label>
             <select
@@ -215,7 +215,7 @@ export function ManualOrderModal({ initialTableId, onClose, onOrderCreated }: Ma
         {/* Two-Column Workspace: Menu on Left, Running Bill on Right */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 16 }}>
           {/* Left: Dishes List */}
-          <div style={{ border: '1px solid var(--line)', borderRadius: 12, padding: 14, background: '#fff' }}>
+          <div style={{ border: '1px solid var(--line)', borderRadius: 12, padding: 14, background: 'var(--paper)' }}>
             <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
               <input
                 type="search"
@@ -264,7 +264,7 @@ export function ManualOrderModal({ initialTableId, onClose, onOrderCreated }: Ma
                       padding: '8px 10px',
                       borderRadius: 8,
                       border: '1px solid var(--line)',
-                      background: isSoldOut ? '#fafafa' : '#fff',
+                      background: isSoldOut ? 'var(--paper-elevated)' : 'var(--paper)',
                       opacity: isSoldOut ? 0.6 : 1
                     }}
                   >
@@ -290,11 +290,11 @@ export function ManualOrderModal({ initialTableId, onClose, onOrderCreated }: Ma
           </div>
 
           {/* Right: Running Bill & Action */}
-          <div style={{ border: '1.5px solid var(--line)', borderRadius: 12, padding: 14, background: '#fdfbf7', display: 'flex', flexDirection: 'column' }}>
+          <div style={{ border: '1px solid var(--line)', borderRadius: 12, padding: 14, background: 'var(--paper)', display: 'flex', flexDirection: 'column' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--line)', paddingBottom: 8, marginBottom: 10 }}>
               <strong style={{ fontSize: 14 }}>📋 Order Summary ({cart.reduce((s, c) => s + c.quantity, 0)} items)</strong>
               {cart.length > 0 && (
-                <button type="button" className="btn ghost small" style={{ fontSize: 11, color: '#dc2626' }} onClick={() => setCart([])}>
+                <button type="button" className="btn ghost small" style={{ fontSize: 11, color: 'var(--red)' }} onClick={() => setCart([])}>
                   Clear all
                 </button>
               )}
@@ -307,7 +307,7 @@ export function ManualOrderModal({ initialTableId, onClose, onOrderCreated }: Ma
             ) : (
               <div style={{ flex: 1, maxHeight: 250, overflowY: 'auto', display: 'grid', gap: 8, paddingRight: 4, marginBottom: 12 }}>
                 {cart.map((entry) => (
-                  <div key={entry.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', padding: 8, background: '#fff', borderRadius: 8, border: '1px solid var(--line)' }}>
+                  <div key={entry.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', padding: 8, background: 'var(--paper-elevated)', borderRadius: 8, border: '1px solid var(--line)' }}>
                     <div style={{ flex: 1, paddingRight: 8 }}>
                       <strong style={{ fontSize: 13 }}>{entry.menuItem.name}</strong>
                       {entry.selectedVariant && (
@@ -317,7 +317,7 @@ export function ManualOrderModal({ initialTableId, onClose, onOrderCreated }: Ma
                         <div style={{ fontSize: 11, color: 'var(--muted)' }}>+ {entry.selectedAddons.map((a) => a.name).join(', ')}</div>
                       )}
                       {entry.notes && (
-                        <div style={{ fontSize: 11, color: '#854d0e' }}>Note: {entry.notes}</div>
+                        <div style={{ fontSize: 11, color: 'var(--orange)' }}>Note: {entry.notes}</div>
                       )}
                       <div style={{ fontSize: 12, fontWeight: 700, marginTop: 2 }}>{money(calculateItemPrice(entry))}</div>
                     </div>
@@ -340,7 +340,7 @@ export function ManualOrderModal({ initialTableId, onClose, onOrderCreated }: Ma
             <div style={{ borderTop: '2px dashed var(--line)', paddingTop: 10, marginTop: 'auto' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
                 <span style={{ fontWeight: 650, fontSize: 14 }}>Total Amount:</span>
-                <span style={{ fontWeight: 800, fontSize: 18, color: '#166534' }}>{money(totalPaise)}</span>
+                <span style={{ fontWeight: 800, fontSize: 18, color: 'var(--green)' }}>{money(totalPaise)}</span>
               </div>
 
               <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, marginBottom: 12, cursor: 'pointer' }}>
@@ -357,7 +357,7 @@ export function ManualOrderModal({ initialTableId, onClose, onOrderCreated }: Ma
               <button
                 type="button"
                 className="btn full"
-                style={{ background: '#16a34a', borderColor: '#15803d', fontWeight: 800 }}
+                style={{ background: 'var(--green)', borderColor: 'transparent', fontWeight: 800 }}
                 disabled={cart.length === 0 || !tableId || createOrderMutation.isPending}
                 onClick={() => createOrderMutation.mutate()}
               >

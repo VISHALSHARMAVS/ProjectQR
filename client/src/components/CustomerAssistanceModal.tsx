@@ -77,17 +77,22 @@ export function CustomerAssistanceModal({ token, tableLabel = 'Your table', isOp
               borderRadius: 12,
               background:
                 statusMessage.type === 'success'
-                  ? '#e9f5ec'
+                  ? 'var(--soft-green)'
                   : statusMessage.type === 'info'
-                  ? '#fef3c7'
-                  : '#fee2e2',
+                  ? 'var(--soft-orange)'
+                  : 'rgba(239, 68, 68, 0.15)',
               color:
                 statusMessage.type === 'success'
-                  ? '#166534'
+                  ? 'var(--green)'
                   : statusMessage.type === 'info'
-                  ? '#92400e'
-                  : '#991b1b',
-              border: '1px solid currentColor'
+                  ? 'var(--orange)'
+                  : 'var(--red)',
+              border:
+                statusMessage.type === 'success'
+                  ? '1px solid var(--green)'
+                  : statusMessage.type === 'info'
+                  ? '1px solid var(--orange)'
+                  : '1px solid var(--red)'
             }}
           >
             <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 4 }}>
@@ -129,14 +134,14 @@ export function CustomerAssistanceModal({ token, tableLabel = 'Your table', isOp
                       padding: '12px 14px',
                       borderRadius: 12,
                       border: isSelected ? '2px solid var(--green)' : '1px solid var(--line)',
-                      background: isSelected ? 'var(--soft-green)' : 'white',
+                      background: isSelected ? 'var(--soft-green)' : 'var(--paper)',
                       cursor: 'pointer',
                       textAlign: 'left',
                       transition: 'all .15s ease'
                     }}
                   >
                     <span style={{ fontSize: 22, marginBottom: 4 }}>{opt.icon}</span>
-                    <strong style={{ fontSize: 13, color: isSelected ? 'var(--green-dark)' : 'var(--ink)' }}>
+                    <strong style={{ fontSize: 13, color: isSelected ? 'var(--green)' : 'var(--ink)' }}>
                       {opt.label}
                     </strong>
                     <span className="muted" style={{ fontSize: 11, marginTop: 2 }}>

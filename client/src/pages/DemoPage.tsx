@@ -281,7 +281,7 @@ export default function DemoPage() {
           >
             🍳 2. Kitchen Display (KDS)
             {activeOrdersCount > 0 && (
-              <span style={{ marginLeft: 6, background: '#ea580c', color: 'white', padding: '1px 6px', borderRadius: 999, fontSize: 11 }}>
+              <span style={{ marginLeft: 6, background: 'var(--orange)', color: 'white', padding: '1px 6px', borderRadius: 999, fontSize: 11 }}>
                 {activeOrdersCount}
               </span>
             )}
@@ -661,7 +661,7 @@ export default function DemoPage() {
         <main className="page-wrap" style={{ padding: '24px 16px 64px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18, flexWrap: 'wrap', gap: 12 }}>
             <div>
-              <span className="eyebrow" style={{ color: '#ea580c' }}>Live kitchen queue</span>
+              <span className="eyebrow" style={{ color: 'var(--orange)' }}>Live kitchen queue</span>
               <h1 className="heading-4" style={{ margin: '2px 0 0' }}>Kitchen Display System (KDS)</h1>
             </div>
             <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
@@ -764,7 +764,7 @@ export default function DemoPage() {
                               </div>
                             )}
                             {line.notes && (
-                              <div style={{ fontSize: 12, color: '#b45309', background: '#fef3c7', padding: '2px 6px', borderRadius: 4, marginTop: 3 }}>
+                              <div style={{ fontSize: 12, color: 'var(--orange)', background: 'var(--soft-orange)', border: '1px solid var(--line)', padding: '2px 6px', borderRadius: 4, marginTop: 3 }}>
                                 ✎ Note: {line.notes}
                               </div>
                             )}
@@ -779,7 +779,7 @@ export default function DemoPage() {
                         <button
                           type="button"
                           className="btn full"
-                          style={{ background: '#ea580c' }}
+                          style={{ background: 'var(--orange)' }}
                           onClick={() => advanceOrderStatus(order.id, 'PREPARING')}
                         >
                           Start preparing →
@@ -789,7 +789,7 @@ export default function DemoPage() {
                         <button
                           type="button"
                           className="btn full"
-                          style={{ background: '#16a34a' }}
+                          style={{ background: 'var(--green)' }}
                           onClick={() => advanceOrderStatus(order.id, 'READY')}
                         >
                           Mark ready to serve ✓
@@ -849,7 +849,7 @@ export default function DemoPage() {
             <div className="stat-card">
               <span className="stat-caption">Today's gross sales</span>
               <div className="stat-value font-mono-numbers">{money(totalSalesPaise)}</div>
-              <span className="caption-3" style={{ color: '#16a34a', marginTop: 4, display: 'block' }}>
+              <span className="caption-3" style={{ color: 'var(--green)', marginTop: 4, display: 'block' }}>
                 ✓ 100% UPI auto-confirmed
               </span>
             </div>
@@ -872,7 +872,7 @@ export default function DemoPage() {
 
             <div className="stat-card">
               <span className="stat-caption">Internal theft protection</span>
-              <div className="stat-value" style={{ color: '#16a34a', fontSize: 24 }}>Protected</div>
+              <div className="stat-value" style={{ color: 'var(--green)', fontSize: 24 }}>Protected</div>
               <span className="caption-3" style={{ color: 'var(--muted)', marginTop: 4, display: 'block' }}>
                 Fine-grained RBAC active
               </span>
@@ -913,7 +913,7 @@ export default function DemoPage() {
                         </span>
                       </td>
                       <td>
-                        <span style={{ color: '#16a34a', fontWeight: 600, fontSize: 12 }}>
+                        <span style={{ color: 'var(--green)', fontWeight: 600, fontSize: 12 }}>
                           ✓ UPI Auto-confirmed
                         </span>
                       </td>

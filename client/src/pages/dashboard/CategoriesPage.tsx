@@ -96,7 +96,7 @@ export default function CategoriesPage() {
                     </div>
                   </td>
                   <td>
-                    <span className="pill" style={{ background: '#f1f5f9', color: '#475569', fontSize: 11, fontWeight: 700 }}>
+                    <span className="pill gray" style={{ fontSize: 11, fontWeight: 700 }}>
                       {dishCount} {dishCount === 1 ? 'dish' : 'dishes'}
                     </span>
                   </td>

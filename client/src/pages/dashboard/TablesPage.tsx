@@ -293,7 +293,7 @@ export default function TablesPage() {
                     {table.active ? (
                       <button
                         className="btn ghost small"
-                        style={{ color: '#b91c1c' }}
+                        style={{ color: 'var(--red)' }}
                         onClick={() => {
                           setDeactivating(table);
                           setError('');
@@ -331,7 +331,7 @@ export default function TablesPage() {
           }}
         >
           {qr.logoUrl && (
-            <div style={{ width: 56, height: 56, margin: '0 auto 10px', borderRadius: 14, overflow: 'hidden', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', background: '#fff' }}>
+            <div style={{ width: 56, height: 56, margin: '0 auto 10px', borderRadius: 14, overflow: 'hidden', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', background: 'var(--paper-elevated)' }}>
               <img src={qr.logoUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', margin: 0 }} />
             </div>
           )}
@@ -350,8 +350,8 @@ export default function TablesPage() {
               margin: '12px auto 8px',
               padding: '4px 16px',
               borderRadius: 20,
-              background: `${qr.brandColor || '#315b43'}15`,
-              color: qr.brandColor || '#315b43',
+              background: 'var(--soft-green)',
+              color: qr.brandColor || 'var(--green)',
               fontWeight: 800,
               fontSize: 14,
               letterSpacing: '0.04em'

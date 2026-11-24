@@ -29,6 +29,10 @@ export function applyTheme(theme: Theme): 'light' | 'dark' {
     document.documentElement.setAttribute('data-theme', resolved);
     document.documentElement.setAttribute('data-theme-preference', theme);
     document.documentElement.style.colorScheme = resolved;
+    const metaTheme = document.querySelector('meta[name="theme-color"]');
+    if (metaTheme) {
+      metaTheme.setAttribute('content', resolved === 'dark' ? '#000000' : '#f8fafc');
+    }
   }
   return resolved;
 }

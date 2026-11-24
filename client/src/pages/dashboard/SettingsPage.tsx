@@ -489,7 +489,7 @@ export default function SettingsPage() {
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12 }}>
           <div className="field">
-            <label htmlFor="payment-gateway" style={{ fontSize: 12, fontWeight: 600, color: '#166534' }}>
+            <label htmlFor="payment-gateway" style={{ fontSize: 12, fontWeight: 600, color: 'var(--green)' }}>
               Payment Mode / Gateway
             </label>
             <select
@@ -507,7 +507,7 @@ export default function SettingsPage() {
           </div>
 
           <div className="field">
-            <label htmlFor="webhook-secret" style={{ fontSize: 12, fontWeight: 600, color: '#166534' }}>
+            <label htmlFor="webhook-secret" style={{ fontSize: 12, fontWeight: 600, color: 'var(--green)' }}>
               Webhook Secret <span className="muted">(Optional HMAC key)</span>
             </label>
             <input
@@ -521,7 +521,7 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        <div style={{ marginTop: 10, padding: '8px 12px', background: '#ecfdf5', borderRadius: 8, fontSize: 11, color: '#065f46', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 6 }}>
+        <div style={{ marginTop: 10, padding: '8px 12px', background: 'var(--soft-green)', borderRadius: 8, fontSize: 11, color: 'var(--green)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 6, border: '1px solid var(--line)' }}>
           <span>Universal Webhook URL: <code>{typeof window !== 'undefined' ? `${window.location.origin}/api/webhooks/payment` : '/api/webhooks/payment'}</code></span>
           <button
             type="button"
@@ -539,18 +539,18 @@ export default function SettingsPage() {
       </div>
 
       {/* Google Reviews Booster & Human Psychology Feedback */}
-      <div style={{ padding: 18, background: '#eff6ff', borderRadius: 14, border: '1px solid #bfdbfe', margin: '18px 0' }}>
+      <div style={{ padding: 18, background: 'var(--paper-elevated)', borderRadius: 14, border: '1px solid var(--line)', margin: '18px 0' }}>
         <div>
-          <strong style={{ fontSize: 15, display: 'flex', alignItems: 'center', gap: 6, color: '#1e40af' }}>
+          <strong style={{ fontSize: 15, display: 'flex', alignItems: 'center', gap: 6, color: 'var(--ink)' }}>
             ⭐ Google Reviews Booster & Behavioral Psychology Feedback
           </strong>
-          <p className="muted" style={{ margin: '4px 0 14px', fontSize: 13, color: '#1e3a8a' }}>
+          <p className="muted" style={{ margin: '4px 0 14px', fontSize: 13 }}>
             Rooted in Daniel Kahneman's Peak-End Rule: Delighted 4-5 star diners are gently guided directly into your Google Maps 5-star review page with 1 tap, while unhappy 1-3 star diners are caught table-side with diagnostic chips and alert the floor manager before leaving.
           </p>
         </div>
 
         <div className="field" style={{ marginBottom: 14 }}>
-          <label htmlFor="restaurant-google-review-url" style={{ color: '#1e40af', fontWeight: 650 }}>
+          <label htmlFor="restaurant-google-review-url" style={{ color: 'var(--ink)', fontWeight: 650 }}>
             Google Maps Review Link / Shortlink <span className="muted">(e.g. https://g.page/r/your-id/review or https://maps.app.goo.gl/...)</span>
           </label>
           <input
@@ -575,7 +575,7 @@ export default function SettingsPage() {
             onChange={(e) => setOverrides((current) => ({ ...current, enableDishReviews: e.target.checked }))}
           />
           <div>
-            <strong style={{ fontSize: 13, color: '#1e3a8a', display: 'block' }}>
+            <strong style={{ fontSize: 13, color: 'var(--ink)', display: 'block' }}>
               Enable Dish-Level Sentiment Feedback (Yumpingo Style)
             </strong>
             <span className="muted" style={{ fontSize: 11 }}>
@@ -798,9 +798,9 @@ function StaffAccess() {
                       <span
                         className="pill"
                         style={{
-                          background: isOwner ? '#fef3c7' : '#f1f5f9',
-                          color: meta.badgeColor,
-                          fontWeight: 700,
+                          background: isOwner ? 'var(--soft-orange)' : 'var(--paper-elevated)',
+                          color: isOwner ? 'var(--orange)' : 'var(--ink)',
+                          fontWeight: 750,
                           fontSize: 12,
                           gap: 4
                         }}
@@ -845,7 +845,7 @@ function StaffAccess() {
                           <button
                             type="button"
                             className="btn secondary small"
-                            style={{ color: user.active ? '#991b1b' : 'inherit' }}
+                            style={{ color: user.active ? 'var(--red)' : 'inherit' }}
                             onClick={() => toggle.mutate({ id: userId, active: !user.active })}
                           >
                             {user.active ? 'Deactivate' : 'Reactivate'}

@@ -87,13 +87,13 @@ export function ItemStockModal({ onClose }: ItemStockModalProps) {
           justifyContent: 'space-between',
           padding: '10px 14px',
           borderRadius: 10,
-          background: soldOutCount > 0 ? '#fef2f2' : '#f0fdf4',
-          border: `1.5px solid ${soldOutCount > 0 ? '#fca5a5' : '#86efac'}`,
+          background: soldOutCount > 0 ? 'var(--soft-orange)' : 'var(--soft-green)',
+          border: `1px solid ${soldOutCount > 0 ? 'var(--orange)' : 'var(--green)'}`,
           marginBottom: 12
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <span style={{ fontSize: 18 }}>{soldOutCount > 0 ? '⚠️' : '✅'}</span>
-            <span style={{ fontSize: 13, fontWeight: 700, color: soldOutCount > 0 ? '#991b1b' : '#166534' }}>
+            <span style={{ fontSize: 13, fontWeight: 700, color: soldOutCount > 0 ? 'var(--orange)' : 'var(--green)' }}>
               {soldOutCount > 0 ? `${soldOutCount} item${soldOutCount > 1 ? 's' : ''} currently marked Sold Out` : 'All menu items are currently in stock'}
             </span>
           </div>
@@ -101,7 +101,7 @@ export function ItemStockModal({ onClose }: ItemStockModalProps) {
             <button
               type="button"
               className="btn ghost small"
-              style={{ fontSize: 11, padding: '3px 8px', color: '#991b1b' }}
+              style={{ fontSize: 11, padding: '3px 8px', color: 'var(--red)' }}
               onClick={() => {
                 setSelectedCategoryId('ALL');
                 setSearch('');
@@ -174,18 +174,18 @@ export function ItemStockModal({ onClose }: ItemStockModalProps) {
                   justifyContent: 'space-between',
                   padding: '10px 14px',
                   borderRadius: 10,
-                  background: isSoldOut ? '#fff1f2' : 'white',
-                  border: `1.5px solid ${isSoldOut ? '#fecdd3' : 'var(--line)'}`,
+                  background: isSoldOut ? 'var(--soft-orange)' : 'var(--paper)',
+                  border: `1px solid ${isSoldOut ? 'var(--orange)' : 'var(--line)'}`,
                   transition: 'background 0.15s ease'
                 }}
               >
                 <div style={{ flex: 1, paddingRight: 12 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <strong style={{ fontSize: 14, color: isSoldOut ? '#881337' : 'inherit' }}>
+                    <strong style={{ fontSize: 14, color: isSoldOut ? 'var(--orange)' : 'var(--ink)' }}>
                       {item.name}
                     </strong>
                     {isSoldOut && (
-                      <span className="pill" style={{ background: '#fecdd3', color: '#9f1239', fontSize: 10, fontWeight: 800, padding: '1px 6px' }}>
+                      <span className="pill orange" style={{ fontSize: 10, fontWeight: 800, padding: '1px 6px' }}>
                         SOLD OUT
                       </span>
                     )}
@@ -202,10 +202,10 @@ export function ItemStockModal({ onClose }: ItemStockModalProps) {
                     minWidth: 100,
                     fontWeight: 750,
                     fontSize: 12,
-                    background: isSoldOut ? '#f43f5e' : '#16a34a',
-                    borderColor: isSoldOut ? '#e11d48' : '#15803d',
+                    background: isSoldOut ? 'var(--red)' : 'var(--green)',
+                    borderColor: 'transparent',
                     color: 'white',
-                    boxShadow: isSoldOut ? '0 2px 6px rgba(244, 63, 94, 0.25)' : '0 2px 6px rgba(22, 163, 74, 0.25)'
+                    boxShadow: isSoldOut ? '0 2px 6px rgba(239, 68, 68, 0.25)' : '0 2px 6px rgba(22, 163, 74, 0.25)'
                   }}
                   disabled={isPending}
                   onClick={() => toggleAvailability.mutate({ id: item._id, available: isSoldOut })}

@@ -249,7 +249,7 @@ export default function CustomerMenuPage() {
             className="btn secondary small"
             onClick={() => setReviewOpen(true)}
             title="Rate your dining experience"
-            style={{ color: '#b45309', borderColor: 'var(--line)' }}
+            style={{ color: 'var(--orange)', borderColor: 'var(--line)' }}
           >
             ⭐ Review
           </button>

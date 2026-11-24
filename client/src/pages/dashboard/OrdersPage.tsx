@@ -301,17 +301,17 @@ export default function OrdersPage({ kitchen = false }: { kitchen?: boolean }) {
             >
               {serviceLabels[activeAlert.type]?.icon || '🔔'}
             </div>
-            <span className="eyebrow" style={{ color: '#c2410c', letterSpacing: '0.15em', fontWeight: 800 }}>
+            <span className="eyebrow" style={{ color: 'var(--orange)', letterSpacing: '0.15em', fontWeight: 800 }}>
               GUEST ASSISTANCE ALERT
             </span>
-            <h2 style={{ fontSize: 30, margin: '6px 0 4px', color: '#1c1917', fontWeight: 800 }}>
+            <h2 style={{ fontSize: 30, margin: '6px 0 4px', color: 'var(--ink)', fontWeight: 800 }}>
               {formatTableLabel(activeAlert.tableLabel)}
             </h2>
-            <p style={{ margin: 0, fontSize: 17, fontWeight: 700, color: '#9a3412' }}>
+            <p style={{ margin: 0, fontSize: 17, fontWeight: 700, color: 'var(--orange)' }}>
               {serviceLabels[activeAlert.type]?.title}
             </p>
             {activeAlert.notes && (
-              <div style={{ marginTop: 14, padding: '9px 13px', background: '#fef3c7', borderRadius: 8, fontSize: 13, color: '#78350f', textAlign: 'left' }}>
+              <div style={{ marginTop: 14, padding: '9px 13px', background: 'var(--soft-orange)', border: '1px solid var(--line)', borderRadius: 8, fontSize: 13, color: 'var(--ink)', textAlign: 'left' }}>
                 <strong>Guest note:</strong> {activeAlert.notes}
               </div>
             )}
@@ -327,7 +327,7 @@ export default function OrdersPage({ kitchen = false }: { kitchen?: boolean }) {
             <button
               type="button"
               className="btn"
-              style={{ background: '#ea580c', borderColor: '#c2410c' }}
+              style={{ background: 'var(--orange)', borderColor: 'transparent' }}
               disabled={resolveRequest.isPending}
               onClick={() => resolveRequest.mutate(activeAlert.id)}
             >
@@ -339,9 +339,9 @@ export default function OrdersPage({ kitchen = false }: { kitchen?: boolean }) {
     )}
 
     {serviceRequests.data?.requests && serviceRequests.data.requests.length > 0 && (
-      <div className="surface" style={{ padding: '14px 18px', marginBottom: 16, borderLeft: '4px solid #c96d3c', background: '#fff9f5' }}>
+      <div className="surface" style={{ padding: '14px 18px', marginBottom: 16, borderLeft: '4px solid var(--orange)', background: 'var(--soft-orange)' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-          <strong style={{ fontSize: 14, color: '#9a3412', display: 'flex', alignItems: 'center', gap: 6 }}>
+          <strong style={{ fontSize: 14, color: 'var(--orange)', display: 'flex', alignItems: 'center', gap: 6 }}>
             🔔 Table Assistance Requests ({serviceRequests.data.requests.length})
           </strong>
           <small className="muted">Live updates from guests</small>
@@ -477,7 +477,7 @@ export default function OrdersPage({ kitchen = false }: { kitchen?: boolean }) {
                     <button
                       type="button"
                       className="btn small"
-                      style={{ background: '#16a34a', borderColor: '#16a34a', color: 'white' }}
+                      style={{ background: 'var(--green)', borderColor: 'transparent', color: 'white' }}
                       onClick={() => {
                         setSettlingOrder(order);
                         setPaymentMethod('CASH');
@@ -598,9 +598,9 @@ export default function OrdersPage({ kitchen = false }: { kitchen?: boolean }) {
 
           return (
             <>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: '#f0fdf4', borderRadius: 10, border: '1px solid #bbf7d0', marginBottom: 16 }}>
-                <span style={{ fontSize: 14, fontWeight: 600, color: '#166534' }}>Net Amount to Collect:</span>
-                <strong style={{ fontSize: 20, color: '#15803d' }}>{money(netPayablePaise)}</strong>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: 'var(--soft-green)', borderRadius: 10, border: '1px solid var(--green)', marginBottom: 16 }}>
+                <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--green)' }}>Net Amount to Collect:</span>
+                <strong style={{ fontSize: 20, color: 'var(--green)' }}>{money(netPayablePaise)}</strong>
               </div>
 
               {/* Payment Method / Tender Selection */}
@@ -628,8 +628,8 @@ export default function OrdersPage({ kitchen = false }: { kitchen?: boolean }) {
 
               {/* Dynamic Instant UPI QR Preview */}
               {paymentMethod === 'UPI' && (
-                <div style={{ textAlign: 'center', padding: 14, background: '#f0fdf4', borderRadius: 12, border: '1.5px solid #86efac', marginBottom: 16 }}>
-                  <span style={{ fontSize: 11, fontWeight: 800, color: '#166534', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                <div style={{ textAlign: 'center', padding: 14, background: 'var(--soft-green)', borderRadius: 12, border: '1px solid var(--green)', marginBottom: 16 }}>
+                  <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--green)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
                     Instant UPI QR Code (GPay / PhonePe / Paytm)
                   </span>
                   {upiId ? (
@@ -637,17 +637,17 @@ export default function OrdersPage({ kitchen = false }: { kitchen?: boolean }) {
                       <img
                         src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&margin=6&data=${encodeURIComponent(`upi://pay?pa=${upiId}&pn=${encodeURIComponent(restaurantName)}&am=${(netPayablePaise / 100).toFixed(2)}&cu=INR&tn=${encodeURIComponent(settlingOrder.orderNumber)}`)}`}
                         alt="UPI QR Code"
-                        style={{ width: 140, height: 140, display: 'block', margin: '10px auto', borderRadius: 8, boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}
+                        style={{ width: 140, height: 140, display: 'block', margin: '10px auto', borderRadius: 8, background: '#ffffff', padding: 6, boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}
                       />
-                      <div style={{ fontSize: 13, fontWeight: 700, color: '#14532d' }}>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink)' }}>
                         UPI VPA: {upiId}
                       </div>
-                      <div style={{ fontSize: 11, color: '#166534', marginTop: 2 }}>
+                      <div style={{ fontSize: 11, color: 'var(--green)', marginTop: 2 }}>
                         Customer scans this QR code to transfer exactly <strong>{money(netPayablePaise)}</strong> directly to your bank account.
                       </div>
                     </>
                   ) : (
-                    <p style={{ margin: '8px 0 0', fontSize: 12, color: '#166534' }}>
+                    <p style={{ margin: '8px 0 0', fontSize: 12, color: 'var(--muted)' }}>
                       To show an automated dynamic QR code here, add your restaurant's UPI ID in <strong>Settings ➔ UPI Payments</strong>.
                     </p>
                   )}

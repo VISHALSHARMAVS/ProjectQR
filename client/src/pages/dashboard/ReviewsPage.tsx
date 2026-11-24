@@ -104,8 +104,8 @@ export default function ReviewsPage() {
           style={{
             marginBottom: 20,
             padding: 16,
-            background: '#fef2f2',
-            border: '2px solid #ef4444',
+            background: 'var(--soft-orange)',
+            border: '1px solid var(--red)',
             borderRadius: 12,
             display: 'flex',
             justifyContent: 'space-between',
@@ -116,10 +116,10 @@ export default function ReviewsPage() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <span style={{ fontSize: 28 }}>🚨</span>
             <div>
-              <strong style={{ color: '#991b1b', fontSize: 15, display: 'block' }}>
+              <strong style={{ color: 'var(--red)', fontSize: 15, display: 'block' }}>
                 Instant Table Alert: {liveBanner.tableLabel} ({liveBanner.rating}★ Rating)
               </strong>
-              <p style={{ margin: '2px 0 0', fontSize: 13, color: '#7f1d1d' }}>
+              <p style={{ margin: '2px 0 0', fontSize: 13, color: 'var(--ink)' }}>
                 Guest needs manager attention table-side before departure!{' '}
                 {liveBanner.comment ? `"${liveBanner.comment}"` : ''}
               </p>
@@ -128,7 +128,7 @@ export default function ReviewsPage() {
           <button
             type="button"
             className="btn small"
-            style={{ background: '#b91c1c', color: '#fff', whiteSpace: 'nowrap' }}
+            style={{ background: 'var(--red)', color: '#fff', whiteSpace: 'nowrap' }}
             onClick={() => setLiveBanner(null)}
           >
             Dismiss Alert
@@ -158,7 +158,7 @@ export default function ReviewsPage() {
               ({summary.totalReviews} {summary.totalReviews === 1 ? 'rating' : 'ratings'})
             </span>
           </div>
-          <div style={{ marginTop: 8, fontSize: 11, color: '#16a34a', fontWeight: 600 }}>
+          <div style={{ marginTop: 8, fontSize: 11, color: 'var(--green)', fontWeight: 600 }}>
             {summary.sentimentCounts.POSITIVE} delighted guests
           </div>
         </div>
@@ -415,10 +415,10 @@ export default function ReviewsPage() {
                           fontSize: 11,
                           padding: '3px 8px',
                           borderRadius: 12,
-                          background: '#fee2e2',
-                          color: '#991b1b',
+                          background: 'var(--soft-orange)',
+                          color: 'var(--red)',
                           fontWeight: 650,
-                          border: '1px solid #fecaca'
+                          border: '1px solid var(--line)'
                         }}
                       >
                         ⚠️ {tag.replace('_', ' ')}

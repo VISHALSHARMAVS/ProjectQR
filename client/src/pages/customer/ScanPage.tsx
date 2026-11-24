@@ -79,12 +79,12 @@ export default function ScanPage() {
       </div>
 
       {sessionQuery.data?.tableMismatch ? (
-        <div style={{ marginBottom: 16, padding: 14, background: '#f0fdf4', borderRadius: 12, border: '1.5px solid #86efac' }}>
+        <div style={{ marginBottom: 16, padding: 14, background: 'var(--soft-green)', borderRadius: 12, border: '1px solid var(--green)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
             <span style={{ fontSize: 18 }}>🪑</span>
-            <strong style={{ fontSize: 14, color: '#166534' }}>Switch Dining Table?</strong>
+            <strong style={{ fontSize: 14, color: 'var(--green)' }}>Switch Dining Table?</strong>
           </div>
-          <p style={{ margin: '0 0 12px', fontSize: 13, color: '#14532d', lineHeight: 1.4 }}>
+          <p style={{ margin: '0 0 12px', fontSize: 13, color: 'var(--ink)', lineHeight: 1.4 }}>
             You were previously active at <strong>{formatTableLabel(sessionQuery.data.tableMismatch.currentTable.label)}</strong>. Would you like to move your session to <strong>{formatTableLabel(table.label)}</strong>?
           </p>
           <button

@@ -77,15 +77,15 @@ export default function OverviewPage() {
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-            <span style={{ fontSize: 28, background: '#fee2e2', width: 44, height: 44, borderRadius: 10, display: 'grid', placeItems: 'center' }}>🚨</span>
+            <span style={{ fontSize: 28, background: 'var(--soft-orange)', width: 44, height: 44, borderRadius: 10, display: 'grid', placeItems: 'center' }}>🚨</span>
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <strong style={{ color: '#991b1b', fontSize: 15 }}>
+                <strong style={{ color: 'var(--red)', fontSize: 15 }}>
                   {unresolvedAlertCount} Table Complaint{unresolvedAlertCount > 1 ? 's' : ''} Awaiting Attention
                 </strong>
                 <span className="pill red" style={{ fontSize: 10, fontWeight: 800 }}>LIVE ALERT</span>
               </div>
-              <p style={{ margin: '3px 0 0', fontSize: 13, color: '#b91c1c' }}>
+              <p style={{ margin: '3px 0 0', fontSize: 13, color: 'var(--ink)' }}>
                 Unhappy diners reported issues table-side. Take action before guests depart or post negative Google reviews.
               </p>
             </div>
@@ -132,8 +132,8 @@ export default function OverviewPage() {
 
         <article className="stat-card">
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span className="eyebrow" style={{ color: '#7c3aed' }}>Active Tables</span>
-            <span style={{ fontSize: 16, background: '#ede9fe', width: 32, height: 32, borderRadius: 8, display: 'grid', placeItems: 'center' }}>🪑</span>
+            <span className="eyebrow">Active Tables</span>
+            <span style={{ fontSize: 16, background: 'var(--paper-elevated)', width: 32, height: 32, borderRadius: 8, display: 'grid', placeItems: 'center' }}>🪑</span>
           </div>
           <div className="stat-value">{metrics.activeTables}</div>
           <div className="stat-caption">Ready for guest dining</div>
@@ -141,8 +141,8 @@ export default function OverviewPage() {
 
         <article className="stat-card">
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span className="eyebrow" style={{ color: unresolvedAlertCount > 0 ? '#dc2626' : '#d97706' }}>Guest Rating</span>
-            <span style={{ fontSize: 16, background: unresolvedAlertCount > 0 ? '#fee2e2' : '#fef3c7', width: 32, height: 32, borderRadius: 8, display: 'grid', placeItems: 'center' }}>⭐</span>
+            <span className="eyebrow" style={{ color: unresolvedAlertCount > 0 ? 'var(--red)' : 'var(--orange)' }}>Guest Rating</span>
+            <span style={{ fontSize: 16, background: 'var(--paper-elevated)', width: 32, height: 32, borderRadius: 8, display: 'grid', placeItems: 'center' }}>⭐</span>
           </div>
           <div className="stat-value" style={{ display: 'flex', alignItems: 'baseline', gap: 6, color: unresolvedAlertCount > 0 ? '#dc2626' : 'inherit' }}>
             {reviewSummary && reviewSummary.totalReviews > 0 ? reviewSummary.averageRating.toFixed(1) : '5.0'}
@@ -331,7 +331,7 @@ export default function OverviewPage() {
                 </div>
 
                 {rev.comment && (
-                  <p style={{ margin: '8px 0', fontSize: 13, color: '#334155' }}>
+                  <p style={{ margin: '8px 0', fontSize: 13, color: 'var(--ink)' }}>
                     "{rev.comment}"
                   </p>
                 )}

@@ -199,8 +199,8 @@ export default function FloorMapPage() {
           style={{
             margin: '16px 0',
             padding: '14px 18px',
-            background: '#fef2f2',
-            border: '2px solid #ef4444',
+            background: 'var(--soft-orange)',
+            border: '1px solid var(--red)',
             borderRadius: 12,
             display: 'flex',
             justifyContent: 'space-between',
@@ -211,16 +211,16 @@ export default function FloorMapPage() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <span style={{ fontSize: 24 }}>🚨</span>
             <div>
-              <strong style={{ color: '#991b1b', fontSize: 14, display: 'block' }}>
+              <strong style={{ color: 'var(--red)', fontSize: 14, display: 'block' }}>
                 Table-Side Alert: {reviewAlertToast.tableLabel} ({reviewAlertToast.rating}★ Rating)
               </strong>
-              <span style={{ fontSize: 12, color: '#7f1d1d' }}>
+              <span style={{ fontSize: 12, color: 'var(--ink)' }}>
                 Guest needs immediate manager attention before leaving! {reviewAlertToast.comment ? `"${reviewAlertToast.comment}"` : ''}
               </span>
             </div>
           </div>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            <Link to="/dashboard/reviews" className="btn small" style={{ background: '#b91c1c', color: '#fff', fontSize: 12 }}>
+            <Link to="/dashboard/reviews" className="btn small" style={{ background: 'var(--red)', color: '#fff', fontSize: 12 }}>
               View & Recover →
             </Link>
             <button
@@ -241,8 +241,8 @@ export default function FloorMapPage() {
           style={{
             margin: '16px 0',
             padding: '12px 16px',
-            background: '#f0fdf4',
-            border: '1.5px solid #86efac',
+            background: 'var(--soft-green)',
+            border: '1px solid var(--green)',
             borderRadius: 10,
             display: 'flex',
             justifyContent: 'space-between',
@@ -251,7 +251,7 @@ export default function FloorMapPage() {
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <span style={{ fontSize: 20 }}>💰</span>
-            <span style={{ fontSize: 13, color: '#166534', fontWeight: 650 }}>
+            <span style={{ fontSize: 13, color: 'var(--green)', fontWeight: 650 }}>
               Payment Settled: {paymentSettledToast.tableLabel || 'Table'} · {paymentSettledToast.finalPaidPaise ? money(paymentSettledToast.finalPaidPaise) : 'Paid'} (UPI Auto-Confirmed)
             </span>
           </div>
@@ -283,21 +283,21 @@ export default function FloorMapPage() {
         </div>
         <div style={{ textAlign: 'center', borderLeft: '1px solid var(--line)' }}>
           <span className="muted" style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 700 }}>Occupied</span>
-          <div style={{ fontSize: 24, fontWeight: 800, marginTop: 4, color: '#15803d' }}>{counts.active}</div>
+          <div style={{ fontSize: 24, fontWeight: 800, marginTop: 4, color: 'var(--green)' }}>{counts.active}</div>
         </div>
         <div style={{ textAlign: 'center', borderLeft: '1px solid var(--line)' }}>
           <span className="muted" style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 700 }}>Needs Clearing</span>
-          <div style={{ fontSize: 24, fontWeight: 800, marginTop: 4, color: counts.clearing > 0 ? '#b45309' : 'inherit' }}>
+          <div style={{ fontSize: 24, fontWeight: 800, marginTop: 4, color: counts.clearing > 0 ? 'var(--orange)' : 'inherit' }}>
             {counts.clearing > 0 ? `🧹 ${counts.clearing}` : '0'}
           </div>
         </div>
         <div style={{ textAlign: 'center', borderLeft: '1px solid var(--line)' }}>
           <span className="muted" style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 700 }}>In Kitchen</span>
-          <div style={{ fontSize: 24, fontWeight: 800, marginTop: 4, color: '#b45309' }}>{counts.preparing}</div>
+          <div style={{ fontSize: 24, fontWeight: 800, marginTop: 4, color: 'var(--orange)' }}>{counts.preparing}</div>
         </div>
         <div style={{ textAlign: 'center', borderLeft: '1px solid var(--line)' }}>
           <span className="muted" style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 700 }}>Needs Attention</span>
-          <div style={{ fontSize: 24, fontWeight: 800, marginTop: 4, color: counts.help > 0 ? '#ea580c' : 'inherit' }}>
+          <div style={{ fontSize: 24, fontWeight: 800, marginTop: 4, color: counts.help > 0 ? 'var(--orange)' : 'inherit' }}>
             {counts.help > 0 ? `🚨 ${counts.help}` : '0'}
           </div>
         </div>
@@ -363,7 +363,7 @@ export default function FloorMapPage() {
               >
                 {/* Header: Table label & Status Icon */}
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-                  <strong style={{ fontSize: 18, color: '#1c1917' }}>
+                  <strong style={{ fontSize: 18, color: 'var(--ink)' }}>
                     {formatTableLabel(table.label)}
                   </strong>
                   <span style={{ fontSize: 18 }}>{cfg.icon}</span>
@@ -390,12 +390,12 @@ export default function FloorMapPage() {
                 {table.pendingRequest && (
                   <div
                     style={{
-                      background: '#ffedd5',
-                      border: '1px solid #fdba74',
+                      background: 'var(--soft-orange)',
+                      border: '1px solid var(--orange)',
                       borderRadius: 8,
                       padding: '6px 8px',
                       fontSize: 12,
-                      color: '#9a3412',
+                      color: 'var(--orange)',
                       marginBottom: 10,
                       fontWeight: 650
                     }}
@@ -410,7 +410,7 @@ export default function FloorMapPage() {
                     {table.orders.length > 0 ? `${table.orders.length} active order${table.orders.length > 1 ? 's' : ''}` : 'Available'}
                   </span>
                   {table.totalBillPaise > 0 && (
-                    <strong style={{ fontSize: 13, color: '#1c1917' }}>
+                    <strong style={{ fontSize: 13, color: 'var(--ink)' }}>
                       {money(table.totalBillPaise)}
                     </strong>
                   )}
@@ -418,18 +418,18 @@ export default function FloorMapPage() {
 
                 {/* 1-Tap Quick Action when Needs Clearing */}
                 {table.state === 'NEEDS_CLEARING' && (
-                  <div style={{ marginTop: 10, borderTop: '1px solid #fde68a', paddingTop: 8 }}>
+                  <div style={{ marginTop: 10, borderTop: '1px solid var(--line)', paddingTop: 8 }}>
                     <button
                       type="button"
                       className="btn full small"
                       style={{
-                        background: '#b45309',
-                        borderColor: '#b45309',
+                        background: 'var(--orange)',
+                        borderColor: 'transparent',
                         color: 'white',
                         fontWeight: 750,
                         fontSize: 11,
                         padding: '6px 8px',
-                        boxShadow: '0 2px 6px rgba(180, 83, 9, 0.2)'
+                        boxShadow: '0 2px 6px rgba(234, 88, 12, 0.2)'
                       }}
                       disabled={vacateTable.isPending}
                       onClick={(e) => {
@@ -486,7 +486,7 @@ export default function FloorMapPage() {
                 <button
                   type="button"
                   className="btn small"
-                  style={{ background: '#b45309', borderColor: '#92400e', color: 'white', fontWeight: 750, whiteSpace: 'nowrap' }}
+                  style={{ background: 'var(--orange)', borderColor: 'transparent', color: 'white', fontWeight: 750, whiteSpace: 'nowrap' }}
                   disabled={vacateTable.isPending}
                   onClick={() => vacateTable.mutate(selectedTable.id)}
                 >
@@ -498,14 +498,14 @@ export default function FloorMapPage() {
 
           {/* Pending Assistance Request Action */}
           {selectedTable.pendingRequest && (
-            <div style={{ padding: 14, background: '#fff7ed', border: '1.5px solid #fdba74', borderRadius: 12, marginBottom: 16 }}>
+            <div style={{ padding: 14, background: 'var(--soft-orange)', border: '1px solid var(--orange)', borderRadius: 12, marginBottom: 16 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
                 <div style={{ flex: '1 1 180px' }}>
-                  <strong style={{ color: '#9a3412', display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <strong style={{ color: 'var(--orange)', display: 'flex', alignItems: 'center', gap: 6 }}>
                     🚨 Guest Request: {selectedTable.pendingRequest.type}
                   </strong>
                   {selectedTable.pendingRequest.notes && (
-                    <p style={{ margin: '4px 0 0', fontSize: 12, color: '#7c2d12' }}>
+                    <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--ink)' }}>
                       Note: {selectedTable.pendingRequest.notes}
                     </p>
                   )}
@@ -513,7 +513,7 @@ export default function FloorMapPage() {
                 <button
                   type="button"
                   className="btn small"
-                  style={{ background: '#ea580c', borderColor: '#c2410c' }}
+                  style={{ background: 'var(--orange)', borderColor: 'transparent' }}
                   disabled={resolveRequest.isPending}
                   onClick={() => resolveRequest.mutate(selectedTable.pendingRequest!.id)}
                 >

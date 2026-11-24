@@ -258,7 +258,7 @@ export default function DashboardLayout() {
       <aside className="sidebar">
         <Link to="/dashboard/overview" className="brand">
           {restaurant?.logoUrl ? (
-            <div style={{ width: 34, height: 34, borderRadius: 10, overflow: 'hidden', flexShrink: 0, background: '#f0f0eb' }}>
+            <div style={{ width: 34, height: 34, borderRadius: 10, overflow: 'hidden', flexShrink: 0, background: 'var(--paper-elevated)' }}>
               <img src={restaurant.logoUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             </div>
           ) : (
@@ -301,7 +301,7 @@ export default function DashboardLayout() {
               ☰
             </button>
             {restaurant?.logoUrl && (
-              <div style={{ width: 32, height: 32, borderRadius: 8, overflow: 'hidden', flexShrink: 0, background: '#f0f0eb' }}>
+              <div style={{ width: 32, height: 32, borderRadius: 8, overflow: 'hidden', flexShrink: 0, background: 'var(--paper-elevated)' }}>
                 <img src={restaurant.logoUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               </div>
             )}
@@ -359,7 +359,7 @@ export default function DashboardLayout() {
                         <span aria-hidden="true">⭐</span>
                         <span>Reviews & Table Alerts</span>
                         {unresolvedAlertCount > 0 && (
-                          <span style={{ marginLeft: 'auto', background: '#ef4444', color: '#fff', fontSize: 10, padding: '2px 6px', borderRadius: 10, fontWeight: 700 }}>
+                          <span style={{ marginLeft: 'auto', background: 'var(--red)', color: '#fff', fontSize: 10, padding: '2px 6px', borderRadius: 10, fontWeight: 700 }}>
                             {unresolvedAlertCount}
                           </span>
                         )}
