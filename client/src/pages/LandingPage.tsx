@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { AppHeader } from '../components/ui';
+import { Brand } from '../components/ui';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { ProductShowcase } from '../components/ProductShowcase';
 import { TaglineReveal } from '../components/TaglineReveal';
+import { SiteFooter } from '../components/SiteFooter';
 
 interface FaqItem {
   question: string;
@@ -42,9 +43,12 @@ export default function LandingPage() {
 
   return (
     <div className="app-shell" style={{ background: 'var(--bg)', color: 'var(--ink)' }}>
-      {/* Top Floating Navigation */}
-      <AppHeader
-        action={
+      {/* Sticky Top Navigation */}
+      <header className="landing-header-sticky">
+        <div className="page-wrap" style={{ height: 68, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Link to="/" style={{ textDecoration: 'none' }}>
+            <Brand />
+          </Link>
           <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
             <ThemeToggle variant="compact" />
             <Link className="btn secondary small" to="/demo">
@@ -57,8 +61,8 @@ export default function LandingPage() {
               Start free trial
             </Link>
           </div>
-        }
-      />
+        </div>
+      </header>
 
       <main>
         {/* Above the Fold: Hero Section (B5) */}
@@ -464,23 +468,8 @@ export default function LandingPage() {
         </section>
       </main>
 
-      {/* Semantic Footer (B10) */}
-      <footer style={{ borderTop: '1px solid var(--line)', background: 'var(--paper-elevated)', padding: '40px 0' }}>
-        <div className="page-wrap" style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: 20 }}>
-          <div>
-            <strong style={{ fontSize: 15, color: 'var(--ink)' }}>ProjectQR</strong>
-            <p className="muted" style={{ fontSize: 13, margin: '4px 0 0' }}>
-              Table side ordering, UPI auto settlement, and restaurant operations.
-            </p>
-          </div>
-          <div style={{ display: 'flex', gap: 20, fontSize: 13, alignItems: 'center' }}>
-            <Link to="/demo" style={{ color: 'var(--green)', fontWeight: 600 }}>Live demo</Link>
-            <Link to="/register" style={{ color: 'var(--green)', fontWeight: 600 }}>Get started</Link>
-            <Link to="/login" className="muted">Sign in</Link>
-            <span className="muted">© {new Date().getFullYear()} ProjectQR. All rights reserved.</span>
-          </div>
-        </div>
-      </footer>
+      {/* Semantic Site Footer */}
+      <SiteFooter />
     </div>
   );
 }
