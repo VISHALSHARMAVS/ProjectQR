@@ -8,7 +8,7 @@ export interface DemoState {
   orders: OrderRecord[];
 }
 
-const STORAGE_KEY = 'projectqr_interactive_demo_v2';
+const STORAGE_KEY = 'mesa_interactive_demo_v3';
 
 export const initialDemoRestaurant: RestaurantInfo = {
   id: 'demo-rest-01',
@@ -58,7 +58,7 @@ export const initialDemoItems: MenuItem[] = [
     name: 'Crispy Truffle Fries',
     description: 'Double fried potato batons tossed in white truffle oil and rosemary salt',
     pricePaise: 26000,
-    imageUrl: 'https://images.unsplash.com/photo-1576107232684-1279f3908594?auto=format&fit=crop&w=500&q=80',
+    imageUrl: 'https://images.unsplash.com/photo-1573080496219-bb080dd4f877?auto=format&fit=crop&w=500&q=80',
     available: true,
     dietary: 'VEG',
     preparationMinutes: 8,

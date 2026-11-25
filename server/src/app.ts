@@ -27,6 +27,52 @@ export interface ProjectQrApplication {
   io: SocketServer;
 }
 
+export function isAllowedOrigin(origin: string | undefined, host?: string | null): boolean {
+  if (!origin) return true;
+
+  // 1. Same-origin match with current server host
+  if (host) {
+    try {
+      const originUrl = new URL(origin);
+      if (originUrl.host === host) return true;
+    } catch {}
+  }
+
+  // 2. Explicitly configured origins in environment
+  if (origin === env.CLIENT_ORIGIN || origin === env.PUBLIC_APP_URL) return true;
+
+  // 3. Comma-separated ALLOWED_ORIGINS
+  if (process.env.ALLOWED_ORIGINS) {
+    const list = process.env.ALLOWED_ORIGINS.split(',').map((s) => s.trim());
+    if (list.includes(origin)) return true;
+  }
+
+  // 4. Any official Mesa/ProjectQR deployment domain on onrender.com
+  try {
+    const originUrl = new URL(origin);
+    if (originUrl.protocol === 'https:' && originUrl.hostname.endsWith('.onrender.com')) {
+      const sub = originUrl.hostname.slice(0, -'.onrender.com'.length);
+      if (
+        sub === 'trymesa' ||
+        sub === 'projectqr-preview' ||
+        sub === 'mesa-preview' ||
+        sub === 'mesa-dine' ||
+        sub === 'mesa-order' ||
+        sub === 'mesa-os' ||
+        sub.startsWith('mesa-') ||
+        sub.startsWith('projectqr-')
+      ) {
+        return true;
+      }
+    }
+    if (env.NODE_ENV !== 'production' && ['localhost', '127.0.0.1'].includes(originUrl.hostname)) {
+      return true;
+    }
+  } catch {}
+
+  return false;
+}
+
 export function createApplication(sessionStore?: Store): ProjectQrApplication {
   const app = express();
   if (env.NODE_ENV === 'production') app.set('trust proxy', 1);
@@ -61,12 +107,24 @@ export function createApplication(sessionStore?: Store): ProjectQrApplication {
       }
     }
   }));
-  app.use(cors({ origin: env.CLIENT_ORIGIN, credentials: true, methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'] }));
+  app.use(cors({
+    origin: (origin, callback) => {
+      if (!origin || isAllowedOrigin(origin)) {
+        callback(null, true);
+      } else {
+        callback(null, false);
+      }
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS']
+  }));
   app.use((req, _res, next) => {
     if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) return next();
     if (req.path.startsWith('/api/webhooks')) return next();
     const origin = req.get('origin');
-    if (origin && origin !== env.CLIENT_ORIGIN) return next(new AppError(403, 'ORIGIN_REJECTED', 'Request origin is not allowed.'));
+    if (origin && !isAllowedOrigin(origin, req.get('host'))) {
+      return next(new AppError(403, 'ORIGIN_REJECTED', 'Request origin is not allowed.'));
+    }
     next();
   });
   app.use(express.json({ limit: '1mb' }));
@@ -91,7 +149,16 @@ export function createApplication(sessionStore?: Store): ProjectQrApplication {
 
   const httpServer = createServer(app);
   const io = new SocketServer(httpServer, {
-    cors: { origin: env.CLIENT_ORIGIN, credentials: true },
+    cors: {
+      origin: (origin, callback) => {
+        if (!origin || isAllowedOrigin(origin)) {
+          callback(null, true);
+        } else {
+          callback(new Error('Origin not allowed'));
+        }
+      },
+      credentials: true
+    },
     transports: ['websocket', 'polling']
   });
   io.engine.use(sessionMiddleware);
@@ -99,7 +166,7 @@ export function createApplication(sessionStore?: Store): ProjectQrApplication {
     try {
       const request = socket.request as typeof socket.request & { session?: Express.Request['session'] };
       const origin = socket.handshake.headers.origin;
-      if (origin && origin !== env.CLIENT_ORIGIN) return next(new Error('Origin not allowed'));
+      if (origin && !isAllowedOrigin(origin, socket.handshake.headers.host)) return next(new Error('Origin not allowed'));
       const currentSession = request.session;
       if (!currentSession) return next(new Error('Authentication required'));
       if (currentSession.userId) {

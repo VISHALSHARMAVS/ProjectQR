@@ -508,28 +508,49 @@ export default function DemoPage() {
           </div>
 
           {/* Dish List Grouped by Category */}
-          <div style={{ marginTop: 16 }}>
-            {availableDemoCategories.map((category) => {
-              const categoryDishes = filteredMenuItems.filter((item) => item.categoryId === category._id);
-              if (categoryDishes.length === 0) return null;
+          {filteredMenuItems.length === 0 ? (
+            <div className="surface" style={{ marginTop: 16, padding: '36px 16px', textAlign: 'center', borderRadius: 16 }}>
+              <div style={{ fontSize: 36, marginBottom: 8 }} aria-hidden="true">🔍</div>
+              <h3 style={{ fontSize: 16, fontWeight: 700, margin: '0 0 4px', color: 'var(--ink)' }}>
+                {searchQuery ? `No dishes found for “${searchQuery}”` : 'No dishes match this filter'}
+              </h3>
+              <p className="muted" style={{ fontSize: 13, margin: '0 0 16px', maxWidth: 320, marginLeft: 'auto', marginRight: 'auto' }}>
+                {searchQuery ? 'Try checking your spelling or clear the search to browse all items.' : 'Try selecting “All items” to view the complete catalog.'}
+              </p>
+              <button
+                type="button"
+                className="btn small"
+                onClick={() => {
+                  setSearchQuery('');
+                  setDietaryFilter('ALL');
+                }}
+              >
+                Reset search & filters
+              </button>
+            </div>
+          ) : (
+            <div style={{ marginTop: 16, paddingBottom: 96 }}>
+              {availableDemoCategories.map((category) => {
+                const categoryDishes = filteredMenuItems.filter((item) => item.categoryId === category._id);
+                if (categoryDishes.length === 0) return null;
 
-              return (
-                <section
-                  className="menu-section"
-                  id={`demo-category-${category._id}`}
-                  key={category._id}
-                  style={{ marginBottom: 28 }}
-                >
-                  <div style={{ marginBottom: 12 }}>
-                    <h2 style={{ fontSize: 18, fontWeight: 700, margin: 0, letterSpacing: '-0.02em', color: 'var(--ink)' }}>
-                      {category.name}
-                    </h2>
-                    {category.description && (
-                      <p className="muted" style={{ margin: '2px 0 0', fontSize: 12 }}>
-                        {category.description}
-                      </p>
-                    )}
-                  </div>
+                return (
+                  <section
+                    className="menu-section"
+                    id={`demo-category-${category._id}`}
+                    key={category._id}
+                    style={{ marginBottom: 28 }}
+                  >
+                    <div style={{ marginBottom: 12 }}>
+                      <h2 style={{ fontSize: 18, fontWeight: 700, margin: 0, letterSpacing: '-0.02em', color: 'var(--ink)' }}>
+                        {category.name}
+                      </h2>
+                      {category.description && (
+                        <p className="muted" style={{ margin: '2px 0 0', fontSize: 12 }}>
+                          {category.description}
+                        </p>
+                      )}
+                    </div>
 
                   {categoryDishes.map((item) => {
                     const cartEntry = cart.find((c) => c.item._id === item._id);
@@ -617,6 +638,7 @@ export default function DemoPage() {
               );
             })}
           </div>
+        )}
 
           {/* Floating Cart Bar */}
           {cart.length > 0 && (
@@ -1098,7 +1120,9 @@ export default function DemoPage() {
               const isOccupied = tbl.status === 'OCCUPIED';
               const isBilled = tbl.status === 'BILL_REQUESTED';
               const isSelected = selectedTableId === tbl._id;
-              const matchingOrder = state.orders.find((o) => o.table.label === tbl.label && o.status !== 'DELIVERED');
+              const matchingOrder = (isOccupied || isBilled)
+                ? state.orders.find((o) => o.table.label === tbl.label && o.status !== 'DELIVERED')
+                : undefined;
 
               return (
                 <div
@@ -1219,14 +1243,23 @@ export default function DemoPage() {
 
                   {/* Manager Table Controls */}
                   <div style={{ borderTop: '1px solid var(--line)', paddingTop: 14, display: 'flex', gap: 8, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
-                    {table && isOccupied && (
+                    {table && (isOccupied || isBilled) && (
                       <button
                         type="button"
                         className="btn secondary small"
                         onClick={() => {
                           setState((prev) => ({
                             ...prev,
-                            tables: prev.tables.map((t) => t._id === table._id ? { ...t, status: 'AVAILABLE' as const, pin: undefined, activeOrdersCount: 0 } : t)
+                            tables: prev.tables.map((t) =>
+                              t._id === table._id
+                                ? { ...t, status: 'AVAILABLE' as const, pin: undefined, activeOrdersCount: 0 }
+                                : t
+                            ),
+                            orders: prev.orders.map((o) =>
+                              o.table.label === table.label && o.status !== 'DELIVERED'
+                                ? { ...o, status: 'DELIVERED' as const }
+                                : o
+                            )
                           }));
                           showNotification(`${table.label} marked available and vacated.`);
                           setSelectedTableId(null);

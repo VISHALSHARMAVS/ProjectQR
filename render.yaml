@@ -1,10 +1,10 @@
 services:
   - type: web
-    name: mesa-preview
+    name: trymesa
     runtime: node
     region: singapore
     plan: free
-    buildCommand: npm ci --include=dev && npm run build
+    buildCommand: npm install --include=dev && npm run build
     startCommand: npm run start -w server
     healthCheckPath: /api/health
     autoDeploy: true
@@ -23,12 +23,12 @@ services:
         value: mock
       - key: CLIENT_ORIGIN
         fromService:
-          name: mesa-preview
+          name: trymesa
           type: web
           envVarKey: RENDER_EXTERNAL_URL
       - key: PUBLIC_APP_URL
         fromService:
-          name: mesa-preview
+          name: trymesa
           type: web
           envVarKey: RENDER_EXTERNAL_URL
       - key: UPLOAD_DIR
