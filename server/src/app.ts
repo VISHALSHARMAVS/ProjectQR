@@ -92,6 +92,14 @@ export function createApplication(sessionStore?: Store): ProjectQrApplication {
   });
 
   app.disable('x-powered-by');
+  app.use((req, res, next) => {
+    const host = req.get('host');
+    if (host && (host.startsWith('projectqr-preview.') || host.startsWith('mesa-preview.'))) {
+      const proto = req.get('x-forwarded-proto') || (req.secure ? 'https' : 'http');
+      return res.redirect(301, `${proto}://trymesa.onrender.com${req.originalUrl}`);
+    }
+    next();
+  });
   app.use(helmet({
     crossOriginResourcePolicy: { policy: 'cross-origin' },
     contentSecurityPolicy: {

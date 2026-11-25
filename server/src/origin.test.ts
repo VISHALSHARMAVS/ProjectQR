@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { isAllowedOrigin } from './app.js';
+import { resolvePublicAppUrl } from './routes/restaurant.js';
 
 describe('isAllowedOrigin policy', () => {
   it('allows requests without origin header (mobile apps, server-to-server, curl)', () => {
@@ -21,5 +22,23 @@ describe('isAllowedOrigin policy', () => {
   it('blocks untrusted third party origins when not matching server host', () => {
     expect(isAllowedOrigin('https://evil-phishing.com', 'trymesa.onrender.com')).toBe(false);
     expect(isAllowedOrigin('https://randomservice.onrender.com', 'trymesa.onrender.com')).toBe(false);
+  });
+});
+
+describe('resolvePublicAppUrl', () => {
+  it('resolves trymesa host correctly', () => {
+    const mockReq = {
+      get: (header: string) => header === 'host' ? 'trymesa.onrender.com' : undefined,
+      secure: true
+    } as any;
+    expect(resolvePublicAppUrl(mockReq)).toBe('https://trymesa.onrender.com');
+  });
+
+  it('maps legacy projectqr-preview host to trymesa', () => {
+    const mockReq = {
+      get: (header: string) => header === 'host' ? 'projectqr-preview.onrender.com' : undefined,
+      secure: true
+    } as any;
+    expect(resolvePublicAppUrl(mockReq)).toBe('https://trymesa.onrender.com');
   });
 });

@@ -535,13 +535,26 @@ tablesRouter.post('/:id/mark-clearing', async (req, res) => {
     }
   });
 });
+export function resolvePublicAppUrl(req: import('express').Request): string {
+  const host = req.get('host');
+  if (host) {
+    if (host.startsWith('projectqr-preview.') || host.startsWith('mesa-preview.')) {
+      return 'https://trymesa.onrender.com';
+    }
+    const proto = req.get('x-forwarded-proto') || (req.secure ? 'https' : 'http');
+    return `${proto}://${host}`;
+  }
+  return env.PUBLIC_APP_URL.replace(/\/$/, '');
+}
+
 tablesRouter.post('/:id/qr', requireRoles('owner', 'manager', 'staff'), async (req, res) => {
   if (!objectIdSchema.safeParse(req.params.id).success) throw new AppError(400, 'INVALID_ID', 'Invalid table identifier.');
   const table = await DiningTable.findOne(tenantFilter(req.staff!.restaurantId, { _id: req.params.id }));
   if (!table) throw new AppError(404, 'NOT_FOUND', 'Table not found.');
   const restaurant = await Restaurant.findById(req.staff!.restaurantId).select('name brandColor logoUrl welcomeTagline');
   if (!restaurant) throw new AppError(404, 'NOT_FOUND', 'Restaurant not found.');
-  const url = `${env.PUBLIC_APP_URL.replace(/\/$/, '')}/order/${table.qrToken}`;
+  const baseUrl = resolvePublicAppUrl(req);
+  const url = `${baseUrl}/order/${table.qrToken}`;
   const brandDark = restaurant.brandColor && /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(restaurant.brandColor)
     ? restaurant.brandColor
     : '#171714';

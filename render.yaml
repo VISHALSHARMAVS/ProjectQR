@@ -22,14 +22,8 @@ services:
       - key: OTP_MODE
         value: mock
       - key: CLIENT_ORIGIN
-        fromService:
-          name: trymesa
-          type: web
-          envVarKey: RENDER_EXTERNAL_URL
+        value: https://trymesa.onrender.com
       - key: PUBLIC_APP_URL
-        fromService:
-          name: trymesa
-          type: web
-          envVarKey: RENDER_EXTERNAL_URL
+        value: https://trymesa.onrender.com
       - key: UPLOAD_DIR
         value: /opt/render/project/src/server/uploads
