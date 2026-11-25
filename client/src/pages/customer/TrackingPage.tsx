@@ -36,6 +36,7 @@ export default function TrackingPage() {
   const [upiConfirming, setUpiConfirming] = useState(false);
   const [upiRef, setUpiRef] = useState('');
   const [showUpiInput, setShowUpiInput] = useState(false);
+  const [showUpiQr, setShowUpiQr] = useState(false);
   const [autoConfirmError, setAutoConfirmError] = useState('');
 
   const sessionQuery = useQuery({
@@ -370,21 +371,44 @@ export default function TrackingPage() {
                   <span>⚡</span>
                   <span>Open UPI App to Pay {money(order.totalPaise)}</span>
                 </a>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 11, color: 'var(--muted)', padding: '2px 4px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 11, color: 'var(--muted)', padding: '2px 4px', flexWrap: 'wrap', gap: 6 }}>
                   <span>UPI ID: <strong>{sessionQuery.data.restaurant.upiId}</strong></span>
-                  <button
-                    type="button"
-                    className="btn ghost small"
-                    style={{ fontSize: 10, padding: '2px 6px' }}
-                    onClick={() => {
-                      if (sessionQuery.data?.restaurant?.upiId) {
-                        void navigator.clipboard.writeText(sessionQuery.data.restaurant.upiId);
-                      }
-                    }}
-                  >
-                    📋 Copy UPI ID
-                  </button>
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    <button
+                      type="button"
+                      className="btn ghost small"
+                      style={{ fontSize: 10, padding: '2px 6px' }}
+                      onClick={() => setShowUpiQr((prev) => !prev)}
+                    >
+                      {showUpiQr ? '✕ Hide QR' : '📷 Show QR Code'}
+                    </button>
+                    <button
+                      type="button"
+                      className="btn ghost small"
+                      style={{ fontSize: 10, padding: '2px 6px' }}
+                      onClick={() => {
+                        if (sessionQuery.data?.restaurant?.upiId) {
+                          void navigator.clipboard.writeText(sessionQuery.data.restaurant.upiId);
+                        }
+                      }}
+                    >
+                      📋 Copy
+                    </button>
+                  </div>
                 </div>
+
+                {showUpiQr && (
+                  <div style={{ textAlign: 'center', margin: '10px 0', padding: 12, background: '#ffffff', borderRadius: 12, border: '1px solid var(--line)' }}>
+                    <img
+                      src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&margin=4&data=${encodeURIComponent(`upi://pay?pa=${sessionQuery.data.restaurant.upiId}&pn=${encodeURIComponent(sessionQuery.data.restaurant.name)}&am=${(order.totalPaise / 100).toFixed(2)}&tn=${encodeURIComponent(`Order ${order.orderNumber}`)}&cu=INR`)}`}
+                      alt="Scan to pay via any UPI app"
+                      style={{ width: 180, height: 180, margin: '0 auto', display: 'block', borderRadius: 8 }}
+                    />
+                    <div style={{ fontSize: 11, color: '#333333', marginTop: 6, fontWeight: 600 }}>
+                      Scan with Google Pay, PhonePe, Paytm, or BHIM
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
