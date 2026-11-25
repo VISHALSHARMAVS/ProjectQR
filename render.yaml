@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: projectqr-preview
+    name: mesa-preview
     runtime: node
     region: singapore
     plan: free
@@ -23,12 +23,12 @@ services:
         value: mock
       - key: CLIENT_ORIGIN
         fromService:
-          name: projectqr-preview
+          name: mesa-preview
           type: web
           envVarKey: RENDER_EXTERNAL_URL
       - key: PUBLIC_APP_URL
         fromService:
-          name: projectqr-preview
+          name: mesa-preview
           type: web
           envVarKey: RENDER_EXTERNAL_URL
       - key: UPLOAD_DIR

@@ -1,0 +1,18 @@
+name: Mesa Server Keep-Alive
+
+on:
+  schedule:
+    # Run every 14 minutes to ensure Render never spins down
+    - cron: '*/14 * * * *'
+  workflow_dispatch:
+
+jobs:
+  ping:
+    name: Ping Health Endpoint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Mesa Public URLs
+        run: |
+          echo "Pinging mesa-preview and projectqr-preview health endpoints..."
+          curl -sS --max-time 25 https://mesa-preview.onrender.com/api/health || true
+          curl -sS --max-time 25 https://projectqr-preview.onrender.com/api/health || true

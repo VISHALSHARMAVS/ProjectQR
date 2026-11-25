@@ -17,7 +17,29 @@ async function main(): Promise<void> {
   if (memoryMongo) console.info('Using disposable in-memory MongoDB; data will be discarded when the server stops.');
 
   const { httpServer, io } = createApplication(memoryMongo ? new session.MemoryStore() : undefined);
-  httpServer.listen(env.PORT, '0.0.0.0', () => console.info(`ProjectQR server listening on port ${env.PORT}`));
+  httpServer.listen(env.PORT, '0.0.0.0', () => {
+    console.info(`Mesa server listening on port ${env.PORT}`);
+
+    // Automated 10-minute keep-alive ping to prevent Render free instance spin-down
+    const rawUrl = env.PUBLIC_APP_URL || (process.env.RENDER_EXTERNAL_URL ?? '');
+    if (env.NODE_ENV === 'production' && rawUrl) {
+      const keepAliveUrl = `${rawUrl.replace(/\/$/, '')}/api/health`;
+      const PING_INTERVAL_MS = 10 * 60 * 1000; // 10 minutes (well before the 15-minute sleep threshold)
+      const timer = setInterval(async () => {
+        try {
+          const res = await fetch(keepAliveUrl);
+          if (res.ok) {
+            console.info(`[Keep-Alive] Pinged ${keepAliveUrl} successfully (${res.status})`);
+          } else {
+            console.warn(`[Keep-Alive] Ping ${keepAliveUrl} returned status ${res.status}`);
+          }
+        } catch (err) {
+          console.warn(`[Keep-Alive] Ping failed:`, err instanceof Error ? err.message : err);
+        }
+      }, PING_INTERVAL_MS);
+      timer.unref();
+    }
+  });
 
   let shuttingDown = false;
   const shutdown = (): void => {
