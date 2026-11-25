@@ -6,6 +6,7 @@ import { formatTableLabel, money } from '../../lib/format';
 import { DietaryBadge, EmptyState, ErrorPanel, Loading, Modal } from '../../components/ui';
 import { CustomerAssistanceModal } from '../../components/CustomerAssistanceModal';
 import { ReviewModal } from '../../components/ReviewModal';
+import { CategorySheet, type CategoryItem } from '../../components/CategorySheet';
 import { ThemeToggle } from '../../components/ThemeToggle';
 import { useOrderSocket } from '../../hooks/useOrderSocket';
 import type { Category, CustomerHistory, DietaryType, MenuItem, MenuItemAddon, MenuItemVariant, RestaurantInfo, TableCartLine } from '../../types';
@@ -64,6 +65,7 @@ export default function CustomerMenuPage() {
 
   const cart = tableCartQuery.data?.items ?? [];
   const [activeCategory, setActiveCategory] = useState('');
+  const [categoryMenuOpen, setCategoryMenuOpen] = useState(false);
   const [dietaryFilter, setDietaryFilter] = useState<'ALL' | DietaryType>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [assistanceOpen, setAssistanceOpen] = useState(false);
@@ -95,7 +97,64 @@ export default function CustomerMenuPage() {
         selectedAddons: addons ?? [],
         notes
       }),
-    onSuccess: () => {
+    onMutate: async ({ item, quantity, variant, addons, notes }) => {
+      // 1. Cancel ongoing queries so they don't overwrite optimistic data
+      await queryClient.cancelQueries({ queryKey: ['table-cart', token] });
+
+      // 2. Snapshot previous cart
+      const previousCart = queryClient.getQueryData<{ items: TableCartLine[] }>(['table-cart', token]);
+
+      // 3. Compute price and variant key
+      const basePrice = variant ? variant.pricePaise : item.pricePaise;
+      const addonsTotal = (addons || []).reduce((sum, a) => sum + a.pricePaise, 0);
+      const calculatedUnitPrice = basePrice + addonsTotal;
+      const variantName = variant?.name || '';
+
+      const currentItems: TableCartLine[] = previousCart?.items ? [...previousCart.items] : [];
+      const existingIndex = currentItems.findIndex((line) => {
+        const itemVariantName = line.selectedVariant?.name || '';
+        return line.menuItemId === item._id && itemVariantName === variantName;
+      });
+
+      if (quantity <= 0) {
+        if (existingIndex >= 0) {
+          currentItems.splice(existingIndex, 1);
+        }
+      } else if (existingIndex >= 0) {
+        currentItems[existingIndex] = {
+          ...currentItems[existingIndex],
+          quantity,
+          unitPricePaise: calculatedUnitPrice,
+          selectedVariant: variant ?? null,
+          selectedAddons: addons ?? [],
+          notes: notes !== undefined ? notes : currentItems[existingIndex].notes
+        };
+      } else {
+        currentItems.push({
+          menuItemId: item._id,
+          name: item.name,
+          unitPricePaise: calculatedUnitPrice,
+          quantity,
+          selectedVariant: variant ?? null,
+          selectedAddons: addons ?? [],
+          notes: notes || '',
+          addedByName: session.data?.customer?.name || 'You'
+        });
+      }
+
+      // 4. Instantly update React Query cache in 0ms
+      queryClient.setQueryData<{ items: TableCartLine[] }>(['table-cart', token], {
+        items: currentItems
+      });
+
+      return { previousCart };
+    },
+    onError: (_err, _variables, context) => {
+      if (context?.previousCart) {
+        queryClient.setQueryData(['table-cart', token], context.previousCart);
+      }
+    },
+    onSettled: () => {
       setCustomizingItem(null);
       void queryClient.invalidateQueries({ queryKey: ['table-cart', token] });
     }
@@ -172,9 +231,26 @@ export default function CustomerMenuPage() {
     return filteredItems.some((item) => item.categoryId === category._id);
   });
 
+  const categoryItems: CategoryItem[] = useMemo(() => {
+    return availableCategories.map((category) => {
+      const count = filteredItems.filter((item) => item.categoryId === category._id).length;
+      return {
+        id: category._id,
+        name: category.name,
+        description: category.description,
+        count
+      };
+    });
+  }, [availableCategories, filteredItems]);
+
   const scrollTo = (id: string): void => {
     setActiveCategory(id);
-    document.getElementById(`category-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    const target = document.getElementById(`category-${id}`);
+    if (target) {
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      target.classList.add('category-highlight-flash');
+      window.setTimeout(() => target.classList.remove('category-highlight-flash'), 1200);
+    }
   };
 
   const totalQuantity = cart.reduce((sum, line) => sum + line.quantity, 0);
@@ -685,21 +761,18 @@ export default function CustomerMenuPage() {
         </Modal>
       )}
 
-      {/* Floating Category Quick-Jump FAB */}
-      {availableCategories.length > 1 && (
+      {/* Floating Zomato-style Menu Category FAB */}
+      {availableCategories.length > 0 && (
         <button
           type="button"
-          className="floating-menu-fab"
+          className={`floating-menu-fab ${cart.length > 0 ? 'has-cart' : ''}`}
           style={{ bottom: cart.length > 0 ? 80 : 24 }}
-          onClick={() => {
-            const nav = document.getElementById('menu-category-nav');
-            if (nav) {
-              nav.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }
-          }}
-          title="Jump to categories"
+          onClick={() => setCategoryMenuOpen(true)}
+          aria-label="Open menu categories"
         >
-          <span>🍽️</span> Menu
+          <span className="fab-icon" aria-hidden="true">📖</span>
+          <span className="fab-label">Menu</span>
+          <span className="fab-badge">{availableCategories.length}</span>
         </button>
       )}
 
@@ -731,6 +804,15 @@ export default function CustomerMenuPage() {
           </div>
         </Link>
       )}
+
+      <CategorySheet
+        isOpen={categoryMenuOpen}
+        onClose={() => setCategoryMenuOpen(false)}
+        categories={categoryItems}
+        activeCategoryId={activeCategory}
+        onSelectCategory={scrollTo}
+        restaurantName={restaurant.name}
+      />
 
       <CustomerAssistanceModal
         isOpen={assistanceOpen}

@@ -9,6 +9,7 @@ import {
 import { money, formatTableLabel } from '../lib/format';
 import { playKitchenChime, playPaymentSuccessChime } from '../lib/audio';
 import { DietaryBadge, Modal, Brand } from '../components/ui';
+import { CategorySheet, type CategoryItem } from '../components/CategorySheet';
 import { ThemeToggle } from '../components/ThemeToggle';
 import type { MenuItem, MenuItemAddon, MenuItemVariant, OrderRecord, OrderStatus } from '../types';
 
@@ -17,6 +18,8 @@ type DemoView = 'menu' | 'kitchen' | 'dashboard' | 'floormap';
 export default function DemoPage() {
   const [state, setState] = useState<DemoState>(() => loadDemoState());
   const [activeView, setActiveView] = useState<DemoView>('menu');
+  const [activeCategory, setActiveCategory] = useState('');
+  const [categoryMenuOpen, setCategoryMenuOpen] = useState(false);
   const [notification, setNotification] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState('');
   const [dietaryFilter, setDietaryFilter] = useState<'ALL' | 'VEG' | 'NON_VEG'>('ALL');
@@ -193,6 +196,35 @@ export default function DemoPage() {
       return true;
     });
   }, [state.items, dietaryFilter, searchQuery]);
+
+  // Demo Categories with active dishes
+  const availableDemoCategories = useMemo(() => {
+    return state.categories.filter((cat) => {
+      return filteredMenuItems.some((item) => item.categoryId === cat._id);
+    });
+  }, [state.categories, filteredMenuItems]);
+
+  const demoCategoryItems: CategoryItem[] = useMemo(() => {
+    return availableDemoCategories.map((cat) => {
+      const count = filteredMenuItems.filter((item) => item.categoryId === cat._id).length;
+      return {
+        id: cat._id,
+        name: cat.name,
+        description: cat.description,
+        count
+      };
+    });
+  }, [availableDemoCategories, filteredMenuItems]);
+
+  const scrollToDemoCategory = (id: string) => {
+    setActiveCategory(id);
+    const target = document.getElementById(`demo-category-${id}`);
+    if (target) {
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      target.classList.add('category-highlight-flash');
+      window.setTimeout(() => target.classList.remove('category-highlight-flash'), 1200);
+    }
+  };
 
   // Operational metrics for dashboard
   const totalSalesPaise = useMemo(() => {
@@ -475,88 +507,113 @@ export default function DemoPage() {
             </button>
           </div>
 
-          {/* Dish List */}
+          {/* Dish List Grouped by Category */}
           <div style={{ marginTop: 16 }}>
-            {filteredMenuItems.map((item) => {
-              const cartEntry = cart.find((c) => c.item._id === item._id);
-              const qty = cartEntry ? cartEntry.quantity : 0;
-              const hasCustomizations = (item.variants && item.variants.length > 0) || (item.addons && item.addons.length > 0);
+            {availableDemoCategories.map((category) => {
+              const categoryDishes = filteredMenuItems.filter((item) => item.categoryId === category._id);
+              if (categoryDishes.length === 0) return null;
 
               return (
-                <article className={`swiggy-card ${item.available ? '' : 'is-sold-out'}`} key={item._id}>
-                  <div className="swiggy-card-info">
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <DietaryBadge type={item.dietary || 'VEG'} />
-                      <span className="swiggy-social-badge reordered">
-                        <span className="meter" /> Bestseller
-                      </span>
-                    </div>
-
-                    <h3 className="swiggy-dish-title">{item.name}</h3>
-
-                    <div className="swiggy-dish-price">
-                      {money(item.pricePaise)}
-                    </div>
-
-                    <p className="swiggy-dish-desc">{item.description}</p>
+                <section
+                  className="menu-section"
+                  id={`demo-category-${category._id}`}
+                  key={category._id}
+                  style={{ marginBottom: 28 }}
+                >
+                  <div style={{ marginBottom: 12 }}>
+                    <h2 style={{ fontSize: 18, fontWeight: 700, margin: 0, letterSpacing: '-0.02em', color: 'var(--ink)' }}>
+                      {category.name}
+                    </h2>
+                    {category.description && (
+                      <p className="muted" style={{ margin: '2px 0 0', fontSize: 12 }}>
+                        {category.description}
+                      </p>
+                    )}
                   </div>
 
-                  <div className="swiggy-media-col">
-                    <div className="swiggy-img-wrap">
-                      <img src={item.imageUrl} alt={item.name} loading="lazy" />
-                    </div>
+                  {categoryDishes.map((item) => {
+                    const cartEntry = cart.find((c) => c.item._id === item._id);
+                    const qty = cartEntry ? cartEntry.quantity : 0;
+                    const hasCustomizations = (item.variants && item.variants.length > 0) || (item.addons && item.addons.length > 0);
 
-                    <div className="swiggy-btn-anchor">
-                      {!item.available ? (
-                        <span className="swiggy-sold-out-pill">Sold out</span>
-                      ) : qty === 0 ? (
-                        <>
-                          <button
-                            type="button"
-                            className="swiggy-add-btn"
-                            onClick={() => {
-                              if (hasCustomizations) {
-                                setCustomizingItem(item);
-                                setSelectedVariant(item.variants?.[0] ?? null);
-                                setSelectedAddons([]);
-                                setCookingNotes('');
-                              } else {
-                                addToCart(item);
-                              }
-                            }}
-                          >
-                            Add +
-                          </button>
-                          {hasCustomizations && (
-                            <span className="swiggy-customisable-hint">Customisable</span>
-                          )}
-                        </>
-                      ) : (
-                        <div className="swiggy-stepper">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const index = cart.findIndex((c) => c.item._id === item._id);
-                              if (index >= 0) updateQuantity(index, -1);
-                            }}
-                          >
-                            −
-                          </button>
-                          <span>{qty}</span>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const index = cart.findIndex((c) => c.item._id === item._id);
-                              if (index >= 0) updateQuantity(index, 1);
-                            }}
-                          >
-                            +
-                          </button>
+                    return (
+                      <article className={`swiggy-card ${item.available ? '' : 'is-sold-out'}`} key={item._id}>
+                        <div className="swiggy-card-info">
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <DietaryBadge type={item.dietary || 'VEG'} />
+                            <span className="swiggy-social-badge reordered">
+                              <span className="meter" /> Bestseller
+                            </span>
+                          </div>
+
+                          <h3 className="swiggy-dish-title">{item.name}</h3>
+
+                          <div className="swiggy-dish-price">
+                            {money(item.pricePaise)}
+                          </div>
+
+                          <p className="swiggy-dish-desc">{item.description}</p>
                         </div>
-                      )}
-                    </div>
-                  </div>
-                </article>
+
+                        <div className="swiggy-media-col">
+                          <div className="swiggy-img-wrap">
+                            <img src={item.imageUrl} alt={item.name} loading="lazy" />
+                          </div>
+
+                          <div className="swiggy-btn-anchor">
+                            {!item.available ? (
+                              <span className="swiggy-sold-out-pill">Sold out</span>
+                            ) : qty === 0 ? (
+                              <>
+                                <button
+                                  type="button"
+                                  className="swiggy-add-btn"
+                                  onClick={() => {
+                                    if (hasCustomizations) {
+                                      setCustomizingItem(item);
+                                      setSelectedVariant(item.variants?.[0] ?? null);
+                                      setSelectedAddons([]);
+                                      setCookingNotes('');
+                                    } else {
+                                      addToCart(item);
+                                    }
+                                  }}
+                                >
+                                  Add +
+                                </button>
+                                {hasCustomizations && (
+                                  <span className="swiggy-customisable-hint">Customisable</span>
+                                )}
+                              </>
+                            ) : (
+                              <div className="swiggy-stepper">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const index = cart.findIndex((c) => c.item._id === item._id);
+                                    if (index >= 0) updateQuantity(index, -1);
+                                  }}
+                                >
+                                  −
+                                </button>
+                                <span>{qty}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const index = cart.findIndex((c) => c.item._id === item._id);
+                                    if (index >= 0) updateQuantity(index, 1);
+                                  }}
+                                >
+                                  +
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </article>
+                    );
+                  })}
+                </section>
               );
             })}
           </div>
@@ -589,6 +646,30 @@ export default function DemoPage() {
               </button>
             </aside>
           )}
+
+          {/* Floating Zomato-style Menu Category FAB */}
+          {availableDemoCategories.length > 0 && (
+            <button
+              type="button"
+              className={`floating-menu-fab ${cart.length > 0 ? 'has-cart' : ''}`}
+              style={{ bottom: cart.length > 0 ? 80 : 24 }}
+              onClick={() => setCategoryMenuOpen(true)}
+              aria-label="Open menu categories"
+            >
+              <span className="fab-icon" aria-hidden="true">📖</span>
+              <span className="fab-label">Menu</span>
+              <span className="fab-badge">{availableDemoCategories.length}</span>
+            </button>
+          )}
+
+          <CategorySheet
+            isOpen={categoryMenuOpen}
+            onClose={() => setCategoryMenuOpen(false)}
+            categories={demoCategoryItems}
+            activeCategoryId={activeCategory}
+            onSelectCategory={scrollToDemoCategory}
+            restaurantName={state.restaurant.name}
+          />
 
           {/* Customization Modal */}
           {customizingItem && (

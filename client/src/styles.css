@@ -825,37 +825,333 @@ p, body, .body-1, .body-2, .body-3, .body-4, .body-5, .body-6 {
   to { transform: translateY(0); opacity: 1; }
 }
 
-/* Floating Menu Quick-Jump FAB */
+/* Floating Zomato-style Menu Quick-Jump FAB */
 .floating-menu-fab {
   position: fixed;
-  bottom: max(80px, calc(env(safe-area-inset-bottom, 0px) + 76px));
+  bottom: max(20px, calc(env(safe-area-inset-bottom, 0px) + 16px));
   right: 16px;
   z-index: 95;
-  background: #1e293b;
-  color: white;
-  border: none;
+  background: var(--ink);
+  color: var(--paper);
+  border: 1px solid var(--line);
   border-radius: 999px;
-  padding: 9px 16px;
+  padding: 8px 14px 8px 12px;
   font-size: 12px;
   font-weight: 700;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.22);
+  gap: 7px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.22);
   cursor: pointer;
-  transition: transform 0.15s ease;
+  transition: bottom 0.25s cubic-bezier(0.16, 1, 0.3, 1), transform 0.15s ease, background 0.15s ease;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
 }
 .floating-menu-fab:hover {
-  transform: scale(1.05);
+  transform: scale(1.04);
+}
+.floating-menu-fab:active {
+  transform: scale(0.96);
+}
+.floating-menu-fab.has-cart {
+  bottom: max(80px, calc(env(safe-area-inset-bottom, 0px) + 74px));
+}
+.floating-menu-fab .fab-icon {
+  font-size: 13px;
+  line-height: 1;
+}
+.floating-menu-fab .fab-label {
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-weight: 800;
+  font-size: 11px;
+}
+.floating-menu-fab .fab-badge {
+  background: var(--green);
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 800;
+  font-family: var(--font-mono, monospace);
+  padding: 1px 6px;
+  border-radius: 999px;
+  line-height: 1.3;
 }
 [data-theme="dark"] .floating-menu-fab {
-  background: #1f1f1f;
+  background: #0f1c14;
+  color: #f8fafc;
+  border: 1px solid #166534;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+}
+[data-theme="dark"] .floating-menu-fab .fab-badge {
+  background: #16a34a;
+  color: #07150e;
+}
+
+/* Zomato-style Category Bottom Sheet Drawer */
+.zomato-sheet-root {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.zomato-sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  animation: zomatoBackdropFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.zomato-sheet-drawer {
+  position: relative;
+  z-index: 1001;
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+  background: var(--paper);
+  border-top-left-radius: 24px;
+  border-top-right-radius: 24px;
+  box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.3);
+  padding: 8px 18px calc(24px + env(safe-area-inset-bottom, 0px));
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--line);
+  animation: zomatoDrawerSlideUp 0.26s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+[data-theme="dark"] .zomato-sheet-drawer {
+  background: #0d1a12;
+  border-top: 1px solid #1e3a29;
+  box-shadow: 0 -12px 48px rgba(0, 0, 0, 0.7);
+}
+
+.zomato-sheet-handle-wrap {
+  display: flex;
+  justify-content: center;
+  padding: 6px 0 10px;
+  cursor: pointer;
+}
+
+.zomato-sheet-handle {
+  width: 40px;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--muted);
+  opacity: 0.4;
+  transition: opacity 0.15s ease;
+}
+.zomato-sheet-handle-wrap:hover .zomato-sheet-handle {
+  opacity: 0.8;
+}
+
+.zomato-sheet-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 8px;
+}
+
+.zomato-sheet-eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--green);
+}
+
+.zomato-sheet-title {
+  margin: 2px 0 0;
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--ink);
+  letter-spacing: -0.02em;
+}
+
+.zomato-sheet-count-pill {
+  font-size: 11px;
+  font-weight: 700;
+  font-family: var(--font-mono, monospace);
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--soft-green);
+  color: var(--green);
+  border: 1px solid rgba(22, 163, 74, 0.25);
+}
+
+.zomato-sheet-close-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+.zomato-sheet-close-btn:hover {
+  background: var(--paper);
+  transform: scale(1.08);
+}
+
+.zomato-sheet-list {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 6px 2px 14px;
+  margin-top: 4px;
+}
+
+.zomato-sheet-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.zomato-sheet-item:hover {
+  background: var(--bg);
+}
+.zomato-sheet-item:active {
+  transform: scale(0.99);
+}
+
+.zomato-sheet-item.active {
+  background: var(--soft-green);
+  border-color: rgba(22, 163, 74, 0.35);
+}
+
+[data-theme="dark"] .zomato-sheet-item:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+[data-theme="dark"] .zomato-sheet-item.active {
+  background: rgba(22, 163, 74, 0.16);
+  border-color: #16a34a;
+}
+
+.zomato-sheet-item-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.zomato-sheet-item-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.zomato-sheet-active-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--green);
+  flex-shrink: 0;
+  box-shadow: 0 0 8px var(--green);
+}
+
+.zomato-sheet-item-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+}
+
+.zomato-sheet-item.active .zomato-sheet-item-name {
+  color: var(--green);
+}
+
+.zomato-sheet-item-desc {
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.35;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.zomato-sheet-item-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  margin-left: 12px;
+}
+
+.zomato-sheet-dish-count {
+  font-size: 12px;
+  font-weight: 700;
+  font-family: var(--font-mono, monospace);
+  padding: 3px 8px;
+  border-radius: 8px;
+  background: var(--bg);
   color: var(--ink);
   border: 1px solid var(--line);
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.6);
 }
-[data-theme="dark"] .floating-menu-fab:hover {
-  background: #272727;
+
+.zomato-sheet-item.active .zomato-sheet-dish-count {
+  background: var(--green);
+  color: #ffffff;
+  border-color: var(--green);
+}
+
+[data-theme="dark"] .zomato-sheet-item.active .zomato-sheet-dish-count {
+  background: #16a34a;
+  color: #07150e;
+}
+
+.zomato-sheet-arrow {
+  font-size: 13px;
+  color: var(--muted);
+  transition: transform 0.15s ease;
+}
+.zomato-sheet-item:hover .zomato-sheet-arrow {
+  transform: translateX(2px);
+  color: var(--green);
+}
+
+@keyframes zomatoBackdropFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes zomatoDrawerSlideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+/* Category section highlight pulse after jumping */
+@keyframes categoryPulse {
+  0% { background: transparent; }
+  30% { background: rgba(22, 163, 74, 0.14); border-radius: 12px; }
+  100% { background: transparent; }
+}
+.category-highlight-flash {
+  animation: categoryPulse 1.2s ease-out;
 }
 
 .menu-card { display: grid; grid-template-columns: minmax(0, 1fr) 108px; gap: 15px; padding: 15px 0; border-bottom: 1px solid var(--line); transition: opacity .15s ease; }
