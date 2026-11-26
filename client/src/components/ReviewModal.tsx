@@ -132,26 +132,26 @@ export function ReviewModal({
     <Modal
       title={submittedReviewId ? 'Thank You!' : 'Rate Your Experience'}
       onClose={onClose}
-      width={520}
+      width={480}
     >
-      <div style={{ padding: '4px 0 12px' }}>
+      <div style={{ padding: '4px 0 12px', maxWidth: '100%', overflowX: 'hidden', boxSizing: 'border-box' }}>
         {submittedReviewId ? (
-          <div style={{ textAlign: 'center', padding: '16px 8px' }}>
-            <div style={{ fontSize: 52, marginBottom: 12 }}>
+          <div style={{ textAlign: 'center', padding: '16px 8px', maxWidth: '100%', overflowX: 'hidden' }}>
+            <div style={{ fontSize: 48, marginBottom: 12 }}>
               {isHighRating ? '🎉' : '🙏'}
             </div>
-            <h3 style={{ fontSize: 20, margin: '0 0 8px', color: isHighRating ? '#15803d' : '#991b1b' }}>
+            <h3 style={{ fontSize: 19, margin: '0 0 8px', color: isHighRating ? '#15803d' : '#991b1b', wordBreak: 'break-word' }}>
               {isHighRating ? 'Thank you so much!' : 'Your feedback was delivered to our manager.'}
             </h3>
-            <p className="muted" style={{ fontSize: 14, margin: '0 0 20px', lineHeight: 1.5 }}>
+            <p className="muted" style={{ fontSize: 13, margin: '0 0 18px', lineHeight: 1.5, wordBreak: 'break-word' }}>
               {isHighRating
                 ? 'Your feedback means the world to our chefs and floor team. We look forward to serving you again!'
                 : 'Our duty manager has received your instant table alert. A staff member will attend to your table shortly to address your concerns.'}
             </p>
 
             {isHighRating && googleReviewUrl && (
-              <div style={{ padding: 16, background: 'var(--paper-elevated)', border: '1px solid var(--line)', borderRadius: 12, marginBottom: 20 }}>
-                <p style={{ margin: '0 0 12px', fontSize: 13, fontWeight: 600, color: 'var(--ink)' }}>
+              <div style={{ padding: 14, background: 'var(--paper-elevated)', border: '1px solid var(--line)', borderRadius: 12, marginBottom: 18, boxSizing: 'border-box', maxWidth: '100%' }}>
+                <p style={{ margin: '0 0 10px', fontSize: 13, fontWeight: 600, color: 'var(--ink)', lineHeight: 1.4 }}>
                   Would you take 10 seconds to share this on Google Maps? It helps small restaurants like ours tremendously!
                 </p>
                 <button
@@ -160,13 +160,15 @@ export function ReviewModal({
                   style={{
                     background: '#2563eb',
                     color: '#ffffff',
-                    fontSize: 14,
+                    fontSize: 13,
                     fontWeight: 700,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     gap: 8,
-                    padding: '12px 16px',
+                    padding: '12px 14px',
+                    whiteSpace: 'normal',
+                    textAlign: 'center',
                     boxShadow: '0 4px 14px rgba(37, 99, 235, 0.25)'
                   }}
                   onClick={handleGoogleClick}

@@ -142,12 +142,22 @@ export default function SettingsPage() {
 
   return <>
     <div className="heading-row"><div><span className="eyebrow">Restaurant profile</span><h1>Settings</h1><p className="muted" style={{ margin: '6px 0 0', fontSize: 13 }}>This is the information customers see when they scan a table QR.</p></div></div>
-    <section className="surface" style={{ maxWidth: 760, padding: 22 }}><form className="form-grid" onSubmit={(event) => { event.preventDefault(); setError(''); setMessage(''); save.mutate(); }}>
-      <div className="field"><label htmlFor="restaurant-name">Restaurant name</label><input className="input" id="restaurant-name" required minLength={2} maxLength={120} disabled={!canEdit} value={form.name} onChange={(event) => setOverrides((current) => ({ ...current, name: event.target.value }))} /></div>
-      <div className="field"><label htmlFor="restaurant-description">Description</label><textarea className="textarea" id="restaurant-description" maxLength={500} disabled={!canEdit} value={form.description} onChange={(event) => setOverrides((current) => ({ ...current, description: event.target.value }))} /></div>
+    <section className="surface" style={{ maxWidth: 840, padding: 22 }}><form className="form-grid" onSubmit={(event) => { event.preventDefault(); setError(''); setMessage(''); save.mutate(); }}>
+      <div style={{ padding: '16px 18px', background: 'var(--paper-elevated)', borderRadius: 14, border: '1px solid var(--line)', marginBottom: 8 }}>
+        <strong style={{ display: 'block', fontSize: 15, marginBottom: 4, color: 'var(--ink)' }}>Basic Information</strong>
+        <p className="muted" style={{ fontSize: 12, margin: '0 0 14px' }}>Essential details displayed on your digital guest menu and invoices.</p>
+        <div className="field" style={{ marginBottom: 12 }}>
+          <label htmlFor="restaurant-name">Restaurant name</label>
+          <input className="input" id="restaurant-name" required minLength={2} maxLength={120} disabled={!canEdit} value={form.name} onChange={(event) => setOverrides((current) => ({ ...current, name: event.target.value }))} />
+        </div>
+        <div className="field">
+          <label htmlFor="restaurant-description">Description</label>
+          <textarea className="textarea" id="restaurant-description" maxLength={500} disabled={!canEdit} value={form.description} onChange={(event) => setOverrides((current) => ({ ...current, description: event.target.value }))} />
+        </div>
+      </div>
 
-      <div style={{ padding: '16px 18px', background: '#f8f8f4', borderRadius: 14, border: '1px solid var(--line)', marginTop: 4, marginBottom: 4 }}>
-        <strong style={{ display: 'block', fontSize: 15, marginBottom: 4 }}>Branding & Visual Identity</strong>
+      <div style={{ padding: '16px 18px', background: 'var(--paper-elevated)', borderRadius: 14, border: '1px solid var(--line)', marginTop: 4, marginBottom: 8 }}>
+        <strong style={{ display: 'block', fontSize: 15, marginBottom: 4, color: 'var(--ink)' }}>Branding & Visual Identity</strong>
         <p className="muted" style={{ fontSize: 12, margin: '0 0 16px' }}>Customize your restaurant logo, brand theme color, and mobile cover banner across both the customer menu and staff dashboard.</p>
 
         {/* Logo Upload Section */}
@@ -291,7 +301,7 @@ export default function SettingsPage() {
           </div>
 
           {/* Live Preview Card */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', background: 'white', borderRadius: 10, border: '1px solid var(--line)', marginTop: 10, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', background: 'var(--paper)', borderRadius: 10, border: '1px solid var(--line)', marginTop: 10, flexWrap: 'wrap' }}>
             <span style={{ fontSize: 12, fontWeight: 600 }}>Theme Preview:</span>
             <button type="button" className="btn small" style={{ pointerEvents: 'none', background: effectiveBrandColor }}>
               Primary Button
@@ -335,7 +345,7 @@ export default function SettingsPage() {
               padding: 12,
               borderRadius: 10,
               border: !form.requireCustomerOtp ? '2px solid var(--green)' : '1px solid var(--line)',
-              background: !form.requireCustomerOtp ? 'var(--soft-green)' : 'white',
+              background: !form.requireCustomerOtp ? 'var(--soft-green)' : 'var(--paper)',
               cursor: canEdit ? 'pointer' : 'default'
             }}
           >
@@ -363,7 +373,7 @@ export default function SettingsPage() {
               padding: 12,
               borderRadius: 10,
               border: form.requireCustomerOtp ? '2px solid var(--green)' : '1px solid var(--line)',
-              background: form.requireCustomerOtp ? 'var(--soft-green)' : 'white',
+              background: form.requireCustomerOtp ? 'var(--soft-green)' : 'var(--paper)',
               cursor: canEdit ? 'pointer' : 'default'
             }}
           >
