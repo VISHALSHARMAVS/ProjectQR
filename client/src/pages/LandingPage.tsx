@@ -15,27 +15,27 @@ interface FaqItem {
 const faqs: FaqItem[] = [
   {
     question: 'Does our restaurant need expensive POS hardware to use Mesa?',
-    answer: 'No hardware purchase is required. You can print acrylic QR stands for each dining table and your staff can use any existing tablet, smartphone, or kitchen display monitor through a standard web browser.'
+    answer: 'No hardware purchase is required. You can print QR stands for each dining table and your staff can use any existing tablet, smartphone, or kitchen display monitor through a standard web browser.'
   },
   {
-    question: 'How does the UPI auto confirmation work for busy rush hours?',
-    answer: 'When guests pay with Google Pay, PhonePe, Paytm, or CRED, the payment gateway webhook verifies the transaction automatically. The order ticket updates to paid in real time with an acoustic chime so your waiters never have to inspect customer phone screens.'
+    question: 'How does direct UPI settlement work for busy rush hours?',
+    answer: 'Guest payments route directly to your restaurant merchant UPI VPA with zero platform commission. Transactions are verified in real time, and tickets automatically update to paid status with an acoustic chime so your team never has to inspect customer phone screens.'
   },
   {
     question: 'Can friends sitting at the same table order together or split bills?',
-    answer: 'Yes. The first guest to scan becomes the table host and generates an automatic four digit table PIN. Friends who enter the PIN join the shared table cart and bill. Walk in strangers or solo diners who do not have the PIN are isolated onto their own separate bill.'
+    answer: 'Yes. The first guest to scan generates a four-digit table PIN. Companions who enter the PIN join the shared table cart and bill. Walk-in guests or separate parties who do not have the PIN remain securely isolated on their own separate tab.'
   },
   {
-    question: 'Can I restrict waiters from viewing daily revenue and sales margins?',
-    answer: 'Yes. The owner dashboard includes strict role permissions. Waiters only see floor map table states and punch order screens. Total daily revenue, profit numbers, and the register ledger remain completely shielded to the owner and general manager.'
+    question: 'Can I restrict staff from viewing daily revenue and sales margins?',
+    answer: 'Yes. The owner dashboard includes strict role-based permissions. Floor staff and runners only see table statuses and punch orders. Total daily sales, gross margins, and business ledgers are restricted exclusively to owners and managers.'
   },
   {
-    question: 'How does the review system help prevent negative Google reviews?',
-    answer: 'When a diner completes their meal, they get a 15 second behavioral micro survey. Diners giving 5 stars are routed with one tap to your Google Maps listing. Diners giving 1 to 3 stars trigger an instant acoustic alert on the manager device so complaints are recovered table side before the guest departs.'
+    question: 'How does table-side guest feedback work?',
+    answer: 'At the end of their meal, guests can share immediate dining feedback on their dishes and service. If a guest notes an issue, an instant alert notifies the manager to resolve it table-side before departure. Diners can also easily view your Google Maps listing to share their experience.'
   },
   {
     question: 'What happens when an item runs out of stock during dinner service?',
-    answer: 'Your kitchen chef or floor captain can tap the 86 toggle on any dish. It reflects immediately across customer table QR menus via real time websockets, preventing guests from ordering sold out food.'
+    answer: 'Your kitchen chef or floor captain can tap the out-of-stock toggle on any dish. It reflects immediately across customer table QR menus via real-time websockets, preventing guests from ordering sold-out items.'
   }
 ];
 
@@ -44,12 +44,7 @@ export default function LandingPage() {
 
   return (
     <div className="landing-glass-shell" style={{ color: 'var(--ink)' }}>
-      {/* Ambient background glow orbs for glass depth */}
-      <div className="landing-ambient-glow landing-glow-top" aria-hidden="true" />
-      <div className="landing-ambient-glow landing-glow-mid" aria-hidden="true" />
-      <div className="landing-ambient-glow landing-glow-bottom" aria-hidden="true" />
-
-      {/* Floating Centered Header (SKILL.md B7 & B3) */}
+      {/* Floating Header */}
       <header className="landing-floating-header">
         <nav className="landing-floating-nav" aria-label="Main navigation">
           <Link to="/" style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}>
@@ -89,23 +84,20 @@ export default function LandingPage() {
       </header>
 
       <main id="main-content" style={{ position: 'relative', zIndex: 1 }}>
-        {/* Above the Fold: Hero Section (B5) */}
+        {/* Above the Fold: Hero Section */}
         <section className="page-wrap" style={{ paddingTop: 'clamp(40px, 6vw, 72px)', paddingBottom: 64 }}>
-          <div style={{ maxWidth: 680, margin: '0 auto', textAlign: 'center' }}>
-            <div style={{ display: 'inline-flex', maxWidth: '100%', marginBottom: 16 }}>
+          <div style={{ maxWidth: 700, margin: '0 auto', textAlign: 'center' }}>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginBottom: 16 }}>
               <span
-                className="pill"
+                className="pill green"
                 style={{
-                  padding: '6px 14px',
+                  padding: '5px 12px',
                   fontSize: 12,
                   fontWeight: 600,
-                  maxWidth: '100%',
-                  textAlign: 'center',
-                  whiteSpace: 'normal',
                   lineHeight: 1.4
                 }}
               >
-                Table side QR ordering and restaurant operating system
+                Restaurant Operating System
               </span>
             </div>
 
@@ -113,14 +105,14 @@ export default function LandingPage() {
               className="heading-1 hero-heading-gradient"
               style={{
                 margin: '0 0 16px',
-                fontSize: 'clamp(28px, 6.5vw, 56px)',
+                fontSize: 'clamp(32px, 6vw, 54px)',
                 lineHeight: 1.15,
                 letterSpacing: '-0.035em',
                 overflowWrap: 'break-word',
                 wordBreak: 'break-word'
               }}
             >
-              Turn every dining table into an instant checkout
+              The table operating system for independent restaurants
             </h1>
 
             <p
@@ -133,7 +125,7 @@ export default function LandingPage() {
                 color: 'var(--muted)'
               }}
             >
-              Guests scan their table QR, order together with four digit PIN protection, and auto confirm UPI payments. Your kitchen prepares tickets immediately while your staff stays focused on hospitality.
+              Guests scan their table QR, order together with 4-digit PIN protection, and pay directly via UPI. Orders route instantly to kitchen displays—zero app downloads, 0% platform commission, and no proprietary hardware.
             </p>
 
             <div style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: 12 }}>
@@ -141,7 +133,7 @@ export default function LandingPage() {
                 Explore interactive demo <span aria-hidden="true">→</span>
               </Link>
               <Link to="/register" className="btn secondary" style={{ minHeight: 44, padding: '10px 20px', fontSize: 15, fontWeight: 600 }}>
-                Start free trial
+                Start 14-day free trial
               </Link>
             </div>
 
@@ -161,19 +153,21 @@ export default function LandingPage() {
                 textAlign: 'center'
               }}
             >
-              <span style={{ color: 'var(--green)', fontSize: 14, fontWeight: 700 }}>✓</span>
-              <span>Built for independent dine in restaurants, cafes and bars · Zero upfront hardware · 14 day free trial</span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--green)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+              <span>Designed for dine-in restaurants, cafes, and bars · Zero proprietary hardware · 14-day free trial</span>
             </div>
           </div>
 
-          {/* Hero Visual: System Preview (B5 & B3 Nested Radius with Glass Depth) */}
+          {/* Hero Visual: Connected Operational System Preview */}
           <ScrollReveal delay={120}>
             <div
               className="glass-surface"
               style={{
                 marginTop: 48,
                 borderRadius: 20,
-                padding: 16
+                padding: 18
               }}
             >
               <div
@@ -187,14 +181,14 @@ export default function LandingPage() {
                 {/* Card 1: Guest Table Screen */}
                 <div className="glass-card" style={{ borderRadius: 12, padding: 18 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                    <span className="pill green" style={{ fontSize: 11 }}>Guest experience</span>
-                    <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--green)' }}>Table 4 · PIN active</span>
+                    <span className="pill green" style={{ fontSize: 11, fontWeight: 600 }}>Guest Experience</span>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--green)' }}>Table 4 · PIN Active</span>
                   </div>
-                  <strong style={{ fontSize: 16, display: 'block', marginBottom: 6, color: 'var(--ink)' }}>One tap UPI auto confirm</strong>
+                  <strong style={{ fontSize: 15, display: 'block', marginBottom: 6, color: 'var(--ink)' }}>Table QR & Direct UPI</strong>
                   <p className="muted" style={{ fontSize: 13, margin: '0 0 14px', lineHeight: 1.5 }}>
-                    Guests scan, order dishes together, and pay using Google Pay or PhonePe. Payment settles automatically in seconds.
+                    Guests scan the table QR code, browse live dishes, and pay directly via any UPI app with instant settlement.
                   </p>
-                  <div style={{ background: 'var(--paper)', borderRadius: 8, padding: 10, border: '1px solid var(--line)', fontSize: 12, display: 'flex', justifyContent: 'space-between', color: 'var(--ink)' }}>
+                  <div style={{ background: 'var(--paper-elevated)', borderRadius: 8, padding: 10, border: '1px solid var(--line)', fontSize: 12, display: 'flex', justifyContent: 'space-between', color: 'var(--ink)' }}>
                     <span>Dal Makhani, 2x Garlic Naan</span>
                     <strong style={{ color: 'var(--green)' }}>₹480 · Paid</strong>
                   </div>
@@ -203,32 +197,32 @@ export default function LandingPage() {
                 {/* Card 2: Kitchen KDS Preparation */}
                 <div className="glass-card" style={{ borderRadius: 12, padding: 18 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                    <span className="pill orange" style={{ fontSize: 11 }}>Kitchen KDS</span>
-                    <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--orange)' }}>Ticket 104 · Cooking</span>
+                    <span className="pill orange" style={{ fontSize: 11, fontWeight: 600 }}>Kitchen Display</span>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--orange)' }}>Ticket 104 · Cooking</span>
                   </div>
-                  <strong style={{ fontSize: 16, display: 'block', marginBottom: 6, color: 'var(--ink)' }}>Real time cooking queue</strong>
+                  <strong style={{ fontSize: 15, display: 'block', marginBottom: 6, color: 'var(--ink)' }}>Live Preparation Queue</strong>
                   <p className="muted" style={{ fontSize: 13, margin: '0 0 14px', lineHeight: 1.5 }}>
-                    Orders appear instantly with acoustic chimes and dish notes. Chefs mark food accepted, preparing, and ready.
+                    Orders appear immediately on kitchen screens with audio cues, customer notes, and prep timers.
                   </p>
-                  <div style={{ background: 'var(--paper)', borderRadius: 8, padding: 10, border: '1px solid var(--line)', fontSize: 12, display: 'flex', justifyContent: 'space-between', color: 'var(--ink)' }}>
-                    <span>Table 4 · Special note: Mild spice</span>
-                    <span className="pill orange" style={{ fontSize: 11 }}>4 min in kitchen</span>
+                  <div style={{ background: 'var(--paper-elevated)', borderRadius: 8, padding: 10, border: '1px solid var(--line)', fontSize: 12, display: 'flex', justifyContent: 'space-between', color: 'var(--ink)' }}>
+                    <span>Table 4 · Note: Mild spice</span>
+                    <span className="pill orange" style={{ fontSize: 11 }}>4m in prep</span>
                   </div>
                 </div>
 
-                {/* Card 3: Manager Incident Recovery & Google Booster */}
+                {/* Card 3: Dining Room Floor Control */}
                 <div className="glass-card" style={{ borderRadius: 12, padding: 18 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                    <span className="pill" style={{ fontSize: 11 }}>Table-side recovery</span>
-                    <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--orange)' }}>Diner survey</span>
+                    <span className="pill" style={{ fontSize: 11, fontWeight: 600 }}>Floor Control</span>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--ink)' }}>8 Tables Active</span>
                   </div>
-                  <strong style={{ fontSize: 16, display: 'block', marginBottom: 6, color: 'var(--ink)' }}>Google review booster</strong>
+                  <strong style={{ fontSize: 15, display: 'block', marginBottom: 6, color: 'var(--ink)' }}>Table Turnover & Monitoring</strong>
                   <p className="muted" style={{ fontSize: 13, margin: '0 0 14px', lineHeight: 1.5 }}>
-                    Delighted guests are boosted straight to Google Maps. Unhappy tables trigger instant manager chimes for table side recovery.
+                    Track dining room capacity, occupied tables, and active bills in real time while sales data stays protected.
                   </p>
-                  <div style={{ background: 'var(--paper)', borderRadius: 8, padding: 10, border: '1px solid var(--line)', fontSize: 12, display: 'flex', justifyContent: 'space-between', color: 'var(--ink)' }}>
-                    <span>Table 2 rated 5 stars</span>
-                    <span style={{ color: 'var(--green)', fontWeight: 700 }}>Posted to Google</span>
+                  <div style={{ background: 'var(--paper-elevated)', borderRadius: 8, padding: 10, border: '1px solid var(--line)', fontSize: 12, display: 'flex', justifyContent: 'space-between', color: 'var(--ink)' }}>
+                    <span>Dining Room Status</span>
+                    <span style={{ color: 'var(--green)', fontWeight: 600 }}>6 of 8 Occupied</span>
                   </div>
                 </div>
               </div>
@@ -236,44 +230,48 @@ export default function LandingPage() {
           </ScrollReveal>
         </section>
 
-        {/* Section 2: Problem to Solution (A2 #6) */}
+        {/* Section 2: Problem to Solution */}
         <section id="workflow" style={{ borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)', padding: '64px 0', position: 'relative' }}>
           <div className="page-wrap">
             <ScrollReveal>
               <div style={{ maxWidth: 640, margin: '0 auto', textAlign: 'center', marginBottom: 40 }}>
-                <span className="eyebrow" style={{ color: 'var(--orange)' }}>The dining room bottleneck</span>
+                <span className="pill" style={{ fontSize: 12, fontWeight: 600, marginBottom: 12, display: 'inline-block' }}>Operational Challenges</span>
                 <h2 className="heading-3" style={{ margin: '8px 0 12px' }}>
-                  Manual service workflows slow down busy dining rooms
+                  Operational bottlenecks that slow down dining rooms
                 </h2>
                 <p className="muted" style={{ fontSize: 15, lineHeight: 1.6 }}>
-                  Waiters spend valuable floor time printing paper bills, running card machines, and manually verifying UPI payment screens while other tables wait for service.
+                  Manual order-taking, paper ticket delays, and payment confusion create friction for guests and staff during peak dining hours.
                 </p>
               </div>
             </ScrollReveal>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 20 }}>
               <ScrollReveal delay={80}>
-                <div className="glass-card comparison-card-old" style={{ borderRadius: 16, height: '100%' }}>
-                  <span className="eyebrow" style={{ color: 'var(--red)', display: 'block', marginBottom: 8 }}>Traditional Setup</span>
-                  <strong style={{ fontSize: 16, display: 'block', marginBottom: 6 }}>The manual paper workflow</strong>
+                <div className="comparison-card-old" style={{ height: '100%' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
+                    <span className="pill" style={{ fontSize: 11, fontWeight: 600, color: 'var(--red)', borderColor: 'var(--red)' }}>Traditional Operations</span>
+                  </div>
+                  <strong style={{ fontSize: 16, display: 'block', marginBottom: 8 }}>The manual paper workflow</strong>
                   <ul style={{ paddingLeft: 18, margin: 0, fontSize: 13, lineHeight: 1.8 }}>
-                    <li>Guests wait repeatedly for staff to bring paper menus, take orders, and deliver bills</li>
-                    <li>Waiters must interrupt service to inspect customer phone screens for UPI messages</li>
-                    <li>Prone to unauthorized bill voids, handwritten ticket errors, and manual tallying mistakes</li>
-                    <li>Dissatisfied diners leave quietly and express their frustration in negative public reviews</li>
+                    <li>Guests wait repeatedly for staff to bring physical menus, write orders, and split checks</li>
+                    <li>Waiters interrupt service to manually inspect customer phone screens for UPI confirmations</li>
+                    <li>Handwritten tickets are vulnerable to kitchen misplacement, illegible notes, and delay</li>
+                    <li>Disappointed diners leave quietly without staff ever knowing about a dining room issue</li>
                   </ul>
                 </div>
               </ScrollReveal>
 
               <ScrollReveal delay={160}>
-                <div className="glass-card comparison-card-new" style={{ borderRadius: 16, height: '100%' }}>
-                  <span className="eyebrow" style={{ color: 'var(--green)', display: 'block', marginBottom: 8 }}>Mesa Architecture</span>
-                  <strong style={{ fontSize: 16, display: 'block', marginBottom: 6 }}>The automated table system</strong>
+                <div className="comparison-card-new" style={{ height: '100%' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
+                    <span className="pill green" style={{ fontSize: 11, fontWeight: 600 }}>Mesa Workflow</span>
+                  </div>
+                  <strong style={{ fontSize: 16, display: 'block', marginBottom: 8 }}>The connected table system</strong>
                   <ul style={{ paddingLeft: 18, margin: 0, fontSize: 13, lineHeight: 1.8 }}>
-                    <li>Guests scan, browse live items, and settle the bill directly from their phone browser</li>
-                    <li>Direct UPI webhook listener confirms payments automatically with real time audio chime</li>
-                    <li>Role gated permissions restrict menu pricing, discount overrides, and sales ledgers</li>
-                    <li>Table side micro survey flags unhappy diners for immediate on site manager resolution</li>
+                    <li>Guests scan their table QR code, browse live dish availability, and place orders directly</li>
+                    <li>Direct UPI settlement verifies payments automatically with acoustic alerts and instant receipts</li>
+                    <li>Kitchen display screens organize prep queues by station with accurate order timers</li>
+                    <li>Table-side dining feedback alerts floor managers to guest concerns before diners depart</li>
                   </ul>
                 </div>
               </ScrollReveal>
@@ -286,16 +284,16 @@ export default function LandingPage() {
           <ProductShowcase />
         </section>
 
-        {/* Section 3: Benefits (A2 #7 & A5) */}
+        {/* Section 3: Benefits */}
         <section id="benefits" className="page-wrap" style={{ padding: '72px 0' }}>
           <ScrollReveal>
             <div style={{ maxWidth: 640, marginBottom: 44 }}>
-              <span className="eyebrow" style={{ color: 'var(--green)' }}>Outcome driven results</span>
+              <span className="pill green" style={{ fontSize: 12, fontWeight: 600, marginBottom: 12, display: 'inline-block' }}>Operational Benefits</span>
               <h2 className="heading-3" style={{ margin: '8px 0 12px' }}>
-                Built for speed, accuracy, and hospitality
+                Engineered for speed, accuracy, and dining room control
               </h2>
               <p className="muted" style={{ fontSize: 15, margin: 0 }}>
-                Four core advantages designed specifically for busy Indian restaurants and cafes.
+                Four operational advantages designed specifically for busy dine-in restaurants, cafes, and bars.
               </p>
             </div>
           </ScrollReveal>
@@ -303,25 +301,25 @@ export default function LandingPage() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 18 }}>
             {[
               {
-                title: 'Zero verification queues',
-                desc: 'Guests pay with Google Pay, PhonePe, or Paytm and auto confirm without waiting for staff. Tables settle instantly as soon as diners finish their meal.'
+                title: 'Direct UPI settlement',
+                desc: 'Guests pay instantly with Google Pay, PhonePe, or Paytm with immediate verification. Funds route directly to your merchant account with zero platform commission.'
               },
               {
-                title: 'Stop internal revenue leakage',
-                desc: 'Owner configured power toggles ensure waiters cannot edit menu prices, void orders after taking cash, or view total daily sales numbers.'
+                title: 'Role-gated security',
+                desc: 'Control staff privileges so floor servers cannot alter menu prices, void orders after accepting cash, or view total daily sales numbers.'
               },
               {
-                title: 'One tap Google review booster',
-                desc: 'A short post meal psychology survey routes happy diners straight to your Google review link while alerting managers to table side issues.'
+                title: 'Table-side guest feedback',
+                desc: 'Diners can leave immediate dish and service feedback before leaving, alerting managers to table-side concerns while providing easy access to your Google Maps listing.'
               },
               {
-                title: 'Four digit table PIN defense',
-                desc: 'Hosts share a four digit PIN with dining companions so friends share the bill while solo walk in strangers remain isolated on their own check.'
+                title: 'Four-digit table PIN defense',
+                desc: 'The host generates a 4-digit PIN so dining companions share the table cart, while walk-in strangers and separate parties remain on their own independent bill.'
               }
             ].map((b, idx) => (
               <ScrollReveal key={idx} delay={idx * 80}>
                 <div className="glass-card" style={{ padding: 22, borderRadius: 16, height: '100%' }}>
-                  <strong style={{ fontSize: 16, display: 'block', marginBottom: 6 }}>{b.title}</strong>
+                  <strong style={{ fontSize: 15, display: 'block', marginBottom: 8, color: 'var(--ink)' }}>{b.title}</strong>
                   <p className="muted" style={{ fontSize: 13, lineHeight: 1.6, margin: 0 }}>
                     {b.desc}
                   </p>
@@ -331,40 +329,46 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* Section 4: How It Works in 3 Steps (A2 #8) */}
+        {/* Section 4: How It Works */}
         <section id="how-it-works" style={{ borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)', padding: '64px 0' }}>
           <div className="page-wrap">
             <ScrollReveal>
               <div style={{ maxWidth: 640, margin: '0 auto 40px', textAlign: 'center' }}>
-                <span className="eyebrow">Simple three step flow</span>
+                <span className="pill" style={{ fontSize: 12, fontWeight: 600, marginBottom: 12, display: 'inline-block' }}>System Flow</span>
                 <h2 className="heading-3" style={{ margin: '8px 0 10px' }}>
-                  How your restaurant operates with Mesa
+                  How Mesa operates during dinner service
                 </h2>
+                <p className="muted" style={{ fontSize: 15, margin: 0 }}>
+                  A connected workflow from table scan to kitchen preparation and final settlement.
+                </p>
               </div>
             </ScrollReveal>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 20 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 20 }}>
               {[
                 {
-                  step: 'Step 01',
-                  title: 'Guest scans table QR stand',
-                  desc: 'Diner sits at Table 4 and scans the QR stand with their smartphone camera. No app download or account creation needed.'
+                  title: 'Print & place table QR stands',
+                  desc: 'Generate durable QR stands for each dining table. No proprietary terminals or table hardware required.'
                 },
                 {
-                  step: 'Step 02',
-                  title: 'Select dishes and auto pay via UPI',
-                  desc: 'Guests browse real time menu items, add dish notes, and pay via any UPI app. Webhook listener auto confirms payment in real time.'
+                  title: 'Guests scan, join PIN & order',
+                  desc: 'Diners open the menu in any mobile browser, join the shared table tab with a 4-digit PIN, and place items with custom notes.'
                 },
                 {
-                  step: 'Step 03',
-                  title: 'Kitchen prepares and waiter serves',
-                  desc: 'Kitchen display sounds an alert chime with table number and ticket items. Waiter delivers fresh food to the table.'
+                  title: 'Kitchen prepares via live KDS',
+                  desc: 'Incoming tickets chime on kitchen screens, displaying table number, preparation timer, and specific item instructions.'
+                },
+                {
+                  title: 'Direct settlement & floor turnover',
+                  desc: 'Guests settle directly via UPI with zero commission. Waiters serve fresh food and managers track turnover on any screen.'
                 }
               ].map((s, idx) => (
-                <ScrollReveal key={idx} delay={idx * 100}>
-                  <div className="glass-card" style={{ padding: 24, borderRadius: 16, height: '100%' }}>
-                    <span style={{ fontSize: 14, fontWeight: 800, color: 'var(--green)', display: 'block', marginBottom: 8 }}>{s.step}</span>
-                    <strong style={{ fontSize: 16, display: 'block', marginBottom: 8 }}>{s.title}</strong>
+                <ScrollReveal key={idx} delay={idx * 80}>
+                  <div className="glass-card" style={{ padding: 22, borderRadius: 16, height: '100%' }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--green)', marginBottom: 8, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+                      Phase {idx + 1}
+                    </div>
+                    <strong style={{ fontSize: 15, display: 'block', marginBottom: 8, color: 'var(--ink)' }}>{s.title}</strong>
                     <p className="muted" style={{ fontSize: 13, lineHeight: 1.6, margin: 0 }}>
                       {s.desc}
                     </p>
@@ -375,7 +379,7 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* Section 5: Mandatory Tagline Reveal Section (B11) */}
+        {/* Section 5: Mandatory Tagline Reveal Section */}
         <TaglineReveal />
 
         {/* Section 6: Core Architecture & Operational Guarantees */}
@@ -383,7 +387,7 @@ export default function LandingPage() {
           <div className="page-wrap">
             <ScrollReveal>
               <div style={{ maxWidth: 640, marginBottom: 36 }}>
-                <span className="eyebrow" style={{ color: 'var(--green)' }}>Architectural integrity</span>
+                <span className="pill green" style={{ fontSize: 12, fontWeight: 600, marginBottom: 12, display: 'inline-block' }}>Platform Standards</span>
                 <h2 className="heading-3" style={{ margin: '8px 0 10px' }}>
                   Core guarantees built into the system
                 </h2>
@@ -397,15 +401,15 @@ export default function LandingPage() {
               {[
                 {
                   title: 'Direct UPI settlement · 0% platform fee',
-                  desc: 'Guest payments route straight to your restaurant merchant UPI VPA. Mesa never acts as a middleman, holds your payouts, or deducts commission.'
+                  desc: 'Guest payments route straight to your restaurant merchant UPI VPA. Mesa never acts as an intermediary, holds your payouts, or deducts transaction fees.'
                 },
                 {
                   title: 'Zero app download or guest signup',
                   desc: 'Diners open the menu instantly in any standard mobile browser. No mandatory app installations, OTP verifications, or guest login hurdles.'
                 },
                 {
-                  title: 'Strict multi tenant isolation',
-                  desc: 'Menus, active tickets, table PIN sessions, and daily ledgers are segregated by tenant ID. Staff accounts are gated by granular role based permissions.'
+                  title: 'Strict multi-tenant data isolation',
+                  desc: 'Menus, active tickets, table PIN sessions, and daily ledgers are segregated by tenant ID. Staff accounts are gated by granular role-based permissions.'
                 },
                 {
                   title: 'Complete hardware independence',
@@ -425,16 +429,16 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* Section 7: FAQ (A2 #10, Plain Q&A for AEO) */}
+        {/* Section 7: FAQ (Plain Q&A for AEO) */}
         <section id="faq" className="page-wrap" style={{ padding: '72px 0', maxWidth: 760 }}>
           <ScrollReveal>
             <div style={{ textAlign: 'center', marginBottom: 40 }}>
-              <span className="eyebrow">Frequently asked questions</span>
+              <span className="pill" style={{ fontSize: 12, fontWeight: 600, marginBottom: 12, display: 'inline-block' }}>Answers</span>
               <h2 className="heading-3" style={{ margin: '8px 0 10px' }}>
-                Everything you need to know
+                Frequently asked questions
               </h2>
               <p className="muted" style={{ fontSize: 14 }}>
-                Clear answers on setup, security, hardware, and pricing.
+                Clear answers on setup, security, hardware, and operations.
               </p>
             </div>
           </ScrollReveal>

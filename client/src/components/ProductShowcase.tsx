@@ -11,7 +11,7 @@ export function ProductShowcase() {
     <section className="glass-surface" style={{ padding: '64px 0', borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)' }}>
       <div className="page-wrap">
         <div style={{ maxWidth: 680, margin: '0 auto 36px', textAlign: 'center' }}>
-          <span className="eyebrow" style={{ color: 'var(--green)' }}>Complete restaurant platform</span>
+          <span className="pill green" style={{ fontSize: 12, fontWeight: 600, display: 'inline-block', marginBottom: 12 }}>Platform Interfaces</span>
           <h2 className="heading-3" style={{ margin: '8px 0 12px' }}>
             Built for speed at every step of service
           </h2>
@@ -37,25 +37,39 @@ export function ProductShowcase() {
               type="button"
               className={`btn small ${activeTab === 'menu' ? '' : 'secondary'}`}
               onClick={() => setActiveTab('menu')}
-              style={{ borderRadius: 8, fontSize: 13 }}
+              style={{ borderRadius: 8, fontSize: 13, display: 'inline-flex', alignItems: 'center', gap: 6 }}
             >
-              📱 Customer QR Menu
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <rect x="5" y="2" width="14" height="20" rx="2" ry="2" />
+                <line x1="12" y1="18" x2="12.01" y2="18" />
+              </svg>
+              <span>Customer QR Menu</span>
             </button>
             <button
               type="button"
               className={`btn small ${activeTab === 'kitchen' ? '' : 'secondary'}`}
               onClick={() => setActiveTab('kitchen')}
-              style={{ borderRadius: 8, fontSize: 13 }}
+              style={{ borderRadius: 8, fontSize: 13, display: 'inline-flex', alignItems: 'center', gap: 6 }}
             >
-              🍳 Kitchen Display (KDS)
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
+                <line x1="8" y1="21" x2="16" y2="21" />
+                <line x1="12" y1="17" x2="12" y2="21" />
+              </svg>
+              <span>Kitchen Display (KDS)</span>
             </button>
             <button
               type="button"
               className={`btn small ${activeTab === 'dashboard' ? '' : 'secondary'}`}
               onClick={() => setActiveTab('dashboard')}
-              style={{ borderRadius: 8, fontSize: 13 }}
+              style={{ borderRadius: 8, fontSize: 13, display: 'inline-flex', alignItems: 'center', gap: 6 }}
             >
-              📊 Owner Dashboard
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <line x1="18" y1="20" x2="18" y2="10" />
+                <line x1="12" y1="20" x2="12" y2="4" />
+                <line x1="6" y1="20" x2="6" y2="14" />
+              </svg>
+              <span>Owner Operations</span>
             </button>
           </div>
         </div>
@@ -133,7 +147,12 @@ export function ProductShowcase() {
               <div className="swiggy-card-info">
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                   <DietaryBadge type="NON_VEG" />
-                  <span className="swiggy-social-badge winner">🏆 Today’s winner</span>
+                  <span className="swiggy-social-badge winner" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true">
+                      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                    </svg>
+                    Bestseller
+                  </span>
                 </div>
                 <h4 className="swiggy-dish-title">Smoked Chicken & Rosemary Flatbread</h4>
                 <div className="swiggy-dish-price">₹580.00</div>
@@ -191,7 +210,7 @@ export function ProductShowcase() {
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18, flexWrap: 'wrap', gap: 10 }}>
               <div>
-                <span className="eyebrow" style={{ color: 'var(--orange)' }}>Live ticket stream</span>
+                <span className="pill orange" style={{ fontSize: 11, fontWeight: 600, display: 'inline-block', marginBottom: 6 }}>Live Ticket Stream</span>
                 <h3 className="heading-5" style={{ margin: '2px 0 0' }}>Kitchen Display System (KDS)</h3>
               </div>
               <span className="pill orange" style={{ fontSize: 12 }}>3 active orders</span>
@@ -270,10 +289,16 @@ export function ProductShowcase() {
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 10 }}>
               <div>
-                <span className="eyebrow" style={{ color: 'var(--green)' }}>Operations overview</span>
+                <span className="pill green" style={{ fontSize: 11, fontWeight: 600, display: 'inline-block', marginBottom: 6 }}>Operations Overview</span>
                 <h3 className="heading-5" style={{ margin: '2px 0 0' }}>Restaurant Operations Cockpit</h3>
               </div>
-              <span className="pill green" style={{ fontSize: 12 }}>👑 Owner privileges active</span>
+              <span className="pill green" style={{ fontSize: 12, display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                </svg>
+                Owner role protected
+              </span>
             </div>
 
             {/* Metrics Grid */}

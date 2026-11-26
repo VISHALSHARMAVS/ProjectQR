@@ -190,7 +190,7 @@ export function SiteFooter() {
 
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               <span className="pill" style={{ fontSize: 11, background: 'var(--paper)', border: '1px solid var(--line)' }}>
-                🇮🇳 Direct UPI (INR)
+                Direct UPI (INR)
               </span>
               <ThemeToggle variant="compact" />
             </div>

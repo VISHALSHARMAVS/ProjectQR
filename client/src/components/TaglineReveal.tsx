@@ -61,7 +61,7 @@ export function TaglineReveal({
         margin: '0 auto'
       }}
     >
-      <span className="eyebrow" style={{ color: 'var(--green)', display: 'block', marginBottom: 14 }}>
+      <span className="pill green" style={{ fontSize: 12, fontWeight: 600, display: 'inline-block', marginBottom: 16 }}>
         {eyebrow}
       </span>
       <h2

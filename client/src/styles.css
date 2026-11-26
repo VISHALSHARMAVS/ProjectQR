@@ -62,16 +62,18 @@
   --shadow: 0 4px 20px 0 rgba(0, 0, 0, 0.6), 0 1px 3px 0 rgba(0, 0, 0, 0.4);
 }
 
-/* Hero Section Heading Gradients (SKILL.md B5) */
+/* Hero Section Heading (Clean, Solid, High-Contrast Typography) */
 .hero-heading-gradient {
-  background: linear-gradient(90deg, #000000 0%, #666666 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: var(--ink);
+  background: none;
+  -webkit-background-clip: initial;
+  -webkit-text-fill-color: initial;
 }
 [data-theme="dark"] .hero-heading-gradient {
-  background: linear-gradient(90deg, #ffffff 0%, #9b9b9b 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: var(--ink);
+  background: none;
+  -webkit-background-clip: initial;
+  -webkit-text-fill-color: initial;
 }
 
 * { box-sizing: border-box; }
@@ -232,39 +234,39 @@ p, body, .body-1, .body-2, .body-3, .body-4, .body-5, .body-6 {
 /* Landing Comparison Cards (B4 & Dark Theme Compliant) */
 .comparison-card-old {
   padding: 24px;
-  border-radius: 16px;
-  border: 1px solid #fecdd3;
-  background: #fff1f2;
-  color: #7f1d1d;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--line);
+  background: var(--paper);
+  color: var(--ink);
 }
-.comparison-card-old strong { color: #991b1b; }
-.comparison-card-old ul { color: #7f1d1d; }
+.comparison-card-old strong { color: var(--ink); }
+.comparison-card-old ul { color: var(--muted); }
 
 .comparison-card-new {
   padding: 24px;
-  border-radius: 16px;
-  border: 1px solid #bbf7d0;
-  background: #f0fdf4;
-  color: #166534;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--line-strong);
+  background: var(--paper-elevated);
+  color: var(--ink);
 }
-.comparison-card-new strong { color: #14532d; }
-.comparison-card-new ul { color: #166534; }
+.comparison-card-new strong { color: var(--ink); }
+.comparison-card-new ul { color: var(--muted); }
 
 [data-theme="dark"] .comparison-card-old {
-  border-color: #450a0a;
-  background: #1c0a0a;
-  color: #fca5a5;
+  border-color: var(--line);
+  background: var(--paper);
+  color: var(--ink);
 }
-[data-theme="dark"] .comparison-card-old strong { color: #f87171; }
-[data-theme="dark"] .comparison-card-old ul { color: #fca5a5; }
+[data-theme="dark"] .comparison-card-old strong { color: var(--ink); }
+[data-theme="dark"] .comparison-card-old ul { color: var(--muted); }
 
 [data-theme="dark"] .comparison-card-new {
-  border-color: #14532d;
-  background: #052e16;
-  color: #86efac;
+  border-color: var(--line-strong);
+  background: var(--paper-elevated);
+  color: var(--ink);
 }
-[data-theme="dark"] .comparison-card-new strong { color: #4ade80; }
-[data-theme="dark"] .comparison-card-new ul { color: #86efac; }
+[data-theme="dark"] .comparison-card-new strong { color: var(--ink); }
+[data-theme="dark"] .comparison-card-new ul { color: var(--muted); }
 
 /* Landing CTA Banner (B4 Dark Theme Compliant) */
 .landing-cta-banner {
@@ -302,112 +304,54 @@ p, body, .body-1, .body-2, .body-3, .body-4, .body-5, .body-6 {
   min-height: 100vh;
 }
 
-/* Ambient glow lights behind glass surfaces */
+/* Ambient glow lights removed per engineering brief (No artificial AI SaaS orbs) */
 .landing-ambient-glow {
-  position: absolute;
-  border-radius: 50%;
-  filter: blur(90px);
-  pointer-events: none;
-  z-index: 0;
-  opacity: 0.6;
-  max-width: 100vw;
+  display: none !important;
 }
 
-.landing-glow-top {
-  top: -120px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: min(850px, 95vw);
-  height: 480px;
-  background: radial-gradient(circle, rgba(34, 197, 94, 0.15) 0%, rgba(16, 185, 129, 0.05) 50%, transparent 75%);
-}
-
-.landing-glow-mid {
-  top: 38%;
-  right: -40px;
-  max-width: 90vw;
-  width: 440px;
-  height: 440px;
-  background: radial-gradient(circle, rgba(245, 158, 11, 0.10) 0%, transparent 70%);
-}
-
-.landing-glow-bottom {
-  bottom: 300px;
-  left: -40px;
-  max-width: 90vw;
-  width: 480px;
-  height: 480px;
-  background: radial-gradient(circle, rgba(34, 197, 94, 0.12) 0%, transparent 70%);
-}
-
-[data-theme="dark"] .landing-glow-top {
-  background: radial-gradient(circle, rgba(34, 197, 94, 0.22) 0%, rgba(16, 185, 129, 0.08) 50%, transparent 80%);
-  opacity: 0.8;
-}
-
-[data-theme="dark"] .landing-glow-mid {
-  background: radial-gradient(circle, rgba(245, 158, 11, 0.14) 0%, transparent 75%);
-  opacity: 0.8;
-}
-
-[data-theme="dark"] .landing-glow-bottom {
-  background: radial-gradient(circle, rgba(34, 197, 94, 0.16) 0%, transparent 75%);
-  opacity: 0.8;
-}
-
-/* Frosted Glass Surface Classes */
+/* Refined Surface Classes (Clean, Crisp, Production-Grade) */
 .glass-surface {
-  background: color-mix(in srgb, var(--paper) 78%, transparent);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border: 1px solid color-mix(in srgb, var(--line) 85%, transparent);
-  border-top: 1px solid rgba(255, 255, 255, 0.28);
-  box-shadow: 0 16px 40px -10px rgba(0, 0, 0, 0.07);
+  background: var(--paper-elevated);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
+  border-radius: var(--radius-lg);
 }
 
 [data-theme="dark"] .glass-surface {
-  background: rgba(11, 32, 22, 0.72);
-  border: 1px solid rgba(22, 56, 36, 0.85);
-  border-top: 1px solid rgba(255, 255, 255, 0.18);
-  box-shadow: 0 20px 50px -12px rgba(0, 0, 0, 0.6);
+  background: var(--paper-elevated);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
 }
 
 .glass-card {
-  background: color-mix(in srgb, var(--paper-elevated) 82%, transparent);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid color-mix(in srgb, var(--line) 85%, transparent);
-  border-top: 1px solid rgba(255, 255, 255, 0.22);
-  transition: transform 300ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 300ms cubic-bezier(0.22, 1, 0.36, 1), border-color 300ms cubic-bezier(0.22, 1, 0.36, 1);
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  transition: transform 200ms ease, box-shadow 200ms ease, border-color 200ms ease;
 }
 
 [data-theme="dark"] .glass-card {
-  background: rgba(16, 43, 30, 0.75);
-  border: 1px solid rgba(22, 56, 36, 0.85);
-  border-top: 1px solid rgba(255, 255, 255, 0.15);
+  background: var(--paper);
+  border: 1px solid var(--line);
 }
 
 .glass-card:hover {
   transform: translateY(-2px);
-  border-color: var(--green);
-  box-shadow: 0 16px 36px -8px rgba(34, 197, 94, 0.12);
-}
-
-[data-theme="dark"] .glass-card {
-  background: rgba(31, 31, 31, 0.75);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-top: 1px solid rgba(255, 255, 255, 0.14);
+  border-color: var(--line-strong);
+  box-shadow: var(--shadow);
 }
 
 [data-theme="dark"] .glass-card:hover {
-  box-shadow: 0 16px 40px -8px rgba(34, 197, 94, 0.22);
+  border-color: var(--line-strong);
+  box-shadow: var(--shadow);
 }
 
-/* Scroll Reveal Animation (SKILL.md B7) */
+/* Scroll Reveal Animation */
 .scroll-reveal {
   opacity: 0;
-  transform: translateY(32px);
-  transition: opacity 700ms cubic-bezier(0.22, 1, 0.36, 1), transform 700ms cubic-bezier(0.22, 1, 0.36, 1);
+  transform: translateY(24px);
+  transition: opacity 600ms cubic-bezier(0.16, 1, 0.3, 1), transform 600ms cubic-bezier(0.16, 1, 0.3, 1);
   will-change: opacity, transform;
 }
 
@@ -424,62 +368,39 @@ p, body, .body-1, .body-2, .body-3, .body-4, .body-5, .body-6 {
   }
 }
 
-/* Floating Glass CTA Card (Replaces the harsh flat green wall) */
+/* Focused Call-to-Action Card */
 .landing-cta-glass-card {
   margin: 20px auto 48px;
-  border-radius: 28px;
-  padding: clamp(32px, 6vw, 64px) clamp(16px, 4vw, 44px);
+  border-radius: 20px;
+  padding: clamp(32px, 5vw, 56px) clamp(20px, 4vw, 44px);
   text-align: center;
   position: relative;
   overflow: hidden;
   max-width: 100%;
   box-sizing: border-box;
-  background: linear-gradient(145deg, rgba(20, 83, 45, 0.94) 0%, rgba(10, 46, 26, 0.98) 100%);
-  backdrop-filter: blur(28px);
-  -webkit-backdrop-filter: blur(28px);
-  border: 1px solid rgba(74, 222, 128, 0.3);
-  border-top: 1px solid rgba(134, 239, 172, 0.5);
-  box-shadow: 0 24px 64px -12px rgba(20, 83, 45, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  background: var(--dark-green);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 20px 48px -12px rgba(18, 55, 44, 0.4);
   color: #ffffff;
 }
 
 @media (max-width: 640px) {
   .landing-cta-glass-card {
-    border-radius: 20px;
-    padding: 32px 16px;
+    border-radius: 16px;
+    padding: 28px 16px;
     margin: 16px auto 32px;
   }
 }
 
 [data-theme="dark"] .landing-cta-glass-card {
-  background: linear-gradient(145deg, rgba(19, 42, 28, 0.88) 0%, rgba(12, 24, 18, 0.94) 100%);
-  border: 1px solid rgba(34, 197, 94, 0.25);
-  border-top: 1px solid rgba(74, 222, 128, 0.35);
-  box-shadow: 0 24px 64px -12px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  background: #142820;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 20px 48px -12px rgba(0, 0, 0, 0.6);
 }
 
-.landing-cta-glass-card::before {
-  content: '';
-  position: absolute;
-  top: -60px;
-  right: -60px;
-  width: 240px;
-  height: 240px;
-  background: radial-gradient(circle, rgba(245, 158, 11, 0.2) 0%, transparent 70%);
-  border-radius: 50%;
-  pointer-events: none;
-}
-
+.landing-cta-glass-card::before,
 .landing-cta-glass-card::after {
-  content: '';
-  position: absolute;
-  bottom: -60px;
-  left: -60px;
-  width: 240px;
-  height: 240px;
-  background: radial-gradient(circle, rgba(34, 197, 94, 0.25) 0%, transparent 70%);
-  border-radius: 50%;
-  pointer-events: none;
+  display: none !important;
 }
 
 [data-theme="dark"] .pill {
@@ -571,13 +492,13 @@ p, body, .body-1, .body-2, .body-3, .body-4, .body-5, .body-6 {
   border-color: var(--green);
   color: #ffffff;
   background: var(--green);
-  box-shadow: 0 4px 14px rgba(22, 163, 74, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.3);
+  box-shadow: var(--shadow-sm);
 }
 [data-theme="dark"] .category-chip.active {
-  background: #16a34a;
-  border-color: #22c55e;
+  background: var(--green);
+  border-color: var(--green);
   color: #ffffff;
-  box-shadow: 0 4px 16px rgba(34, 197, 94, 0.45), inset 0 1px 1px rgba(255, 255, 255, 0.3);
+  box-shadow: var(--shadow-sm);
 }
 
 .dietary-badge { display: inline-flex; align-items: center; justify-content: center; width: 15px; height: 15px; border-width: 1.5px; border-style: solid; border-radius: 3px; padding: 1px; flex-shrink: 0; vertical-align: middle; background: var(--paper); }
@@ -902,12 +823,10 @@ p, body, .body-1, .body-2, .body-3, .body-4, .body-5, .body-6 {
   transform: scale(0.98);
 }
 [data-theme="dark"] .swiggy-floating-cart-bar {
-  background: rgba(14, 38, 25, 0.88);
-  backdrop-filter: blur(24px) saturate(190%);
-  -webkit-backdrop-filter: blur(24px) saturate(190%);
-  border: 1px solid rgba(34, 197, 94, 0.5);
+  background: var(--paper-elevated);
+  border: 1px solid var(--line-strong);
   color: var(--ink);
-  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.7), 0 0 24px rgba(22, 163, 74, 0.25), inset 0 1px 1px rgba(255, 255, 255, 0.2);
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.7);
 }
 @keyframes slideUpCart {
   from { transform: translateY(100%); opacity: 0; }
@@ -968,22 +887,22 @@ p, body, .body-1, .body-2, .body-3, .body-4, .body-5, .body-6 {
   padding: 2px 7px;
   border-radius: 999px;
   line-height: 1.3;
-  box-shadow: 0 0 10px rgba(22, 163, 74, 0.5);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 [data-theme="dark"] .floating-menu-fab {
-  background: rgba(11, 26, 18, 0.78);
-  color: #f8fafc;
-  border: 1px solid rgba(34, 197, 94, 0.4);
-  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.6), inset 0 1px 1px rgba(255, 255, 255, 0.2);
+  background: var(--paper-elevated);
+  color: var(--ink);
+  border: 1px solid var(--line-strong);
+  box-shadow: var(--shadow);
 }
 [data-theme="dark"] .floating-menu-fab:hover {
-  border-color: rgba(34, 197, 94, 0.65);
-  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.75), 0 0 20px rgba(22, 163, 74, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.3);
+  border-color: var(--green);
+  box-shadow: var(--shadow);
 }
 [data-theme="dark"] .floating-menu-fab .fab-badge {
-  background: #16a34a;
+  background: var(--green);
   color: #ffffff;
-  box-shadow: 0 0 12px rgba(34, 197, 94, 0.65);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
 }
 
 /* Luxury Frosted Glass Category Bottom Sheet Drawer */
