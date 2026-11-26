@@ -217,12 +217,12 @@ export default function DashboardLayout() {
   const perms = user?.permissions;
 
   const roleLabel =
-    userRole === 'owner' ? '👑 Owner' :
-    userRole === 'manager' ? '🧑‍💼 Manager' :
-    userRole === 'cashier' ? '💵 Cashier' :
-    userRole === 'waiter' ? '🛎️ Waiter' :
-    userRole === 'kitchen' ? '🍳 Kitchen' :
-    '👤 Staff';
+    userRole === 'owner' ? 'Owner' :
+    userRole === 'manager' ? 'Manager' :
+    userRole === 'cashier' ? 'Cashier' :
+    userRole === 'waiter' ? 'Waiter' :
+    userRole === 'kitchen' ? 'Kitchen' :
+    'Staff';
   const roleBadgeClass = `role-${userRole}`;
 
   const isLinkVisible = (to: string): boolean => {
@@ -371,7 +371,6 @@ export default function DashboardLayout() {
                         className="profile-dropdown-item"
                         onClick={() => setProfileDropdownOpen(false)}
                       >
-                        <span aria-hidden="true">⚙️</span>
                         <span>Settings & Team Access</span>
                       </Link>
                     )}
@@ -381,7 +380,6 @@ export default function DashboardLayout() {
                         className="profile-dropdown-item"
                         onClick={() => setProfileDropdownOpen(false)}
                       >
-                        <span aria-hidden="true">📋</span>
                         <span>Day Close Z-Report</span>
                       </Link>
                     )}
@@ -391,7 +389,6 @@ export default function DashboardLayout() {
                         className="profile-dropdown-item"
                         onClick={() => setProfileDropdownOpen(false)}
                       >
-                        <span aria-hidden="true">🔔</span>
                         <span>Live Order Board</span>
                       </Link>
                     )}
@@ -401,7 +398,6 @@ export default function DashboardLayout() {
                         className="profile-dropdown-item"
                         onClick={() => setProfileDropdownOpen(false)}
                       >
-                        <span aria-hidden="true">🗺️</span>
                         <span>Floor Map</span>
                       </Link>
                     )}
@@ -486,31 +482,32 @@ export default function DashboardLayout() {
       {/* Mobile Bottom Navigation Bar with direct Menu & Tables links */}
       <nav className="mobile-nav" aria-label="Quick navigation">
         {staff.data?.user.role === 'kitchen' ? (
-          [
-            { to: '/dashboard/kitchen', label: 'Kitchen', icon: '🍳' },
-            { to: '/dashboard/orders', label: 'Orders', icon: '🔔' }
-          ].map((item) => (
-            <NavLink key={item.to} to={item.to} className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
-              <span className="nav-icon">{item.icon}</span>
-              <span className="nav-label">{item.label}</span>
+          <>
+            <NavLink to="/dashboard/kitchen" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+              <span className="nav-icon"><KitchenIcon /></span>
+              <span className="nav-label">Kitchen</span>
             </NavLink>
-          ))
+            <NavLink to="/dashboard/orders" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+              <span className="nav-icon"><OrdersIcon /></span>
+              <span className="nav-label">Orders</span>
+            </NavLink>
+          </>
         ) : (
           <>
             <NavLink to="/dashboard/overview" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
-              <span className="nav-icon">📊</span>
+              <span className="nav-icon"><OverviewIcon /></span>
               <span className="nav-label">Overview</span>
             </NavLink>
             <NavLink to="/dashboard/menu" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
-              <span className="nav-icon">🍽️</span>
+              <span className="nav-icon"><MenuIcon /></span>
               <span className="nav-label">Menu</span>
             </NavLink>
             <NavLink to="/dashboard/tables" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
-              <span className="nav-icon">🪑</span>
+              <span className="nav-icon"><TablesIcon /></span>
               <span className="nav-label">Tables</span>
             </NavLink>
             <NavLink to="/dashboard/orders" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
-              <span className="nav-icon">🔔</span>
+              <span className="nav-icon"><OrdersIcon /></span>
               <span className="nav-label">Orders</span>
             </NavLink>
             <button
@@ -519,7 +516,11 @@ export default function DashboardLayout() {
               onClick={() => setMobileDrawerOpen(true)}
               style={{ background: 'none', border: 'none', cursor: 'pointer' }}
             >
-              <span className="nav-icon">☰</span>
+              <span className="nav-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/>
+                </svg>
+              </span>
               <span className="nav-label">More</span>
             </button>
           </>

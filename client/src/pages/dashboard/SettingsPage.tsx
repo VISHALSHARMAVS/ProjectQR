@@ -183,7 +183,11 @@ export default function SettingsPage() {
                   style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                 />
               ) : (
-                <span style={{ fontSize: 24 }}>🍽️</span>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.45 }}>
+                  <path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2" />
+                  <path d="M7 2v20" />
+                  <path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7" />
+                </svg>
               )}
             </div>
             <div style={{ flex: '1 1 200px', minWidth: 0 }}>
@@ -329,8 +333,8 @@ export default function SettingsPage() {
       {/* Customer Verification Mode (Zero-SMS Guest vs Strict OTP) */}
       <div style={{ padding: 18, background: 'var(--paper-elevated)', borderRadius: 14, border: '1px solid var(--line)', margin: '18px 0' }}>
         <div>
-          <strong style={{ fontSize: 15, display: 'flex', alignItems: 'center', gap: 6 }}>
-            🛡️ Customer Dine-In Ordering Mode
+          <strong style={{ fontSize: 15, display: 'flex', alignItems: 'center', gap: 6, color: 'var(--ink)' }}>
+            Customer Dine-In Ordering Mode
           </strong>
           <p className="muted" style={{ margin: '4px 0 14px', fontSize: 13 }}>
             Choose how diners access the digital menu when scanning the table QR code.
@@ -358,7 +362,7 @@ export default function SettingsPage() {
               style={{ marginTop: 3 }}
             />
             <div>
-              <strong style={{ display: 'block', fontSize: 14 }}>⚡ Fast Guest Ordering (Recommended · Zero SMS Cost)</strong>
+              <strong style={{ display: 'block', fontSize: 14 }}>Fast Guest Ordering (Recommended · Zero SMS Cost)</strong>
               <span className="muted" style={{ fontSize: 12 }}>
                 Customers enter their name and start ordering immediately. No OTP SMS sent, no network delays, highest order conversion.
               </span>
@@ -386,7 +390,7 @@ export default function SettingsPage() {
               style={{ marginTop: 3 }}
             />
             <div>
-              <strong style={{ display: 'block', fontSize: 14 }}>📱 Strict Mobile Phone OTP Verification</strong>
+              <strong style={{ display: 'block', fontSize: 14 }}>Strict Mobile Phone OTP Verification</strong>
               <span className="muted" style={{ fontSize: 12 }}>
                 Customers must submit their mobile number and verify a 6-digit SMS OTP code before placing orders. Best for high-risk prank prevention.
               </span>
@@ -410,8 +414,8 @@ export default function SettingsPage() {
       {/* GST & Tax Compliance Section */}
       <div style={{ padding: 18, background: 'var(--paper-elevated)', borderRadius: 14, border: '1px solid var(--line)', margin: '18px 0' }}>
         <div>
-          <strong style={{ fontSize: 15, display: 'flex', alignItems: 'center', gap: 6 }}>
-            🧾 GST & Tax Settings (Prices are Inclusive of GST)
+          <strong style={{ fontSize: 15, display: 'flex', alignItems: 'center', gap: 6, color: 'var(--ink)' }}>
+            GST & Tax Settings (Prices are Inclusive of GST)
           </strong>
           <p className="muted" style={{ margin: '4px 0 14px', fontSize: 13 }}>
             Customer menu prices always include tax. These settings calculate the legal CGST/SGST tax breakdown printed on the final guest bill.
@@ -453,7 +457,7 @@ export default function SettingsPage() {
       <div style={{ padding: 18, background: 'var(--soft-green)', borderRadius: 14, border: '1px solid var(--green)', margin: '18px 0' }}>
         <div>
           <strong style={{ fontSize: 15, display: 'flex', alignItems: 'center', gap: 6, color: 'var(--green)' }}>
-            📱 UPI Payment Integration & Rush-Hour Auto-Confirm
+            UPI Payment Integration & Rush-Hour Auto-Confirm
           </strong>
           <p className="muted" style={{ margin: '4px 0 14px', fontSize: 13 }}>
             Configure your business UPI ID and automated payment verification so staff never have to stand around checking diner phone screens during busy rush hours.
@@ -543,7 +547,7 @@ export default function SettingsPage() {
               }
             }}
           >
-            📋 Copy URL
+            Copy URL
           </button>
         </div>
       </div>
@@ -552,7 +556,7 @@ export default function SettingsPage() {
       <div style={{ padding: 18, background: 'var(--paper-elevated)', borderRadius: 14, border: '1px solid var(--line)', margin: '18px 0' }}>
         <div>
           <strong style={{ fontSize: 15, display: 'flex', alignItems: 'center', gap: 6, color: 'var(--ink)' }}>
-            ⭐ Google Reviews Booster & Behavioral Psychology Feedback
+            Google Reviews Booster & Customer Feedback
           </strong>
           <p className="muted" style={{ margin: '4px 0 14px', fontSize: 13 }}>
             Rooted in Daniel Kahneman's Peak-End Rule: Delighted 4-5 star diners are gently guided directly into your Google Maps 5-star review page with 1 tap, while unhappy 1-3 star diners are caught table-side with diagnostic chips and alert the floor manager before leaving.
@@ -589,7 +593,7 @@ export default function SettingsPage() {
               Enable Dish-Level Sentiment Feedback (Yumpingo Style)
             </strong>
             <span className="muted" style={{ fontSize: 11 }}>
-              Customers can give 1-tap 👍/👎 on individual dishes they ordered to diagnose kitchen taste & consistency.
+              Customers can give 1-tap thumbs up/down on individual dishes they ordered to diagnose kitchen taste & consistency.
             </span>
           </div>
         </label>
@@ -662,23 +666,23 @@ function getDefaultPermissions(role: UserRole): UserPermissions {
   }
 }
 
-const roleMeta: Record<UserRole, { label: string; icon: string; description: string; badgeColor: string }> = {
-  owner: { label: 'Owner', icon: '👑', description: 'Master administrator with full unconstrained power', badgeColor: '#854d0e' },
-  manager: { label: 'Manager', icon: '🧑‍💼', description: 'Floor oversight, complaint recovery, item stock, orders', badgeColor: '#1e40af' },
-  cashier: { label: 'Cashier / Reception', icon: '💵', description: 'Counter billing, payments, shift register close', badgeColor: '#166534' },
-  waiter: { label: 'Waiter / Captain', icon: '🛎️', description: 'Floor map, table status, punching walk in orders', badgeColor: '#b45309' },
-  kitchen: { label: 'Kitchen Cook', icon: '🍳', description: 'Kitchen KDS ticket queue preparation only', badgeColor: '#9f1239' },
-  staff: { label: 'Staff', icon: '👤', description: 'General operations and orders', badgeColor: '#475569' }
+const roleMeta: Record<UserRole, { label: string; description: string; badgeColor: string }> = {
+  owner: { label: 'Owner', description: 'Master administrator with full unconstrained power', badgeColor: '#854d0e' },
+  manager: { label: 'Manager', description: 'Floor oversight, complaint recovery, item stock, orders', badgeColor: '#1e40af' },
+  cashier: { label: 'Cashier / Reception', description: 'Counter billing, payments, shift register close', badgeColor: '#166534' },
+  waiter: { label: 'Waiter / Captain', description: 'Floor map, table status, punching walk in orders', badgeColor: '#b45309' },
+  kitchen: { label: 'Kitchen Cook', description: 'Kitchen KDS ticket queue preparation only', badgeColor: '#9f1239' },
+  staff: { label: 'Staff', description: 'General operations and orders', badgeColor: '#475569' }
 };
 
-const permissionMeta: { key: keyof UserPermissions; label: string; description: string; icon: string }[] = [
-  { key: 'canViewFinancials', label: 'View Total Sales and Revenue', description: 'See daily turnover, orders value, and financial metrics on dashboard', icon: '💰' },
-  { key: 'canEditMenu', label: 'Edit Menu Dishes and Prices', description: 'Add or modify dishes, categories, and item pricing', icon: '🍽️' },
-  { key: 'canManageStock', label: 'Toggle 86 / Out of Stock', description: 'Mark dishes unavailable or restore stock during rush hours', icon: '🚫' },
-  { key: 'canSettleBills', label: 'Settle Bills and Collect Payments', description: 'Mark table bills paid via Cash, Card, or manual UPI', icon: '💳' },
-  { key: 'canPunchOrders', label: 'Punch Walk In / Table Orders', description: 'Take orders for guests directly from staff device', icon: '📝' },
-  { key: 'canManageReviews', label: 'Table Complaints and Recovery', description: 'View dining feedback, receive live table alerts, and record resolutions', icon: '⭐' },
-  { key: 'canCloseRegister', label: 'Close Register and Cash Drawer', description: 'Run end of day register reconciliation and generate Z Report', icon: '📋' }
+const permissionMeta: { key: keyof UserPermissions; label: string; description: string }[] = [
+  { key: 'canViewFinancials', label: 'View Total Sales and Revenue', description: 'See daily turnover, orders value, and financial metrics on dashboard' },
+  { key: 'canEditMenu', label: 'Edit Menu Dishes and Prices', description: 'Add or modify dishes, categories, and item pricing' },
+  { key: 'canManageStock', label: 'Toggle 86 / Out of Stock', description: 'Mark dishes unavailable or restore stock during rush hours' },
+  { key: 'canSettleBills', label: 'Settle Bills and Collect Payments', description: 'Mark table bills paid via Cash, Card, or manual UPI' },
+  { key: 'canPunchOrders', label: 'Punch Walk In / Table Orders', description: 'Take orders for guests directly from staff device' },
+  { key: 'canManageReviews', label: 'Table Complaints and Recovery', description: 'View dining feedback, receive live table alerts, and record resolutions' },
+  { key: 'canCloseRegister', label: 'Close Register and Cash Drawer', description: 'Run end of day register reconciliation and generate Z Report' }
 ];
 
 function StaffAccess() {
@@ -768,7 +772,7 @@ function StaffAccess() {
             setOpenAddModal(true);
           }}
         >
-          ➕ Add team member
+          Add team member
         </button>
       </div>
 
@@ -815,7 +819,6 @@ function StaffAccess() {
                           gap: 4
                         }}
                       >
-                        <span>{meta.icon}</span>
                         <span>{meta.label}</span>
                       </span>
                     </td>
@@ -824,14 +827,14 @@ function StaffAccess() {
                         <span className="pill green" style={{ fontSize: 11 }}>Full Unrestricted Access</span>
                       ) : (
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, maxWidth: 280 }}>
-                          {perms.canViewFinancials && <span className="pill green" style={{ fontSize: 10, padding: '1px 6px' }}>💰 Sales</span>}
-                          {perms.canEditMenu && <span className="pill green" style={{ fontSize: 10, padding: '1px 6px' }}>🍽️ Menu</span>}
-                          {perms.canSettleBills && <span className="pill green" style={{ fontSize: 10, padding: '1px 6px' }}>💳 Billing</span>}
-                          {perms.canPunchOrders && <span className="pill green" style={{ fontSize: 10, padding: '1px 6px' }}>📝 Punch</span>}
-                          {perms.canManageReviews && <span className="pill green" style={{ fontSize: 10, padding: '1px 6px' }}>⭐ Reviews</span>}
-                          {perms.canCloseRegister && <span className="pill green" style={{ fontSize: 10, padding: '1px 6px' }}>📋 Register</span>}
+                          {perms.canViewFinancials && <span className="pill green" style={{ fontSize: 10, padding: '1px 6px' }}>Sales</span>}
+                          {perms.canEditMenu && <span className="pill green" style={{ fontSize: 10, padding: '1px 6px' }}>Menu</span>}
+                          {perms.canSettleBills && <span className="pill green" style={{ fontSize: 10, padding: '1px 6px' }}>Billing</span>}
+                          {perms.canPunchOrders && <span className="pill green" style={{ fontSize: 10, padding: '1px 6px' }}>Punch</span>}
+                          {perms.canManageReviews && <span className="pill green" style={{ fontSize: 10, padding: '1px 6px' }}>Reviews</span>}
+                          {perms.canCloseRegister && <span className="pill green" style={{ fontSize: 10, padding: '1px 6px' }}>Register</span>}
                           {!perms.canViewFinancials && !perms.canEditMenu && !perms.canSettleBills && !perms.canPunchOrders && !perms.canManageReviews && (
-                            <span className="pill gray" style={{ fontSize: 10, padding: '1px 6px' }}>🍳 Kitchen KDS only</span>
+                            <span className="pill gray" style={{ fontSize: 10, padding: '1px 6px' }}>Kitchen KDS only</span>
                           )}
                         </div>
                       )}
@@ -850,7 +853,7 @@ function StaffAccess() {
                             onClick={() => openEditModal(user)}
                             title="Configure role powers"
                           >
-                            ⚙️ Edit Powers
+                            Edit permissions
                           </button>
                           <button
                             type="button"
@@ -920,10 +923,10 @@ function StaffAccess() {
                 value={role}
                 onChange={(event) => handleRoleChange(event.target.value as UserRole)}
               >
-                <option value="manager">🧑‍💼 Manager (Floor operations, complaints, stock, orders)</option>
-                <option value="cashier">💵 Cashier / Reception (Billing counter, payments, register close)</option>
-                <option value="waiter">🛎️ Waiter / Captain (Floor map, table orders, table PIN defense)</option>
-                <option value="kitchen">🍳 Kitchen (Kitchen KDS preparation queue only)</option>
+                <option value="manager">Manager (Floor operations, complaints, stock, orders)</option>
+                <option value="cashier">Cashier / Reception (Billing counter, payments, register close)</option>
+                <option value="waiter">Waiter / Captain (Floor map, table orders, table PIN defense)</option>
+                <option value="kitchen">Kitchen (Kitchen KDS preparation queue only)</option>
               </select>
               <span className="muted" style={{ fontSize: 12 }}>
                 {roleMeta[role]?.description}
@@ -978,12 +981,9 @@ function StaffAccess() {
                         cursor: 'pointer'
                       }}
                     >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <span style={{ fontSize: 16 }}>{perm.icon}</span>
-                        <div>
-                          <strong style={{ fontSize: 13, display: 'block' }}>{perm.label}</strong>
-                          <span className="muted" style={{ fontSize: 11 }}>{perm.description}</span>
-                        </div>
+                      <div>
+                        <strong style={{ fontSize: 13, display: 'block' }}>{perm.label}</strong>
+                        <span className="muted" style={{ fontSize: 11 }}>{perm.description}</span>
                       </div>
                       <input
                         type="checkbox"
@@ -1036,10 +1036,10 @@ function StaffAccess() {
                   setEditPowers(getDefaultPermissions(newRole));
                 }}
               >
-                <option value="manager">🧑‍💼 Manager</option>
-                <option value="cashier">💵 Cashier / Reception</option>
-                <option value="waiter">🛎️ Waiter / Captain</option>
-                <option value="kitchen">🍳 Kitchen Cook</option>
+                <option value="manager">Manager</option>
+                <option value="cashier">Cashier / Reception</option>
+                <option value="waiter">Waiter / Captain</option>
+                <option value="kitchen">Kitchen Cook</option>
               </select>
             </div>
 
@@ -1060,12 +1060,9 @@ function StaffAccess() {
                       cursor: 'pointer'
                     }}
                   >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <span style={{ fontSize: 16 }}>{perm.icon}</span>
-                      <div>
-                        <strong style={{ fontSize: 13, display: 'block' }}>{perm.label}</strong>
-                        <span className="muted" style={{ fontSize: 11 }}>{perm.description}</span>
-                      </div>
+                    <div>
+                      <strong style={{ fontSize: 13, display: 'block' }}>{perm.label}</strong>
+                      <span className="muted" style={{ fontSize: 11 }}>{perm.description}</span>
                     </div>
                     <input
                       type="checkbox"

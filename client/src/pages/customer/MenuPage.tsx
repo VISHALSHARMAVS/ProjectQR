@@ -333,7 +333,7 @@ export default function CustomerMenuPage() {
                   }}
                   title="Share this PIN with friends at your table so they can join your shared cart"
                 >
-                  🔒 Pin: <span className="font-mono-numbers" style={{ letterSpacing: 1 }}>{table.pin}</span>
+                  PIN: <span className="font-mono-numbers" style={{ letterSpacing: 1 }}>{table.pin}</span>
                 </span>
               )}
               {session.data.tab?.isSeparateTab && (
@@ -351,7 +351,7 @@ export default function CustomerMenuPage() {
                     fontWeight: 600
                   }}
                 >
-                  👤 Solo tab
+                  Solo tab
                 </span>
               )}
             </div>
@@ -366,7 +366,7 @@ export default function CustomerMenuPage() {
             title="Rate your dining experience"
             style={{ color: 'var(--orange)', borderColor: 'var(--line)' }}
           >
-            ⭐ Review
+            Review
           </button>
           <button
             type="button"
@@ -374,7 +374,7 @@ export default function CustomerMenuPage() {
             onClick={() => setAssistanceOpen(true)}
             title="Request water, cutlery, bill or call a waiter"
           >
-            🔔 Help
+            Help
           </button>
           <Link className="btn secondary small" to={`/order/${encodeURIComponent(token)}/tracking`}>
             Orders
@@ -404,14 +404,16 @@ export default function CustomerMenuPage() {
             lineHeight: 1.4
           }}>
             <span>
-              👥 <strong>Friends dining with you?</strong> Tell them Table PIN <strong>{table.pin}</strong> when they scan the table QR code so they can join your shared cart.
+              <strong>Friends dining with you?</strong> Tell them Table PIN <strong>{table.pin}</strong> when they scan the table QR code so they can join your shared cart.
             </span>
           </div>
         )}
 
         {/* Instant Search Bar */}
         <div className="menu-search-wrap">
-          <span className="menu-search-icon" aria-hidden="true">🔍</span>
+          <svg className="menu-search-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
+          </svg>
           <input
             type="search"
             className="menu-search-input"
@@ -469,7 +471,6 @@ export default function CustomerMenuPage() {
           <section className="todays-winner-card">
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span style={{ fontSize: 16 }}>🏆</span>
                 <span className="caption-3" style={{ color: 'var(--ink)' }}>
                   Today’s winner
                 </span>
@@ -604,7 +605,7 @@ export default function CustomerMenuPage() {
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                       <DietaryBadge type={item.dietary || 'VEG'} />
                       {isWinner ? (
-                        <span className="swiggy-social-badge winner">🏆 Today’s winner</span>
+                        <span className="swiggy-social-badge winner">Today’s winner</span>
                       ) : isBestseller ? (
                         <span className="swiggy-social-badge reordered">
                           <span className="meter" /> Frequently reordered
@@ -623,12 +624,16 @@ export default function CustomerMenuPage() {
                     {item.description && <p className="swiggy-dish-desc">{item.description}</p>}
                   </div>
 
-                  <div className="swiggy-media-col">
+                  <div className="media-col">
                     <div className="swiggy-img-wrap">
                       {item.imageUrl ? (
                         <img src={item.imageUrl} alt={item.name} loading="lazy" />
                       ) : (
-                        <div className="swiggy-placeholder-img">🍽️</div>
+                        <div className="swiggy-placeholder-img">
+                          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                            <path d="M18 2v6a3 3 0 0 1-3 3 3 3 0 0 1-3-3V2"/><path d="M15 11v11"/><path d="M5 2v20"/><path d="M2 2h6"/>
+                          </svg>
+                        </div>
                       )}
                     </div>
 
@@ -813,7 +818,9 @@ export default function CustomerMenuPage() {
           onClick={() => setCategoryMenuOpen(true)}
           aria-label="Open menu categories"
         >
-          <span className="fab-icon" aria-hidden="true">📖</span>
+          <svg className="fab-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/><path d="M6 6h10"/><path d="M6 10h10"/>
+          </svg>
           <span className="fab-label">Menu</span>
           <span className="fab-badge">{availableCategories.length}</span>
         </button>
@@ -827,7 +834,10 @@ export default function CustomerMenuPage() {
         onClick={() => setAssistanceOpen(true)}
         title="Request water, cutlery, bill or call a waiter"
       >
-        <span>🔔</span> Call staff
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>
+        </svg>
+        <span>Call staff</span>
       </button>
 
       {/* Floating Bottom Table Cart Bar */}

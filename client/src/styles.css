@@ -92,6 +92,21 @@ a { color: inherit; text-decoration: none; }
 button { cursor: pointer; }
 button:disabled { cursor: not-allowed; opacity: .55; }
 img { max-width: 100%; }
+input[type="file"]::file-selector-button {
+  background: var(--paper-hover);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-right: 10px;
+  transition: all var(--duration-interactive) var(--ease-base);
+}
+input[type="file"]::file-selector-button:hover {
+  background: var(--line);
+}
 
 /* Typography Rules (B1) - No orphaned words & balanced headings */
 h1, h2, h3, h4, h5, h6, .heading-1, .heading-2, .heading-3, .heading-4, .heading-5, .heading-6 {

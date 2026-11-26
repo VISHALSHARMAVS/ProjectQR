@@ -187,7 +187,7 @@ export default function LandingPage() {
                 {/* Card 1: Guest Table Screen */}
                 <div className="glass-card" style={{ borderRadius: 12, padding: 18 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                    <span className="pill green" style={{ fontSize: 11 }}>📱 Guest experience</span>
+                    <span className="pill green" style={{ fontSize: 11 }}>Guest experience</span>
                     <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--green)' }}>Table 4 · PIN active</span>
                   </div>
                   <strong style={{ fontSize: 16, display: 'block', marginBottom: 6, color: 'var(--ink)' }}>One tap UPI auto confirm</strong>
@@ -195,7 +195,7 @@ export default function LandingPage() {
                     Guests scan, order dishes together, and pay using Google Pay or PhonePe. Payment settles automatically in seconds.
                   </p>
                   <div style={{ background: 'var(--paper)', borderRadius: 8, padding: 10, border: '1px solid var(--line)', fontSize: 12, display: 'flex', justifyContent: 'space-between', color: 'var(--ink)' }}>
-                    <span>✓ Dal Makhani, 2x Garlic Naan</span>
+                    <span>Dal Makhani, 2x Garlic Naan</span>
                     <strong style={{ color: 'var(--green)' }}>₹480 · Paid</strong>
                   </div>
                 </div>
@@ -203,7 +203,7 @@ export default function LandingPage() {
                 {/* Card 2: Kitchen KDS Preparation */}
                 <div className="glass-card" style={{ borderRadius: 12, padding: 18 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                    <span className="pill orange" style={{ fontSize: 11 }}>🍳 Kitchen KDS</span>
+                    <span className="pill orange" style={{ fontSize: 11 }}>Kitchen KDS</span>
                     <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--orange)' }}>Ticket 104 · Cooking</span>
                   </div>
                   <strong style={{ fontSize: 16, display: 'block', marginBottom: 6, color: 'var(--ink)' }}>Real time cooking queue</strong>
@@ -219,7 +219,7 @@ export default function LandingPage() {
                 {/* Card 3: Manager Incident Recovery & Google Booster */}
                 <div className="glass-card" style={{ borderRadius: 12, padding: 18 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                    <span className="pill" style={{ fontSize: 11 }}>⭐ Table side recovery</span>
+                    <span className="pill" style={{ fontSize: 11 }}>Table-side recovery</span>
                     <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--orange)' }}>Diner survey</span>
                   </div>
                   <strong style={{ fontSize: 16, display: 'block', marginBottom: 6, color: 'var(--ink)' }}>Google review booster</strong>
@@ -228,7 +228,7 @@ export default function LandingPage() {
                   </p>
                   <div style={{ background: 'var(--paper)', borderRadius: 8, padding: 10, border: '1px solid var(--line)', fontSize: 12, display: 'flex', justifyContent: 'space-between', color: 'var(--ink)' }}>
                     <span>Table 2 rated 5 stars</span>
-                    <span style={{ color: 'var(--green)', fontWeight: 700 }}>Posted to Google ✓</span>
+                    <span style={{ color: 'var(--green)', fontWeight: 700 }}>Posted to Google</span>
                   </div>
                 </div>
               </div>
@@ -254,7 +254,7 @@ export default function LandingPage() {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 20 }}>
               <ScrollReveal delay={80}>
                 <div className="glass-card comparison-card-old" style={{ borderRadius: 16, height: '100%' }}>
-                  <span style={{ fontSize: 24, display: 'block', marginBottom: 12 }}>❌</span>
+                  <span className="eyebrow" style={{ color: 'var(--red)', display: 'block', marginBottom: 8 }}>Traditional Setup</span>
                   <strong style={{ fontSize: 16, display: 'block', marginBottom: 6 }}>The manual paper workflow</strong>
                   <ul style={{ paddingLeft: 18, margin: 0, fontSize: 13, lineHeight: 1.8 }}>
                     <li>Guests wait repeatedly for staff to bring paper menus, take orders, and deliver bills</li>
@@ -267,8 +267,8 @@ export default function LandingPage() {
 
               <ScrollReveal delay={160}>
                 <div className="glass-card comparison-card-new" style={{ borderRadius: 16, height: '100%' }}>
-                  <span style={{ fontSize: 24, display: 'block', marginBottom: 12 }}>✅</span>
-                  <strong style={{ fontSize: 16, display: 'block', marginBottom: 6 }}>The Mesa architecture</strong>
+                  <span className="eyebrow" style={{ color: 'var(--green)', display: 'block', marginBottom: 8 }}>Mesa Architecture</span>
+                  <strong style={{ fontSize: 16, display: 'block', marginBottom: 6 }}>The automated table system</strong>
                   <ul style={{ paddingLeft: 18, margin: 0, fontSize: 13, lineHeight: 1.8 }}>
                     <li>Guests scan, browse live items, and settle the bill directly from their phone browser</li>
                     <li>Direct UPI webhook listener confirms payments automatically with real time audio chime</li>
@@ -303,29 +303,24 @@ export default function LandingPage() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 18 }}>
             {[
               {
-                icon: '⚡',
                 title: 'Zero verification queues',
                 desc: 'Guests pay with Google Pay, PhonePe, or Paytm and auto confirm without waiting for staff. Tables settle instantly as soon as diners finish their meal.'
               },
               {
-                icon: '🛡️',
                 title: 'Stop internal revenue leakage',
                 desc: 'Owner configured power toggles ensure waiters cannot edit menu prices, void orders after taking cash, or view total daily sales numbers.'
               },
               {
-                icon: '⭐',
                 title: 'One tap Google review booster',
                 desc: 'A short post meal psychology survey routes happy diners straight to your Google review link while alerting managers to table side issues.'
               },
               {
-                icon: '🔒',
                 title: 'Four digit table PIN defense',
                 desc: 'Hosts share a four digit PIN with dining companions so friends share the bill while solo walk in strangers remain isolated on their own check.'
               }
             ].map((b, idx) => (
               <ScrollReveal key={idx} delay={idx * 80}>
                 <div className="glass-card" style={{ padding: 22, borderRadius: 16, height: '100%' }}>
-                  <div style={{ fontSize: 28, marginBottom: 12 }}>{b.icon}</div>
                   <strong style={{ fontSize: 16, display: 'block', marginBottom: 6 }}>{b.title}</strong>
                   <p className="muted" style={{ fontSize: 13, lineHeight: 1.6, margin: 0 }}>
                     {b.desc}
@@ -401,29 +396,24 @@ export default function LandingPage() {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 20 }}>
               {[
                 {
-                  icon: '💳',
                   title: 'Direct UPI settlement · 0% platform fee',
                   desc: 'Guest payments route straight to your restaurant merchant UPI VPA. Mesa never acts as a middleman, holds your payouts, or deducts commission.'
                 },
                 {
-                  icon: '⚡',
                   title: 'Zero app download or guest signup',
                   desc: 'Diners open the menu instantly in any standard mobile browser. No mandatory app installations, OTP verifications, or guest login hurdles.'
                 },
                 {
-                  icon: '🛡️',
                   title: 'Strict multi tenant isolation',
                   desc: 'Menus, active tickets, table PIN sessions, and daily ledgers are segregated by tenant ID. Staff accounts are gated by granular role based permissions.'
                 },
                 {
-                  icon: '🖥️',
                   title: 'Complete hardware independence',
                   desc: 'Runs on existing Android tablets, iPads, desktop PCs, kitchen monitors, and smartphones. No proprietary terminal leases or proprietary dongles required.'
                 }
               ].map((g, idx) => (
                 <ScrollReveal key={idx} delay={idx * 80}>
                   <div className="glass-card" style={{ padding: 24, borderRadius: 16, height: '100%' }}>
-                    <div style={{ fontSize: 24, marginBottom: 12 }}>{g.icon}</div>
                     <strong style={{ fontSize: 15, display: 'block', marginBottom: 6, color: 'var(--ink)' }}>{g.title}</strong>
                     <p className="muted" style={{ fontSize: 13, lineHeight: 1.6, margin: 0 }}>
                       {g.desc}
