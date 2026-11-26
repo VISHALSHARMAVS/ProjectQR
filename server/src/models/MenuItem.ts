@@ -22,7 +22,9 @@ const menuItemSchema = new Schema({
   available: { type: Boolean, default: true },
   dietary: { type: String, enum: ['VEG', 'NON_VEG', 'EGG'], default: 'VEG' },
   preparationMinutes: { type: Number, min: 1, max: 600, default: null },
-  displayOrder: { type: Number, min: 0, default: 0 }
+  displayOrder: { type: Number, min: 0, default: 0 },
+  isBestseller: { type: Boolean, default: false },
+  isChefSpecial: { type: Boolean, default: false }
 }, { timestamps: true });
 menuItemSchema.index({ restaurantId: 1, categoryId: 1, available: 1, displayOrder: 1 });
 
@@ -42,5 +44,7 @@ export interface MenuItemDoc {
   dietary?: 'VEG' | 'NON_VEG' | 'EGG';
   preparationMinutes: number | null;
   displayOrder: number;
+  isBestseller?: boolean;
+  isChefSpecial?: boolean;
 }
 export const MenuItem = model('MenuItem', menuItemSchema);

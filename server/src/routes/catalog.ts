@@ -63,7 +63,9 @@ const menuFields = {
   available: z.boolean().default(true),
   dietary: z.enum(['VEG', 'NON_VEG', 'EGG']).default('VEG'),
   preparationMinutes: z.number().int().min(1).max(600).nullable().default(null),
-  displayOrder: z.number().int().min(0).max(10000).default(0)
+  displayOrder: z.number().int().min(0).max(10000).default(0),
+  isBestseller: z.boolean().default(false),
+  isChefSpecial: z.boolean().default(false)
 };
 const menuInput = z.object(menuFields);
 const menuPatch = menuInput.partial();

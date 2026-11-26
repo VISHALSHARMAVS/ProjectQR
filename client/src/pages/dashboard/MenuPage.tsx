@@ -22,6 +22,8 @@ interface FormState {
   dietary: DietaryType;
   preparationMinutes: string;
   displayOrder: string;
+  isBestseller: boolean;
+  isChefSpecial: boolean;
 }
 
 const blank: FormState = {
@@ -35,7 +37,9 @@ const blank: FormState = {
   available: true,
   dietary: 'VEG',
   preparationMinutes: '',
-  displayOrder: '0'
+  displayOrder: '0',
+  isBestseller: false,
+  isChefSpecial: false
 };
 
 export default function MenuPage() {
@@ -86,7 +90,9 @@ export default function MenuPage() {
         available: form.available,
         dietary: form.dietary,
         preparationMinutes: form.preparationMinutes ? Number(form.preparationMinutes) : null,
-        displayOrder: Number(form.displayOrder || 0)
+        displayOrder: Number(form.displayOrder || 0),
+        isBestseller: form.isBestseller,
+        isChefSpecial: form.isChefSpecial
       };
 
       const response = editing
@@ -135,7 +141,9 @@ export default function MenuPage() {
         available: item.available,
         dietary: item.dietary ?? 'VEG',
         preparationMinutes: item.preparationMinutes ? String(item.preparationMinutes) : '',
-        displayOrder: String(item.displayOrder)
+        displayOrder: String(item.displayOrder),
+        isBestseller: item.isBestseller ?? false,
+        isChefSpecial: item.isChefSpecial ?? false
       });
     } else {
       setForm({ ...blank, categoryId: activeCategories[0]?._id ?? '' });
@@ -232,9 +240,11 @@ export default function MenuPage() {
                         {item.imageUrl && <img src={item.imageUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
                       </div>
                       <div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                           <DietaryBadge type={item.dietary} />
                           <strong>{item.name}</strong>
+                          {item.isBestseller && <span className="pill orange" style={{ fontSize: 10, padding: '1px 6px' }}>Bestseller</span>}
+                          {item.isChefSpecial && <span className="pill green" style={{ fontSize: 10, padding: '1px 6px' }}>Chef’s Special</span>}
                         </div>
                         <small className="muted" style={{ display: 'block', maxWidth: 280 }}>{item.description}</small>
                       </div>
@@ -431,6 +441,17 @@ export default function MenuPage() {
               <input type="checkbox" checked={form.available} onChange={(event) => update('available', event.target.checked)} />
               Available for customers
             </label>
+
+            <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', padding: '10px 14px', background: 'var(--paper-elevated)', borderRadius: 10, border: '1px solid var(--line)' }}>
+              <label style={{ display: 'flex', gap: 8, alignItems: 'center', fontSize: 13, cursor: 'pointer' }}>
+                <input type="checkbox" checked={form.isBestseller} onChange={(event) => update('isBestseller', event.target.checked)} />
+                <span style={{ fontWeight: 600 }}>Bestseller / Must-Try</span>
+              </label>
+              <label style={{ display: 'flex', gap: 8, alignItems: 'center', fontSize: 13, cursor: 'pointer' }}>
+                <input type="checkbox" checked={form.isChefSpecial} onChange={(event) => update('isChefSpecial', event.target.checked)} />
+                <span style={{ fontWeight: 600 }}>Chef’s Recommendation</span>
+              </label>
+            </div>
 
             {error && <div className="form-error" role="alert">{error}</div>}
 

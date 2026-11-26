@@ -68,6 +68,7 @@ export default function CustomerMenuPage() {
   const [activeCategory, setActiveCategory] = useState('');
   const [categoryMenuOpen, setCategoryMenuOpen] = useState(false);
   const [dietaryFilter, setDietaryFilter] = useState<'ALL' | DietaryType>('ALL');
+  const [bestsellerOnly, setBestsellerOnly] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [assistanceOpen, setAssistanceOpen] = useState(false);
 
@@ -204,10 +205,15 @@ export default function CustomerMenuPage() {
 
   const categories = menu.data?.categories ?? [];
   const items = menu.data?.items ?? [];
+  const todaysWinner = menu.data?.todaysWinner;
+  const bestsellerItemIds = useMemo(() => menu.data?.bestsellerItemIds ?? [], [menu.data?.bestsellerItemIds]);
   const queryClean = searchQuery.trim().toLowerCase();
 
   const filteredItems = useMemo(() => {
     return items.filter((item) => {
+      if (bestsellerOnly && !item.isBestseller && !item.isChefSpecial && !bestsellerItemIds.includes(item._id) && item._id !== todaysWinner?.menuItemId) {
+        return false;
+      }
       if (dietaryFilter !== 'ALL' && item.dietary !== dietaryFilter) return false;
       if (queryClean) {
         const matchName = item.name.toLowerCase().includes(queryClean);
@@ -216,7 +222,7 @@ export default function CustomerMenuPage() {
       }
       return true;
     });
-  }, [items, dietaryFilter, queryClean]);
+  }, [items, bestsellerOnly, bestsellerItemIds, todaysWinner, dietaryFilter, queryClean]);
 
   const availableCategories = useMemo(() => {
     return categories.filter((category) => {
@@ -279,8 +285,6 @@ export default function CustomerMenuPage() {
   }
 
   const { restaurant, table } = session.data;
-  const todaysWinner = menu.data.todaysWinner;
-  const bestsellerItemIds = menu.data.bestsellerItemIds ?? [];
   const winnerMenuItem = todaysWinner ? items.find((i) => i._id === todaysWinner.menuItemId) : null;
 
   const scrollTo = (id: string): void => {
@@ -432,14 +436,21 @@ export default function CustomerMenuPage() {
           )}
         </div>
 
-        {/* Dietary Filters */}
+        {/* Dietary & Bestseller Filters */}
         <div className="dietary-filter-bar" aria-label="Filter by dietary preference">
           <button
             type="button"
-            className={`dietary-filter-chip ${dietaryFilter === 'ALL' ? 'active' : ''}`}
-            onClick={() => setDietaryFilter('ALL')}
+            className={`dietary-filter-chip ${dietaryFilter === 'ALL' && !bestsellerOnly ? 'active' : ''}`}
+            onClick={() => { setDietaryFilter('ALL'); setBestsellerOnly(false); }}
           >
             All Items
+          </button>
+          <button
+            type="button"
+            className={`dietary-filter-chip ${bestsellerOnly ? 'active' : ''}`}
+            onClick={() => setBestsellerOnly(!bestsellerOnly)}
+          >
+            Bestsellers
           </button>
           <button
             type="button"
@@ -595,18 +606,23 @@ export default function CustomerMenuPage() {
               const qty = quantityById.get(item._id) ?? 0;
               const hasCustomizations = (item.variants && item.variants.length > 0) || (item.addons && item.addons.length > 0);
               const isWinner = todaysWinner?.menuItemId === item._id;
-              const isBestseller = bestsellerItemIds.includes(item._id);
+              const isBestseller = Boolean(item.isBestseller || bestsellerItemIds.includes(item._id));
+              const isSpecial = Boolean(item.isChefSpecial);
 
               return (
                 <article className={`swiggy-card ${item.available ? '' : 'is-sold-out'}`} key={item._id}>
                   <div className="swiggy-card-info">
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                       <DietaryBadge type={item.dietary || 'VEG'} />
                       {isWinner ? (
                         <span className="swiggy-social-badge winner">Today’s winner</span>
                       ) : isBestseller ? (
                         <span className="swiggy-social-badge reordered">
-                          <span className="meter" /> Frequently reordered
+                          <span className="meter" /> Bestseller
+                        </span>
+                      ) : isSpecial ? (
+                        <span className="swiggy-social-badge" style={{ background: 'var(--soft-green)', color: 'var(--green)', border: '1px solid var(--brand-border, var(--line))', padding: '2px 8px', borderRadius: 999, fontSize: 11, fontWeight: 700 }}>
+                          Chef’s Special
                         </span>
                       ) : null}
                     </div>

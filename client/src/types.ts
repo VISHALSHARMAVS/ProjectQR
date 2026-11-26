@@ -79,6 +79,8 @@ export interface MenuItem {
   dietary?: DietaryType;
   preparationMinutes: number | null;
   displayOrder: number;
+  isBestseller?: boolean;
+  isChefSpecial?: boolean;
 }
 
 export interface TableRecord {
