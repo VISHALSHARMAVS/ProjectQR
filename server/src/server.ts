@@ -17,6 +17,13 @@ async function main(): Promise<void> {
   if (memoryMongo) console.info('Using disposable in-memory MongoDB; data will be discarded when the server stops.');
 
   const { httpServer, io } = createApplication(memoryMongo ? new session.MemoryStore() : undefined);
+
+  // Align Node HTTP keep-alive timeouts above Render's reverse-proxy idle timeout (60s)
+  // to prevent ECONNRESET -> 502 Bad Gateway race conditions under burst polling.
+  httpServer.keepAliveTimeout = 65_000;
+  httpServer.headersTimeout = 66_000;
+  httpServer.requestTimeout = 30_000;
+
   httpServer.listen(env.PORT, '0.0.0.0', () => {
     console.info(`Mesa server listening on port ${env.PORT}`);
 
@@ -49,6 +56,7 @@ async function main(): Promise<void> {
     forceExit.unref();
     void (async () => {
       await new Promise<void>((resolve) => io.close(() => resolve()));
+      await new Promise<void>((resolve) => httpServer.close(() => resolve()));
       await mongoose.disconnect();
       await memoryMongo?.stop();
       clearTimeout(forceExit);
@@ -60,6 +68,9 @@ async function main(): Promise<void> {
   };
   process.once('SIGINT', shutdown);
   process.once('SIGTERM', shutdown);
+  process.on('unhandledRejection', (reason) => {
+    console.error('[Process] Unhandled promise rejection:', reason instanceof Error ? reason.stack || reason.message : reason);
+  });
 }
 
 main().catch((error: unknown) => {

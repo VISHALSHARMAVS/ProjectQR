@@ -7,6 +7,7 @@ import helmet from 'helmet';
 import session, { type Store } from 'express-session';
 import MongoStore from 'connect-mongo';
 import { Server as SocketServer } from 'socket.io';
+import mongoose from 'mongoose';
 import { env } from './config/env.js';
 import { CustomerSession } from './models/CustomerSession.js';
 import { Restaurant } from './models/Restaurant.js';
@@ -81,7 +82,12 @@ export function createApplication(sessionStore?: Store): ProjectQrApplication {
     secret: env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
-    store: sessionStore ?? MongoStore.create({ mongoUrl: env.MONGODB_URI, collectionName: 'httpSessions', ttl: 60 * 60 * 24 * 7 }),
+    store: sessionStore ?? MongoStore.create({
+      mongoUrl: env.MONGODB_URI,
+      collectionName: 'httpSessions',
+      ttl: 60 * 60 * 24 * 7,
+      touchAfter: 24 * 3600
+    }),
     cookie: {
       httpOnly: true,
       secure: env.cookieSecure,
@@ -145,6 +151,7 @@ export function createApplication(sessionStore?: Store): ProjectQrApplication {
   app.use('/uploads', express.static(path.resolve(env.uploadPath), { maxAge: env.NODE_ENV === 'production' ? '1d' : 0, immutable: env.NODE_ENV === 'production' }));
   app.get(['/health', '/api/health'], (_req, res) => res.json({
     status: 'ok',
+    dbConnected: mongoose.connection.readyState === 1,
     uptime: Math.round(process.uptime()),
     timestamp: new Date().toISOString()
   }));
@@ -162,6 +169,8 @@ export function createApplication(sessionStore?: Store): ProjectQrApplication {
 
   const httpServer = createServer(app);
   const io = new SocketServer(httpServer, {
+    pingTimeout: 20_000,
+    pingInterval: 25_000,
     cors: {
       origin: (origin, callback) => {
         if (!origin || isAllowedOrigin(origin)) {
