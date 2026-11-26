@@ -215,7 +215,7 @@ customerOrders.get('/:id', async (req, res) => {
 
 const autoConfirmSchema = z.object({
   token: z.string().optional(),
-  transactionReference: z.string().trim().max(100).optional(),
+  transactionReference: z.string().trim().min(6, 'Enter a valid UPI Reference / UTR number (at least 6 characters)').max(100),
   paymentMethod: z.enum(['UPI', 'CARD']).default('UPI')
 });
 
@@ -252,7 +252,7 @@ customerOrders.post('/:id/auto-confirm', async (req, res) => {
     restaurantId: req.customer!.restaurantId,
     paymentMethod: parsed.data.paymentMethod,
     autoConfirmed: true,
-    transactionReference: parsed.data.transactionReference || `UPI-${Date.now().toString(36).toUpperCase()}`
+    transactionReference: parsed.data.transactionReference
   });
 
   res.json({

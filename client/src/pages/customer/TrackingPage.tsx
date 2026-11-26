@@ -35,8 +35,8 @@ export default function TrackingPage() {
   const [tableVacated, setTableVacated] = useState(false);
   const [upiConfirming, setUpiConfirming] = useState(false);
   const [upiRef, setUpiRef] = useState('');
-  const [showUpiInput, setShowUpiInput] = useState(false);
-  const [showUpiQr, setShowUpiQr] = useState(false);
+  const [showUpiInput, setShowUpiInput] = useState(true);
+  const [showUpiQr, setShowUpiQr] = useState(true);
   const [autoConfirmError, setAutoConfirmError] = useState('');
 
   const sessionQuery = useQuery({
@@ -68,11 +68,16 @@ export default function TrackingPage() {
   );
 
   const handleAutoConfirmPayment = async () => {
+    const trimmedRef = upiRef.trim();
+    if (!trimmedRef || trimmedRef.length < 6) {
+      setAutoConfirmError('Please enter your 12-digit UPI Reference / UTR number from your payment app.');
+      return;
+    }
     setAutoConfirmError('');
     setUpiConfirming(true);
     try {
       await api.post(`/customer/orders/${encodeURIComponent(orderId)}/auto-confirm?token=${encodeURIComponent(token)}`, {
-        transactionReference: upiRef.trim() || undefined
+        transactionReference: trimmedRef
       });
       playPaymentSuccessChime();
       await queryClient.invalidateQueries({ queryKey: ['customer-order', orderId, token] });
@@ -336,22 +341,23 @@ export default function TrackingPage() {
           </div>
         ) : !rejected ? (
           <div style={{ marginTop: 16, padding: '16px', background: 'var(--paper-elevated)', border: '1px solid var(--line)', borderRadius: 12 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-              <div>
-                <strong style={{ fontSize: 14, display: 'block', color: 'var(--ink)' }}>
-                  📱 Pay with UPI (Zero Wait Time)
-                </strong>
-                <span className="muted" style={{ fontSize: 11 }}>
-                  Instant UPI payment · Digital order receipt updates in real time
-                </span>
-              </div>
-              <span className="pill green" style={{ fontSize: 10, fontWeight: 700 }}>
-                AUTO-CONFIRM
-              </span>
-            </div>
+            {sessionQuery.data?.restaurant?.upiId ? (
+              <>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                  <div>
+                    <strong style={{ fontSize: 14, display: 'block', color: 'var(--ink)' }}>
+                      📱 Pay via UPI
+                    </strong>
+                    <span className="muted" style={{ fontSize: 11 }}>
+                      Scan QR or tap to open your preferred UPI app
+                    </span>
+                  </div>
+                  <span className="pill green" style={{ fontSize: 10, fontWeight: 700 }}>
+                    UPI AVAILABLE
+                  </span>
+                </div>
 
-            {sessionQuery.data?.restaurant?.upiId && (
-              <div style={{ marginBottom: 12 }}>
+                {/* 1-Tap Open UPI App */}
                 <a
                   href={`upi://pay?pa=${encodeURIComponent(sessionQuery.data.restaurant.upiId)}&pn=${encodeURIComponent(sessionQuery.data.restaurant.name)}&am=${(order.totalPaise / 100).toFixed(2)}&tn=${encodeURIComponent(`Order ${order.orderNumber}`)}&cu=INR`}
                   className="btn full"
@@ -360,32 +366,38 @@ export default function TrackingPage() {
                     color: '#ffffff',
                     fontWeight: 750,
                     fontSize: 14,
-                    marginBottom: 8,
+                    marginBottom: 10,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     gap: 8,
-                    textDecoration: 'none'
+                    textDecoration: 'none',
+                    boxShadow: '0 4px 12px rgba(49, 91, 67, 0.2)'
                   }}
                 >
                   <span>⚡</span>
                   <span>Open UPI App to Pay {money(order.totalPaise)}</span>
                 </a>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 11, color: 'var(--muted)', padding: '2px 4px', flexWrap: 'wrap', gap: 6 }}>
-                  <span>UPI ID: <strong>{sessionQuery.data.restaurant.upiId}</strong></span>
-                  <div style={{ display: 'flex', gap: 6 }}>
+
+                {/* Scannable Dynamic QR Code - Visible by Default */}
+                <div style={{ textAlign: 'center', margin: '12px 0', padding: 14, background: '#ffffff', borderRadius: 12, border: '1px solid var(--line)' }}>
+                  <img
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&margin=4&data=${encodeURIComponent(`upi://pay?pa=${sessionQuery.data.restaurant.upiId}&pn=${encodeURIComponent(sessionQuery.data.restaurant.name)}&am=${(order.totalPaise / 100).toFixed(2)}&tn=${encodeURIComponent(`Order ${order.orderNumber}`)}&cu=INR`)}`}
+                    alt="Scan to pay via any UPI app"
+                    style={{ width: 180, height: 180, margin: '0 auto', display: 'block', borderRadius: 8 }}
+                  />
+                  <div style={{ fontSize: 12, color: '#111827', marginTop: 8, fontWeight: 700 }}>
+                    Scan with Google Pay, PhonePe, Paytm, or BHIM
+                  </div>
+                  <div style={{ fontSize: 13, color: 'var(--green)', fontWeight: 800, marginTop: 2 }}>
+                    Amount: {money(order.totalPaise)}
+                  </div>
+                  <div style={{ fontSize: 11, color: '#6b7280', marginTop: 4 }}>
+                    UPI ID: <strong style={{ color: '#111827' }}>{sessionQuery.data.restaurant.upiId}</strong>
                     <button
                       type="button"
                       className="btn ghost small"
-                      style={{ fontSize: 10, padding: '2px 6px' }}
-                      onClick={() => setShowUpiQr((prev) => !prev)}
-                    >
-                      {showUpiQr ? '✕ Hide QR' : '📷 Show QR Code'}
-                    </button>
-                    <button
-                      type="button"
-                      className="btn ghost small"
-                      style={{ fontSize: 10, padding: '2px 6px' }}
+                      style={{ fontSize: 10, padding: '1px 6px', marginLeft: 6 }}
                       onClick={() => {
                         if (sessionQuery.data?.restaurant?.upiId) {
                           void navigator.clipboard.writeText(sessionQuery.data.restaurant.upiId);
@@ -397,84 +409,95 @@ export default function TrackingPage() {
                   </div>
                 </div>
 
-                {showUpiQr && (
-                  <div style={{ textAlign: 'center', margin: '10px 0', padding: 12, background: '#ffffff', borderRadius: 12, border: '1px solid var(--line)' }}>
-                    <img
-                      src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&margin=4&data=${encodeURIComponent(`upi://pay?pa=${sessionQuery.data.restaurant.upiId}&pn=${encodeURIComponent(sessionQuery.data.restaurant.name)}&am=${(order.totalPaise / 100).toFixed(2)}&tn=${encodeURIComponent(`Order ${order.orderNumber}`)}&cu=INR`)}`}
-                      alt="Scan to pay via any UPI app"
-                      style={{ width: 180, height: 180, margin: '0 auto', display: 'block', borderRadius: 8 }}
+                {/* Mandatory UTR Entry after payment */}
+                <div style={{ marginTop: 14, padding: 12, background: 'var(--paper)', borderRadius: 10, border: '1px solid var(--line)' }}>
+                  <label htmlFor="upi-ref" style={{ fontSize: 12, fontWeight: 700, display: 'block', marginBottom: 4, color: 'var(--ink)' }}>
+                    Already paid in your UPI app?
+                  </label>
+                  <p className="muted" style={{ fontSize: 11, margin: '0 0 8px' }}>
+                    Enter the 12-digit UPI Reference / UTR Number from your payment receipt screen to confirm:
+                  </p>
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    <input
+                      id="upi-ref"
+                      className="input"
+                      placeholder="e.g. 423456789012"
+                      value={upiRef}
+                      onChange={(e) => setUpiRef(e.target.value.replace(/[^0-9a-zA-Z]/g, ''))}
+                      maxLength={30}
+                      style={{ fontSize: 13, flex: 1 }}
                     />
-                    <div style={{ fontSize: 11, color: '#333333', marginTop: 6, fontWeight: 600 }}>
-                      Scan with Google Pay, PhonePe, Paytm, or BHIM
-                    </div>
+                    <button
+                      type="button"
+                      className="btn"
+                      style={{
+                        background: 'var(--green, #315b43)',
+                        color: '#ffffff',
+                        fontWeight: 750,
+                        fontSize: 13,
+                        whiteSpace: 'nowrap'
+                      }}
+                      onClick={handleAutoConfirmPayment}
+                      disabled={upiConfirming || upiRef.trim().length < 6}
+                    >
+                      {upiConfirming ? 'Verifying…' : 'Submit UTR ✓'}
+                    </button>
                   </div>
-                )}
-              </div>
-            )}
+                </div>
 
-            {showUpiInput && (
-              <div style={{ marginBottom: 10 }}>
-                <label htmlFor="upi-ref" style={{ fontSize: 11, fontWeight: 600, display: 'block', marginBottom: 4 }}>
-                  UPI Reference / UTR Number (optional)
-                </label>
-                <input
-                  id="upi-ref"
-                  className="input"
-                  placeholder="e.g. 423456789012"
-                  value={upiRef}
-                  onChange={(e) => setUpiRef(e.target.value)}
-                  maxLength={50}
-                  style={{ fontSize: 13 }}
-                />
-              </div>
-            )}
-
-            <div style={{ display: 'grid', gap: 8 }}>
-              <button
-                type="button"
-                className="btn full"
-                style={{
-                  background: 'var(--green, #315b43)',
-                  color: '#ffffff',
-                  fontWeight: 750,
-                  fontSize: 14,
-                  minHeight: 44,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: 8,
-                  boxShadow: '0 4px 12px rgba(49, 91, 67, 0.2)'
-                }}
-                onClick={handleAutoConfirmPayment}
-                disabled={upiConfirming}
-              >
-                <span>✓</span>
-                <span>{upiConfirming ? 'Auto-Confirming Payment…' : "I've Paid via UPI · Auto-Confirm"}</span>
-              </button>
-
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 2 }}>
-                <button
-                  type="button"
-                  className="btn ghost small"
-                  style={{ fontSize: 11, padding: '2px 4px', color: 'var(--muted)' }}
-                  onClick={() => setShowUpiInput((prev) => !prev)}
-                >
-                  {showUpiInput ? '− Hide UTR input' : '+ Add UTR / Reference number'}
-                </button>
+                <div style={{ display: 'flex', justifyContent: 'center', marginTop: 10 }}>
+                  <button
+                    type="button"
+                    className="btn ghost small"
+                    style={{ fontSize: 11, padding: '4px 8px', color: 'var(--muted)' }}
+                    onClick={() => setAssistanceOpen(true)}
+                  >
+                    🔔 Pay with Cash / Card via Waiter
+                  </button>
+                </div>
+              </>
+            ) : (
+              /* When restaurant has no UPI ID configured: Show standard bill & cash/card payment */
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                  <div>
+                    <strong style={{ fontSize: 14, display: 'block', color: 'var(--ink)' }}>
+                      🧾 Bill & Payment ({money(order.totalPaise)})
+                    </strong>
+                    <span className="muted" style={{ fontSize: 11 }}>
+                      Pay with Cash or Card directly at your table or counter
+                    </span>
+                  </div>
+                  <span className="pill gray" style={{ fontSize: 10, fontWeight: 700 }}>
+                    UNPAID
+                  </span>
+                </div>
 
                 <button
                   type="button"
-                  className="btn ghost small"
-                  style={{ fontSize: 11, padding: '2px 4px', color: 'var(--muted)' }}
+                  className="btn full"
+                  style={{
+                    background: 'var(--green, #315b43)',
+                    color: '#ffffff',
+                    fontWeight: 750,
+                    fontSize: 14,
+                    minHeight: 44,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 8,
+                    boxShadow: '0 4px 12px rgba(49, 91, 67, 0.2)'
+                  }}
                   onClick={() => setAssistanceOpen(true)}
                 >
-                  🔔 Request Cash / Card Bill
+                  <span>🔔</span>
+                  <span>Request Bill from Waiter</span>
                 </button>
               </div>
-            </div>
+            )}
 
             {autoConfirmError && (
-              <div className="form-error" style={{ marginTop: 8, fontSize: 12 }}>
+              <div className="form-error" style={{ marginTop: 10, fontSize: 12 }}>
                 {autoConfirmError}
               </div>
             )}
