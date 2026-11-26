@@ -235,6 +235,33 @@ export default function CustomerMenuPage() {
     });
   }, [availableCategories, filteredItems]);
 
+  // Auto-sync active category on scroll using lightweight IntersectionObserver
+  useEffect(() => {
+    if (!availableCategories.length) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            const catId = entry.target.id.replace('category-', '');
+            setActiveCategory(catId);
+            const chip = document.getElementById(`chip-${catId}`);
+            if (chip) {
+              chip.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+            }
+          }
+        }
+      },
+      { rootMargin: '-15% 0px -75% 0px', threshold: 0 }
+    );
+
+    availableCategories.forEach((cat) => {
+      const el = document.getElementById(`category-${cat._id}`);
+      if (el) observer.observe(el);
+    });
+
+    return () => observer.disconnect();
+  }, [availableCategories]);
+
   if (session.data?.tableMismatch || (session.error instanceof ApiError && (session.error.status === 401 || session.error.code === 'CUSTOMER_SESSION_TABLE_MISMATCH'))) {
     return <Navigate to={`/order/${encodeURIComponent(token)}/verify`} replace />;
   }
@@ -252,7 +279,9 @@ export default function CustomerMenuPage() {
     setActiveCategory(id);
     const target = document.getElementById(`category-${id}`);
     if (target) {
-      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      const yOffset = -55;
+      const y = target.getBoundingClientRect().top + window.pageYOffset + yOffset;
+      window.scrollTo({ top: y, behavior: 'smooth' });
       target.classList.add('category-highlight-flash');
       window.setTimeout(() => target.classList.remove('category-highlight-flash'), 1200);
     }
@@ -524,11 +553,15 @@ export default function CustomerMenuPage() {
           </section>
         )}
 
-        {availableCategories.length > 0 && (
+      </div>
+
+      {availableCategories.length > 0 && (
+        <div className="menu-categories-sticky-wrap">
           <nav className="menu-categories" id="menu-category-nav" aria-label="Menu categories">
             {availableCategories.map((category) => (
               <button
                 key={category._id}
+                id={`chip-${category._id}`}
                 className={`category-chip ${activeCategory === category._id ? 'active' : ''}`}
                 onClick={() => scrollTo(category._id)}
               >
@@ -536,8 +569,8 @@ export default function CustomerMenuPage() {
               </button>
             ))}
           </nav>
-        )}
-      </div>
+        </div>
+      )}
 
       {availableCategories.length === 0 ? (
         <div className="surface" style={{ marginTop: 14 }}>
