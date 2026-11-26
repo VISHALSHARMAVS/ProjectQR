@@ -4,6 +4,7 @@ import { api, ApiError } from '../../lib/api';
 import { useStaff } from '../../hooks/useStaff';
 import { ErrorPanel, Loading, Modal } from '../../components/ui';
 import type { RestaurantInfo, StaffUser, UserPermissions, UserRole } from '../../types';
+import { BRAND_COLOR_PRESETS, extractDominantColor } from '../../lib/theme';
 
 interface SettingsPayload { restaurant: RestaurantInfo }
 interface SettingsForm {
@@ -27,14 +28,7 @@ interface SettingsForm {
   enableDishReviews: boolean;
 }
 
-const colorPresets = [
-  { label: 'Forest Green', hex: '#315b43' },
-  { label: 'Midnight Navy', hex: '#1e3a8a' },
-  { label: 'Deep Burgundy', hex: '#8b0000' },
-  { label: 'Warm Terracotta', hex: '#c85a32' },
-  { label: 'Rich Charcoal', hex: '#262626' },
-  { label: 'Golden Amber', hex: '#b45309' }
-];
+const colorPresets = BRAND_COLOR_PRESETS;
 
 export default function SettingsPage() {
   const staff = useStaff();
@@ -43,6 +37,7 @@ export default function SettingsPage() {
   const [overrides, setOverrides] = useState<Partial<SettingsForm>>({});
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string>('');
+  const [detectedLogoColor, setDetectedLogoColor] = useState<string | null>(null);
   const [bannerFile, setBannerFile] = useState<File | null>(null);
   const [bannerPreview, setBannerPreview] = useState<string>('');
   const [message, setMessage] = useState('');
@@ -69,12 +64,21 @@ export default function SettingsPage() {
     enableDishReviews: overrides.enableDishReviews ?? restaurant?.enableDishReviews ?? true
   };
 
-  const handleLogoChange = (file: File | null) => {
+  const handleLogoChange = async (file: File | null) => {
     setLogoFile(file);
     if (file) {
       setLogoPreview(URL.createObjectURL(file));
+      const extracted = await extractDominantColor(file);
+      if (extracted) {
+        setDetectedLogoColor(extracted);
+        // If current color is default, auto-apply the extracted logo brand color
+        if (!overrides.brandColor || form.brandColor.toLowerCase() === '#315b43') {
+          setOverrides((curr) => ({ ...curr, brandColor: extracted }));
+        }
+      }
     } else {
       setLogoPreview('');
+      setDetectedLogoColor(null);
     }
   };
 
@@ -302,6 +306,20 @@ export default function SettingsPage() {
                 />
               ))}
             </div>
+            {detectedLogoColor && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10, width: '100%' }}>
+                <span className="muted" style={{ fontSize: 12 }}>Extracted from logo:</span>
+                <button
+                  type="button"
+                  className="btn secondary small"
+                  style={{ minHeight: 28, padding: '3px 10px', fontSize: 12, display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                  onClick={() => setOverrides((current) => ({ ...current, brandColor: detectedLogoColor }))}
+                >
+                  <span style={{ width: 12, height: 12, borderRadius: 3, background: detectedLogoColor, display: 'inline-block' }} />
+                  Apply {detectedLogoColor.toUpperCase()}
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Live Preview Card */}

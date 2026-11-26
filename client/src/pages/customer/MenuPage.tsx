@@ -9,6 +9,7 @@ import { ReviewModal } from '../../components/ReviewModal';
 import { CategorySheet, type CategoryItem } from '../../components/CategorySheet';
 import { ThemeToggle } from '../../components/ThemeToggle';
 import { useOrderSocket } from '../../hooks/useOrderSocket';
+import { getBrandStyle } from '../../lib/theme';
 import type { Category, CustomerHistory, DietaryType, MenuItem, MenuItemAddon, MenuItemVariant, RestaurantInfo, TableCartLine } from '../../types';
 
 interface CustomerSession {
@@ -295,10 +296,7 @@ export default function CustomerMenuPage() {
   const totalQuantity = cart.reduce((sum, line) => sum + line.quantity, 0);
   const subtotal = cart.reduce((sum, line) => sum + line.quantity * line.unitPricePaise, 0);
 
-  const brandStyle = restaurant.brandColor ? ({
-    '--green': restaurant.brandColor,
-    '--green-dark': restaurant.brandColor
-  } as CSSProperties) : undefined;
+  const brandStyle = getBrandStyle(restaurant.brandColor);
 
   // Compute live subtotal inside customization modal
   const modalUnitPrice = (selectedVariant ? selectedVariant.pricePaise : (customizingItem?.pricePaise || 0)) +

@@ -6,6 +6,7 @@ import { ApiError, api } from '../../lib/api';
 import { Loading } from '../../components/ui';
 import { ThemeToggle } from '../../components/ThemeToggle';
 import { formatTableLabel } from '../../lib/format';
+import { getBrandStyle } from '../../lib/theme';
 import type { CustomerTabInfo, RestaurantInfo } from '../../types';
 
 interface TableLanding {
@@ -95,10 +96,7 @@ export default function VerifyPage() {
   const { restaurant, table } = tableQuery.data;
   const isStrictOtp = Boolean(restaurant.requireCustomerOtp);
   const requested = requestMutation.isSuccess;
-  const brandStyle = restaurant.brandColor ? ({
-    '--green': restaurant.brandColor,
-    '--green-dark': restaurant.brandColor
-  } as CSSProperties) : undefined;
+  const brandStyle = getBrandStyle(restaurant.brandColor);
   const isPending = quickJoinMutation.isPending || requestMutation.isPending || verifyMutation.isPending || switchTableMutation.isPending;
   const requiresPin = Boolean(table.hasActiveParty && joinMode === 'join');
   const isPinReady = !requiresPin || pin.trim().length === 4;

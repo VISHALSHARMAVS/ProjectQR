@@ -43,19 +43,19 @@
   --duration-interactive: 300ms;
 }
 
-/* Dark Theme Tokens (Mesa Brand Guidelines: Obsidian Canvas & Slate Container) */
+/* Dark Theme Tokens (Compliant with SKILL.md B4: Neutral Obsidian Palette) */
 [data-theme="dark"] {
   color-scheme: dark;
-  --bg: #07150e;
+  --bg: #000000;
   --ink: #f8fafc;
   --muted: #94a3b8;
-  --line: #163824;
-  --paper: #0b2016;
-  --paper-elevated: #102b1e;
-  --paper-hover: #163824;
+  --line: #313131;
+  --paper: #181818;
+  --paper-elevated: #1f1f1f;
+  --paper-hover: #272727;
   --green: #16a34a;
-  --green-dark: #14532d;
-  --soft-green: #0d281a;
+  --green-dark: #15803d;
+  --soft-green: rgba(22, 163, 74, 0.15);
   --orange: #f59e0b;
   --soft-orange: #451a03;
   --red: #ef4444;
@@ -189,7 +189,7 @@ p, body, .body-1, .body-2, .body-3, .body-4, .body-5, .body-6 {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 8px 14px;
+  padding: 8px 12px;
   border: 1px solid transparent;
   border-radius: 10px;
   color: white;

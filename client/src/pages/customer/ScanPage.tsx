@@ -5,6 +5,7 @@ import { api, ApiError } from '../../lib/api';
 import { Loading } from '../../components/ui';
 import { ThemeToggle } from '../../components/ThemeToggle';
 import { formatTableLabel } from '../../lib/format';
+import { getBrandStyle } from '../../lib/theme';
 import type { RestaurantInfo } from '../../types';
 
 interface TableLanding { restaurant: RestaurantInfo; table: { id: string; label: string; hasActiveParty?: boolean } }
@@ -43,10 +44,7 @@ export default function ScanPage() {
   }
   if (!query.data) return <Navigate to="/" replace />;
   const { restaurant, table } = query.data;
-  const brandStyle = restaurant.brandColor ? ({
-    '--green': restaurant.brandColor,
-    '--green-dark': restaurant.brandColor
-  } as CSSProperties) : undefined;
+  const brandStyle = getBrandStyle(restaurant.brandColor);
 
   return <main className="customer-wrap customer-page" style={brandStyle}>
     {restaurant.bannerUrl && (

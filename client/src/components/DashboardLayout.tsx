@@ -6,6 +6,7 @@ import { api } from '../lib/api';
 import { Loading } from './ui';
 import { ThemeToggle } from './ThemeToggle';
 import type { UserRole } from '../types';
+import { getBrandStyle } from '../lib/theme';
 
 function OverviewIcon() {
   return (
@@ -196,11 +197,7 @@ export default function DashboardLayout() {
   const restaurant = staff.data?.restaurant;
   const name = restaurant?.name ?? 'Restaurant';
   const brandColor = restaurant?.brandColor || '#315b43';
-  const brandStyle = {
-    '--green': brandColor,
-    '--green-dark': brandColor,
-    '--soft-green': `${brandColor}18`
-  } as CSSProperties;
+  const brandStyle = getBrandStyle(brandColor);
 
   const user = staff.data?.user;
   const userName = user?.name || 'User';

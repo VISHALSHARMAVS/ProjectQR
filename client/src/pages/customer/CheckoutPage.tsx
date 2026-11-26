@@ -7,6 +7,7 @@ import { createIdempotencyKey } from '../../lib/idempotency';
 import { EmptyState, Loading } from '../../components/ui';
 import { ThemeToggle } from '../../components/ThemeToggle';
 import { useOrderSocket } from '../../hooks/useOrderSocket';
+import { getBrandStyle } from '../../lib/theme';
 import type { MenuItem, OrderStatus, RestaurantInfo, TableCartLine } from '../../types';
 
 interface CustomerSession {
@@ -171,10 +172,7 @@ export default function CheckoutPage() {
   if (!session.data) return <div className="customer-wrap"><Loading /></div>;
   if (menu.error) return <main className="customer-wrap customer-page"><div className="form-error" style={{ marginTop: 24 }}>We couldn’t verify the current menu. Please refresh before placing your order.</div><button className="btn secondary" style={{ marginTop: 12 }} onClick={() => void menu.refetch()}>Refresh menu</button></main>;
   const { restaurant, table, customer } = session.data;
-  const brandStyle = restaurant.brandColor ? ({
-    '--green': restaurant.brandColor,
-    '--green-dark': restaurant.brandColor
-  } as CSSProperties) : undefined;
+  const brandStyle = getBrandStyle(restaurant.brandColor);
 
   if (cart.length === 0) return (
     <main className="customer-wrap customer-page" style={brandStyle}>

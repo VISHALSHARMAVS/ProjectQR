@@ -9,6 +9,7 @@ import { ReviewModal } from '../../components/ReviewModal';
 import { ThemeToggle } from '../../components/ThemeToggle';
 import { useOrderSocket } from '../../hooks/useOrderSocket';
 import { playPaymentSuccessChime } from '../../lib/audio';
+import { getBrandStyle } from '../../lib/theme';
 import type { OrderRecord, OrderStatus, RestaurantInfo } from '../../types';
 
 interface OrderResponse { order: OrderRecord }
@@ -147,8 +148,10 @@ export default function TrackingPage() {
     }
   };
 
+  const brandStyle = getBrandStyle(sessionQuery.data?.restaurant?.brandColor);
+
   return (
-    <main className="customer-wrap customer-page">
+    <main className="customer-wrap customer-page" style={brandStyle}>
       <header className="customer-header">
         <div
           className="restaurant-logo"
@@ -169,7 +172,7 @@ export default function TrackingPage() {
             className="btn secondary small"
             onClick={() => setAssistanceOpen(true)}
           >
-            🔔 Call staff
+            Call staff
           </button>
         </div>
       </header>
@@ -295,7 +298,6 @@ export default function TrackingPage() {
               onClick={restoreToCart}
               disabled={restoring}
             >
-              <span>🔄</span>
               <span>{restoring ? 'Restoring dishes to cart…' : 'Restore Dishes to Cart & Re-order'}</span>
             </button>
             {restoreError && <div className="form-error" style={{ marginTop: 10 }}>{restoreError}</div>}
@@ -335,7 +337,6 @@ export default function TrackingPage() {
               }}
               onClick={() => setReviewOpen(true)}
             >
-              <span>⭐</span>
               <span>Rate Your Dining Experience</span>
             </button>
           </div>
@@ -346,7 +347,7 @@ export default function TrackingPage() {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                   <div>
                     <strong style={{ fontSize: 14, display: 'block', color: 'var(--ink)' }}>
-                      📱 Pay via UPI
+                      Pay via UPI
                     </strong>
                     <span className="muted" style={{ fontSize: 11 }}>
                       Scan QR or tap to open your preferred UPI app
@@ -404,7 +405,7 @@ export default function TrackingPage() {
                         }
                       }}
                     >
-                      📋 Copy
+                      Copy
                     </button>
                   </div>
                 </div>
@@ -452,7 +453,7 @@ export default function TrackingPage() {
                     style={{ fontSize: 11, padding: '4px 8px', color: 'var(--muted)' }}
                     onClick={() => setAssistanceOpen(true)}
                   >
-                    🔔 Pay with Cash / Card via Waiter
+                    Pay with Cash / Card via Waiter
                   </button>
                 </div>
               </>
@@ -462,7 +463,7 @@ export default function TrackingPage() {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                   <div>
                     <strong style={{ fontSize: 14, display: 'block', color: 'var(--ink)' }}>
-                      🧾 Bill & Payment ({money(order.totalPaise)})
+                      Bill & Payment ({money(order.totalPaise)})
                     </strong>
                     <span className="muted" style={{ fontSize: 11 }}>
                       Pay with Cash or Card directly at your table or counter
@@ -490,7 +491,6 @@ export default function TrackingPage() {
                   }}
                   onClick={() => setAssistanceOpen(true)}
                 >
-                  <span>🔔</span>
                   <span>Request Bill from Waiter</span>
                 </button>
               </div>
@@ -509,7 +509,7 @@ export default function TrackingPage() {
       {tableVacated && (
         <div style={{ padding: 14, background: 'var(--soft-green)', border: '1.5px solid var(--green)', borderRadius: 12, marginTop: 14, textAlign: 'center' }}>
           <strong style={{ color: 'var(--green)', display: 'block', fontSize: 14 }}>
-            👋 Table Cleared · Visit Complete
+            Table Cleared · Visit Complete
           </strong>
           <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--ink)' }}>
             This table is now cleared for the next guests. Thank you for dining with us!
