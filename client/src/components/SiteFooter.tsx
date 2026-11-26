@@ -2,17 +2,15 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Brand, Modal } from './ui';
 import { ThemeToggle } from './ThemeToggle';
-import { ScrollReveal } from './ScrollReveal';
 
 export function SiteFooter() {
-  const [legalModal, setLegalModal] = useState<'privacy' | 'terms' | 'settlement' | null>(null);
+  const [legalModal, setLegalModal] = useState<'privacy' | 'terms' | 'settlement' | 'contact' | null>(null);
 
   return (
     <>
       <footer className="site-footer">
         <div className="page-wrap">
-          <ScrollReveal>
-            {/* Top Trust Pill Strip */}
+          {/* Top Trust Pill Strip */}
           <div
             style={{
               display: 'flex',
@@ -152,6 +150,20 @@ export function SiteFooter() {
                     Data privacy guarantee
                   </button>
                 </li>
+                <li>
+                  <button
+                    type="button"
+                    className="site-footer-link"
+                    onClick={() => setLegalModal('contact')}
+                  >
+                    Contact &amp; support
+                  </button>
+                </li>
+                <li>
+                  <a href="mailto:support@trymesa.in" className="site-footer-link">
+                    support@trymesa.in
+                  </a>
+                </li>
               </ul>
             </div>
           </div>
@@ -186,6 +198,14 @@ export function SiteFooter() {
               >
                 Zero percent commission policy
               </button>
+              <span aria-hidden="true">·</span>
+              <button
+                type="button"
+                className="site-footer-legal-btn"
+                onClick={() => setLegalModal('contact')}
+              >
+                Contact
+              </button>
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -195,7 +215,6 @@ export function SiteFooter() {
               <ThemeToggle variant="compact" />
             </div>
           </div>
-        </ScrollReveal>
       </div>
     </footer>
 
@@ -282,6 +301,36 @@ export function SiteFooter() {
             <h4 style={{ margin: '0 0 6px', fontSize: 15 }}>3. Real Time Webhook Verification</h4>
             <p className="muted" style={{ margin: 0 }}>
               Our webhook listener instantly verifies receipt of funds, sounds an acoustic chime on your kitchen screen, and marks the table order as paid in real time.
+            </p>
+          </div>
+        </Modal>
+      )}
+
+      {/* Contact & Support Modal */}
+      {legalModal === 'contact' && (
+        <Modal
+          title="Contact Mesa Support & Onboarding"
+          onClose={() => setLegalModal(null)}
+          width={540}
+        >
+          <div style={{ padding: '12px 4px', fontSize: 14, lineHeight: 1.6, color: 'var(--ink)' }}>
+            <h4 style={{ margin: '0 0 6px', fontSize: 15 }}>Email Support</h4>
+            <p className="muted" style={{ margin: '0 0 16px' }}>
+              Reach our onboarding and technical support team at{' '}
+              <a href="mailto:support@trymesa.in" style={{ color: 'var(--green)', fontWeight: 600 }}>
+                support@trymesa.in
+              </a>
+              .
+            </p>
+
+            <h4 style={{ margin: '0 0 6px', fontSize: 15 }}>Restaurant Onboarding</h4>
+            <p className="muted" style={{ margin: '0 0 16px' }}>
+              Need help importing your existing menu, configuring UPI settlement, or setting up table QR stands? Include your restaurant name and city and we will assist you.
+            </p>
+
+            <h4 style={{ margin: '0 0 6px', fontSize: 15 }}>Support Hours</h4>
+            <p className="muted" style={{ margin: 0 }}>
+              Monday to Sunday · 10:00 AM – 10:00 PM IST
             </p>
           </div>
         </Modal>

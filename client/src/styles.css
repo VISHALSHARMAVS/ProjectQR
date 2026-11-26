@@ -221,7 +221,12 @@ p, body, .body-1, .body-2, .body-3, .body-4, .body-5, .body-6 {
 .field label { font-size: 12px; font-weight: 600; color: var(--ink); }
 .form-grid { display: grid; gap: 16px; min-width: 0; max-width: 100%; }
 .form-error, .notice { padding: 11px 13px; border-radius: 10px; color: #873c31; background: #f8ebe7; font-size: 13px; border: 1px solid #fca5a5; }
-.notice.success { color: #2e5a3c; background: var(--soft-green); border: 1px solid #86efac; }
+.notice.success { color: #166534; background: var(--soft-green); border: 1px solid #86efac; }
+[data-theme="dark"] .notice.success { color: #86efac; background: rgba(22, 163, 74, 0.14); border-color: rgba(34, 197, 94, 0.35); }
+.field-error { color: #b91c1c; font-size: 12px; font-weight: 500; margin-top: 4px; }
+[data-theme="dark"] .field-error { color: #fca5a5; }
+.input.is-invalid { border-color: #dc2626; }
+[data-theme="dark"] .input.is-invalid { border-color: #ef4444; }
 .heading-row { display: flex; align-items: end; justify-content: space-between; gap: 20px; margin: 28px 0 18px; flex-wrap: wrap; }
 .heading-row h1, .heading-row h2 { margin: 3px 0 0; letter-spacing: -.03em; }
 .heading-row h1 { font-size: clamp(25px, 4vw, 36px); }

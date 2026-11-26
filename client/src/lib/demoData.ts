@@ -8,7 +8,7 @@ export interface DemoState {
   orders: OrderRecord[];
 }
 
-const STORAGE_KEY = 'mesa_interactive_demo_v3';
+const STORAGE_KEY = 'mesa_interactive_demo_v4';
 
 export const initialDemoRestaurant: RestaurantInfo = {
   id: 'demo-rest-01',
@@ -106,6 +106,18 @@ export const initialDemoItems: MenuItem[] = [
   },
   {
     _id: 'item-6',
+    categoryId: 'cat-3',
+    name: 'Spiced Kokum & Ginger Fizz',
+    description: 'Coastal kokum reduction muddled with fresh ginger, roasted cumin and sparkling water',
+    pricePaise: 19000,
+    imageUrl: 'https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?auto=format&fit=crop&w=500&q=80',
+    available: true,
+    dietary: 'VEG',
+    preparationMinutes: 4,
+    displayOrder: 2
+  },
+  {
+    _id: 'item-7',
     categoryId: 'cat-4',
     name: 'Saffron Pistachio Tres Leches',
     description: 'Kashmiri saffron soaked sponge cake crowned with crushed roasted pistachios',
@@ -115,6 +127,18 @@ export const initialDemoItems: MenuItem[] = [
     dietary: 'VEG',
     preparationMinutes: 4,
     displayOrder: 1
+  },
+  {
+    _id: 'item-8',
+    categoryId: 'cat-4',
+    name: 'Dark Chocolate Sea Salt Tart',
+    description: '70% single-origin dark chocolate ganache in a crisp cocoa pastry shell with flaky sea salt',
+    pricePaise: 33000,
+    imageUrl: 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?auto=format&fit=crop&w=500&q=80',
+    available: true,
+    dietary: 'EGG',
+    preparationMinutes: 4,
+    displayOrder: 2
   }
 ];
 
