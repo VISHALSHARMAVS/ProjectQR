@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
-import type { CSSProperties } from 'react';
 import { ApiError, api } from '../../lib/api';
 import { Loading } from '../../components/ui';
 import { ThemeToggle } from '../../components/ThemeToggle';

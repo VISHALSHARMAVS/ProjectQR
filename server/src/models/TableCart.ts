@@ -21,10 +21,10 @@ const tableCartItemSchema = new Schema({
 const tableCartSchema = new Schema({
   restaurantId: { type: Schema.Types.ObjectId, ref: 'Restaurant', required: true, index: true },
   tableId: { type: Schema.Types.ObjectId, ref: 'DiningTable', required: true, index: true },
-  tabId: { type: String, default: 'main', index: true },
+  tabId: { type: String, required: true, default: 'main', index: true },
   items: { type: [tableCartItemSchema], default: [] }
 }, { timestamps: true });
-tableCartSchema.index({ tableId: 1, tabId: 1 }, { unique: true });
+tableCartSchema.index({ restaurantId: 1, tableId: 1, tabId: 1 }, { unique: true });
 
 export interface TableCartItemDoc {
   menuItemId: Types.ObjectId;

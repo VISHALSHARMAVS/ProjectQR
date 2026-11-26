@@ -98,7 +98,7 @@ webhooksRouter.post('/payment', async (req, res) => {
     if (!signature) {
       throw new AppError(401, 'MISSING_SIGNATURE', 'Webhook signature header is required.');
     }
-    const rawPayload = (req as any).rawBody || (typeof req.body === 'string' ? req.body : JSON.stringify(req.body));
+    const rawPayload = req.rawBody || (typeof req.body === 'string' ? req.body : JSON.stringify(req.body));
     const valid = verifyWebhookSignature(rawPayload, signature, restaurant.webhookSecret);
     if (!valid) throw new AppError(401, 'INVALID_SIGNATURE', 'Webhook signature verification failed.');
   }

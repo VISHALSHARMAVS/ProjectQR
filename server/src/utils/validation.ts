@@ -3,6 +3,10 @@ import { z } from 'zod';
 export const objectIdSchema = z.string().regex(/^[a-f\d]{24}$/i, 'Invalid identifier');
 export const labelSchema = z.string().trim().min(1).max(40);
 
+export function sanitizePlainText(raw: string): string {
+  return raw.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
+}
+
 export function normalizePhone(raw: string): string | null {
   let digits = raw.replace(/[^\d]/g, '');
   if (digits.length === 11 && digits.startsWith('0')) digits = digits.slice(1);

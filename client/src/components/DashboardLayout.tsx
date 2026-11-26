@@ -1,4 +1,4 @@
-import { useState, type CSSProperties, type ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, Navigate, NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useStaff } from '../hooks/useStaff';
@@ -150,7 +150,7 @@ export default function DashboardLayout() {
     queryKey: ['restaurant-reviews-count'],
     queryFn: () => api.get<{ summary: { unresolvedComplaints: number } }>('/restaurant/reviews'),
     refetchInterval: 15_000,
-    enabled: staff.data?.user.role !== 'kitchen'
+    enabled: staff.data?.user.role === 'owner' || Boolean(staff.data?.user.permissions?.canManageReviews)
   });
   const unresolvedAlertCount = reviewsCountQuery.data?.summary?.unresolvedComplaints ?? 0;
 
@@ -228,19 +228,26 @@ export default function DashboardLayout() {
       return ['/dashboard/kitchen', '/dashboard/orders'].includes(to);
     }
     if (userRole === 'waiter') {
-      if (['/dashboard/floor-map', '/dashboard/orders', '/dashboard/tables'].includes(to)) return true;
-      if (to === '/dashboard/menu' && perms?.canManageStock) return true;
+      if (['/dashboard/floor-map', '/dashboard/orders'].includes(to)) return true;
+      if (to === '/dashboard/reviews') return Boolean(perms?.canManageReviews);
       return false;
     }
     if (userRole === 'cashier') {
-      if (['/dashboard/orders', '/dashboard/floor-map', '/dashboard/day-close', '/dashboard/tables'].includes(to)) return true;
-      if (to === '/dashboard/menu' && perms?.canManageStock) return true;
+      if (['/dashboard/orders', '/dashboard/floor-map'].includes(to)) return true;
+      if (to === '/dashboard/day-close') return Boolean(perms?.canCloseRegister || perms?.canViewFinancials);
+      if (to === '/dashboard/reviews') return Boolean(perms?.canManageReviews);
+      if (to === '/dashboard/overview') return Boolean(perms?.canViewFinancials);
       return false;
     }
-    if (userRole === 'manager') {
-      return to !== '/dashboard/settings';
-    }
-    return to !== '/dashboard/settings';
+    // Manager / Staff: gate strictly on effective permissions
+    if (to === '/dashboard/settings') return false;
+    if (to === '/dashboard/overview') return Boolean(perms?.canViewFinancials);
+    if (to === '/dashboard/day-close') return Boolean(perms?.canCloseRegister || perms?.canViewFinancials);
+    if (to === '/dashboard/reviews') return Boolean(perms?.canManageReviews);
+    if (to === '/dashboard/menu') return Boolean(perms?.canEditMenu || perms?.canManageStock);
+    if (to === '/dashboard/categories') return Boolean(perms?.canEditMenu);
+    if (to === '/dashboard/tables') return Boolean(perms?.canEditMenu || perms?.canSettleBills);
+    return true;
   };
 
   const visibleLinks = links.filter((item) => isLinkVisible(item.to));

@@ -4,6 +4,7 @@ const tableSchema = new Schema({
   restaurantId: { type: Schema.Types.ObjectId, ref: 'Restaurant', required: true, index: true },
   label: { type: String, required: true, trim: true, maxlength: 40 },
   qrToken: { type: String, required: true, unique: true, index: true },
+  capacity: { type: Number, min: 1, max: 50, default: null },
   active: { type: Boolean, default: true },
   needsClearing: { type: Boolean, default: false },
   clearedAt: { type: Date, default: null },
@@ -18,6 +19,7 @@ export interface DiningTableDoc {
   restaurantId: Types.ObjectId;
   label: string;
   qrToken: string;
+  capacity?: number | null;
   active: boolean;
   needsClearing?: boolean;
   clearedAt?: Date | null;

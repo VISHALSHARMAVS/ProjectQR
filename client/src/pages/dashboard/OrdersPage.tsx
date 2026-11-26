@@ -214,7 +214,7 @@ export default function OrdersPage({ kitchen = false }: { kitchen?: boolean }) {
             ➕ Punch New Order
           </button>
         )}
-        {!kitchen && (
+        {!kitchen && (staff.data?.user.role === 'owner' || staff.data?.user.permissions?.canManageReviews) && (
           <Link
             to="/dashboard/reviews"
             className="btn secondary small"

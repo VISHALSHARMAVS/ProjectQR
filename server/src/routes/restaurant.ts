@@ -1,10 +1,11 @@
 import { randomBytes } from 'node:crypto';
 import { Router } from 'express';
+import { Types } from 'mongoose';
 import multer from 'multer';
 import QRCode from 'qrcode';
 import { z } from 'zod';
 import { env } from '../config/env.js';
-import { requirePermission, requireRoles, requireStaff } from '../middleware/auth.js';
+import { requireAnyPermission, requireRoles, requireStaff } from '../middleware/auth.js';
 import { CustomerSession } from '../models/CustomerSession.js';
 import { DiningTable } from '../models/DiningTable.js';
 import { MenuItem } from '../models/MenuItem.js';
@@ -12,7 +13,7 @@ import { Order, type OrderDoc } from '../models/Order.js';
 import { Restaurant } from '../models/Restaurant.js';
 import { ServiceRequest } from '../models/ServiceRequest.js';
 import { TableCart } from '../models/TableCart.js';
-import { User, getDefaultPermissions, type UserDoc, type UserPermissions, type UserRole } from '../models/User.js';
+import { User, getDefaultPermissions, type UserRole } from '../models/User.js';
 import { getOrderSocket } from './orders.js';
 import { saveMenuImage } from '../services/imageStorage.js';
 import { hashPassword } from '../services/password.js';
@@ -93,7 +94,7 @@ restaurantRouter.get('/dashboard', async (req, res) => {
   });
 });
 
-restaurantRouter.get('/day-close', requirePermission('canCloseRegister'), async (req, res) => {
+restaurantRouter.get('/day-close', requireAnyPermission('canCloseRegister', 'canViewFinancials'), async (req, res) => {
   const restaurantId = req.staff!.restaurantId;
   const restaurant = await Restaurant.findById(restaurantId).select('name gstin gstPercentage');
   if (!restaurant) throw new AppError(404, 'NOT_FOUND', 'Restaurant not found.');
@@ -374,12 +375,30 @@ tablesRouter.get('/live-status', async (req, res) => {
     }
   }
 
-  // 3. Fetch active orders (NEW, ACCEPTED, PREPARING, READY)
-  const activeOrders = await Order.find({
-    restaurantId,
-    tableId: { $in: tableIds },
-    status: { $in: ['NEW', 'ACCEPTED', 'PREPARING', 'READY'] }
-  }).sort({ createdAt: -1 }).lean();
+  // 3. Fetch active orders (NEW, ACCEPTED, PREPARING, READY) & active customer occupancy
+  const now = new Date();
+  const [activeOrders, activeSessionCounts] = await Promise.all([
+    Order.find({
+      restaurantId,
+      tableId: { $in: tableIds },
+      status: { $in: ['NEW', 'ACCEPTED', 'PREPARING', 'READY'] }
+    }).sort({ createdAt: -1 }).lean(),
+    CustomerSession.aggregate<{ _id: Types.ObjectId; count: number }>([
+      {
+        $match: {
+          restaurantId: new Types.ObjectId(String(restaurantId)),
+          tableId: { $in: tableIds },
+          revokedAt: null,
+          expiresAt: { $gt: now }
+        }
+      },
+      { $group: { _id: '$tableId', count: { $sum: 1 } } }
+    ])
+  ]);
+
+  const occupancyByTable = new Map<string, number>(
+    activeSessionCounts.map((entry) => [String(entry._id), entry.count])
+  );
 
   const ordersByTable = new Map<string, typeof activeOrders>();
   for (const ord of activeOrders) {
@@ -390,11 +409,16 @@ tablesRouter.get('/live-status', async (req, res) => {
     ordersByTable.get(tid)!.push(ord);
   }
 
-  // 4. Construct live status summary per table
-  const tableStatuses = tables.map((table) => {
+  // 4. Construct live status summary per table (natural numeric sort: Table 1, Table 2, ..., Table 10)
+  const sortedTables = [...tables].sort((a, b) =>
+    a.label.localeCompare(b.label, undefined, { numeric: true, sensitivity: 'base' })
+  );
+
+  const tableStatuses = sortedTables.map((table) => {
     const tid = String(table._id);
     const pendingRequest = requestByTable.get(tid);
     const tableOrders = ordersByTable.get(tid) || [];
+    const activeGuestsCount = occupancyByTable.get(tid) ?? 0;
 
     // Derive status
     let state: 'VACANT' | 'NEEDS_CLEARING' | 'SEATED' | 'PREPARING' | 'READY' | 'HELP_NEEDED' | 'BILL_REQUESTED' = 'VACANT';
@@ -407,7 +431,7 @@ tablesRouter.get('/live-status', async (req, res) => {
       state = 'READY';
     } else if (tableOrders.some((o) => ['ACCEPTED', 'PREPARING'].includes(o.status))) {
       state = 'PREPARING';
-    } else if (tableOrders.some((o) => o.status === 'NEW')) {
+    } else if (tableOrders.some((o) => o.status === 'NEW') || activeGuestsCount > 0) {
       state = 'SEATED';
     } else if (table.needsClearing) {
       state = 'NEEDS_CLEARING';
@@ -418,6 +442,8 @@ tablesRouter.get('/live-status', async (req, res) => {
     return {
       id: String(table._id),
       label: table.label,
+      capacity: table.capacity ?? null,
+      activeGuestsCount,
       active: table.active,
       needsClearing: Boolean(table.needsClearing),
       state,
@@ -442,20 +468,34 @@ tablesRouter.get('/live-status', async (req, res) => {
   res.json({ tables: tableStatuses });
 });
 
+const tableCapacitySchema = z.number().int().min(1).max(50).nullable().optional();
+
 tablesRouter.get('/', async (req, res) => {
-  const tables = await DiningTable.find(tenantFilter(req.staff!.restaurantId)).sort({ createdAt: 1, label: 1 }).select('-qrToken').lean();
+  const tables = await DiningTable.find(tenantFilter(req.staff!.restaurantId)).select('-qrToken').lean();
+  tables.sort((a, b) => a.label.localeCompare(b.label, undefined, { numeric: true, sensitivity: 'base' }));
   res.json({ tables });
 });
 tablesRouter.post('/', requireRoles('owner', 'manager', 'staff'), async (req, res) => {
-  const parsed = z.object({ label: labelSchema }).strict().safeParse(req.body);
+  const parsed = z.object({ label: labelSchema, capacity: tableCapacitySchema }).strict().safeParse(req.body);
   if (!parsed.success) throw new AppError(400, 'INVALID_INPUT', parsed.error.issues[0]?.message ?? 'Enter a table label.');
-  const table = await DiningTable.create({ restaurantId: req.staff!.restaurantId, label: parsed.data.label, qrToken: randomBytes(24).toString('base64url') });
-  res.status(201).json({ table: { id: table.id, label: table.label, active: table.active, createdAt: table.createdAt } });
+  const table = await DiningTable.create({
+    restaurantId: req.staff!.restaurantId,
+    label: parsed.data.label,
+    capacity: parsed.data.capacity ?? null,
+    qrToken: randomBytes(24).toString('base64url')
+  });
+  res.status(201).json({
+    table: { id: table.id, label: table.label, capacity: table.capacity ?? null, active: table.active, createdAt: table.createdAt }
+  });
 });
 tablesRouter.patch('/:id', requireRoles('owner', 'manager', 'staff'), async (req, res) => {
   if (!objectIdSchema.safeParse(req.params.id).success) throw new AppError(400, 'INVALID_ID', 'Invalid table identifier.');
-  const parsed = z.object({ label: labelSchema.optional(), active: z.boolean().optional() }).strict().safeParse(req.body);
-  if (!parsed.success || Object.keys(parsed.data ?? {}).length === 0) throw new AppError(400, 'INVALID_INPUT', 'Provide a valid table label or active state.');
+  const parsed = z.object({
+    label: labelSchema.optional(),
+    active: z.boolean().optional(),
+    capacity: tableCapacitySchema
+  }).strict().safeParse(req.body);
+  if (!parsed.success || Object.keys(parsed.data ?? {}).length === 0) throw new AppError(400, 'INVALID_INPUT', 'Provide a valid table label, capacity, or active state.');
   const table = await DiningTable.findOneAndUpdate(tenantFilter(req.staff!.restaurantId, { _id: req.params.id }), parsed.data, { returnDocument: 'after', runValidators: true }).select('-qrToken');
   if (!table) throw new AppError(404, 'NOT_FOUND', 'Table not found.');
   res.json({ table });

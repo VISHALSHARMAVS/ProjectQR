@@ -156,13 +156,17 @@ export default function FloorMapPage() {
     preparing: tables.filter((t) => ['PREPARING', 'READY'].includes(t.state)).length
   };
 
+  const sortedTables = [...tables].sort((a, b) =>
+    a.label.localeCompare(b.label, undefined, { numeric: true, sensitivity: 'base' })
+  );
+
   const filteredTables = filterState === 'ALL'
-    ? tables
+    ? sortedTables
     : filterState === 'OCCUPIED'
-      ? tables.filter((t) => !['VACANT', 'NEEDS_CLEARING'].includes(t.state))
+      ? sortedTables.filter((t) => !['VACANT', 'NEEDS_CLEARING'].includes(t.state))
       : filterState === 'ATTENTION'
-        ? tables.filter((t) => ['HELP_NEEDED', 'BILL_REQUESTED'].includes(t.state))
-        : tables.filter((t) => t.state === filterState);
+        ? sortedTables.filter((t) => ['HELP_NEEDED', 'BILL_REQUESTED'].includes(t.state))
+        : sortedTables.filter((t) => t.state === filterState);
 
   return (
     <>
@@ -362,12 +366,19 @@ export default function FloorMapPage() {
                 }}
               >
                 {/* Header: Table label & Status Icon */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
                   <strong style={{ fontSize: 18, color: 'var(--ink)' }}>
                     {formatTableLabel(table.label)}
                   </strong>
                   <span style={{ fontSize: 18 }}>{cfg.icon}</span>
                 </div>
+                {(table.capacity || (table.activeGuestsCount ?? 0) > 0) && (
+                  <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--muted)', marginBottom: 8 }}>
+                    {table.capacity
+                      ? `${table.activeGuestsCount ?? 0} / ${table.capacity} seats`
+                      : `${table.activeGuestsCount ?? 0} active`}
+                  </div>
+                )}
 
                 {/* Status Badge */}
                 <div style={{ marginBottom: 12 }}>

@@ -20,9 +20,11 @@ export default function TablesPage() {
   const client = useQueryClient();
   const query = useQuery({ queryKey: ['staff-tables'], queryFn: () => api.get<TablesPayload>('/tables') });
   const [label, setLabel] = useState('');
+  const [capacity, setCapacity] = useState('');
   const [error, setError] = useState('');
   const [editing, setEditing] = useState<TableRecord | null>(null);
   const [editLabel, setEditLabel] = useState('');
+  const [editCapacity, setEditCapacity] = useState('');
   const [qr, setQr] = useState<QrData | null>(null);
   const [qrLoading, setQrLoading] = useState(false);
   const [deactivating, setDeactivating] = useState<TableRecord | null>(null);
@@ -32,8 +34,17 @@ export default function TablesPage() {
   const [bulkPrefix, setBulkPrefix] = useState('Table ');
   const [bulkStart, setBulkStart] = useState('1');
   const [bulkEnd, setBulkEnd] = useState('10');
+  const [bulkCapacity, setBulkCapacity] = useState('');
   const [bulkLoading, setBulkLoading] = useState(false);
   const [bulkSuccess, setBulkSuccess] = useState('');
+
+  const parseCapacity = (raw: string): number | null => {
+    const trimmed = raw.trim();
+    if (!trimmed) return null;
+    const n = Number(trimmed);
+    if (!Number.isInteger(n) || n < 1 || n > 50) return null;
+    return n;
+  };
 
   const handleBulkGenerate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,13 +62,14 @@ export default function TablesPage() {
       return;
     }
 
+    const parsedBulkCap = parseCapacity(bulkCapacity);
     setBulkLoading(true);
     let createdCount = 0;
     try {
       for (let i = start; i <= end; i++) {
         const tableLabel = `${bulkPrefix.trim()} ${i}`.trim();
         try {
-          await api.post('/tables', { label: tableLabel });
+          await api.post('/tables', { label: tableLabel, capacity: parsedBulkCap });
           createdCount++;
         } catch {
           // Skip if already exists or fails
@@ -72,12 +84,12 @@ export default function TablesPage() {
     }
   };
   const create = useMutation({
-    mutationFn: () => api.post('/tables', { label: label.trim() }),
-    onSuccess: async () => { setLabel(''); setError(''); await client.invalidateQueries({ queryKey: ['staff-tables'] }); },
+    mutationFn: () => api.post('/tables', { label: label.trim(), capacity: parseCapacity(capacity) }),
+    onSuccess: async () => { setLabel(''); setCapacity(''); setError(''); await client.invalidateQueries({ queryKey: ['staff-tables'] }); },
     onError: (cause: Error) => setError(cause instanceof ApiError ? cause.message : 'This table could not be created.')
   });
   const save = useMutation({
-    mutationFn: () => api.patch(`/tables/${editing?.id ?? editing?._id}`, { label: editLabel.trim() }),
+    mutationFn: () => api.patch(`/tables/${editing?.id ?? editing?._id}`, { label: editLabel.trim(), capacity: parseCapacity(editCapacity) }),
     onSuccess: async () => { setEditing(null); setError(''); await client.invalidateQueries({ queryKey: ['staff-tables'] }); },
     onError: (cause: Error) => setError(cause instanceof ApiError ? cause.message : 'This table could not be updated.')
   });
@@ -187,6 +199,19 @@ export default function TablesPage() {
               required
             />
           </div>
+          <div className="field">
+            <label htmlFor="bulk-capacity">Max seats (optional)</label>
+            <input
+              className="input"
+              id="bulk-capacity"
+              type="number"
+              min="1"
+              max="50"
+              value={bulkCapacity}
+              onChange={(e) => setBulkCapacity(e.target.value)}
+              placeholder="e.g. 4"
+            />
+          </div>
           <div>
             <button
               className="btn full"
@@ -232,6 +257,18 @@ export default function TablesPage() {
             placeholder="e.g. Table 1, T-5, Patio 2"
             style={{ flex: '1 1 200px' }}
           />
+          <input
+            className="input"
+            id="table-capacity"
+            type="number"
+            min="1"
+            max="50"
+            value={capacity}
+            onChange={(event) => setCapacity(event.target.value)}
+            placeholder="Max seats (optional, e.g. 4)"
+            aria-label="Maximum seats (optional)"
+            style={{ flex: '0 1 190px' }}
+          />
           <button
             className="btn"
             disabled={create.isPending || !label.trim()}
@@ -254,6 +291,7 @@ export default function TablesPage() {
           <thead>
             <tr>
               <th>Table</th>
+              <th>Capacity</th>
               <th>Status</th>
               <th>QR Code</th>
               <th style={{ textAlign: 'right' }}>Actions</th>
@@ -267,6 +305,11 @@ export default function TablesPage() {
                     <span style={{ fontSize: 16 }}>🪑</span>
                     <strong style={{ fontSize: 14 }}>{table.label}</strong>
                   </div>
+                </td>
+                <td>
+                  <span className="muted" style={{ fontSize: 13 }}>
+                    {table.capacity ? `${table.capacity} seats` : 'Unlimited'}
+                  </span>
                 </td>
                 <td>
                   <span className={`pill ${table.active ? '' : 'gray'}`}>
@@ -285,6 +328,7 @@ export default function TablesPage() {
                       onClick={() => {
                         setEditing(table);
                         setEditLabel(table.label);
+                        setEditCapacity(table.capacity ? String(table.capacity) : '');
                         setError('');
                       }}
                     >
@@ -317,7 +361,7 @@ export default function TablesPage() {
         </table>
       )}
     </section>
-    {editing && <Modal title="Edit table" onClose={() => { setEditing(null); setError(''); }}><form className="form-grid" onSubmit={(event) => { event.preventDefault(); save.mutate(); }}><div className="field"><label htmlFor="edit-table-label">Table number or label</label><input className="input" id="edit-table-label" required maxLength={40} value={editLabel} onChange={(event) => setEditLabel(event.target.value)} /></div>{error && <div className="form-error">{error}</div>}<button className="btn full" disabled={save.isPending}>{save.isPending ? 'Saving…' : 'Save table'}</button></form></Modal>}
+    {editing && <Modal title="Edit table" onClose={() => { setEditing(null); setError(''); }}><form className="form-grid" onSubmit={(event) => { event.preventDefault(); save.mutate(); }}><div className="field"><label htmlFor="edit-table-label">Table number or label</label><input className="input" id="edit-table-label" required maxLength={40} value={editLabel} onChange={(event) => setEditLabel(event.target.value)} /></div><div className="field"><label htmlFor="edit-table-capacity">Max seats (leave empty for unlimited)</label><input className="input" id="edit-table-capacity" type="number" min="1" max="50" value={editCapacity} onChange={(event) => setEditCapacity(event.target.value)} placeholder="e.g. 4" /></div>{error && <div className="form-error">{error}</div>}<button className="btn full" disabled={save.isPending}>{save.isPending ? 'Saving…' : 'Save table'}</button></form></Modal>}
     {deactivating && <Modal title="Deactivate this table?" onClose={() => { setDeactivating(null); setError(''); }}><p className="muted">New orders through {deactivating.label}’s QR code will stop. Existing orders will remain available to your team.</p>{error && <div className="form-error" style={{ marginBottom: 12 }}>{error}</div>}<div className="toolbar" style={{ justifyContent: 'end' }}><button className="btn secondary" onClick={() => setDeactivating(null)}>Cancel</button><button className="btn danger" onClick={() => deactivate.mutate(deactivating)} disabled={deactivate.isPending}>{deactivate.isPending ? 'Deactivating…' : 'Deactivate table'}</button></div></Modal>}
     {qr && (
       <Modal title={`${formatTableLabel(qr.tableLabel)} QR code`} onClose={() => setQr(null)} width={570}>

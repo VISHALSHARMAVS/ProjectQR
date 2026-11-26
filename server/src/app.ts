@@ -1,7 +1,7 @@
 import path from 'node:path';
 import { createServer, type Server as HttpServer } from 'node:http';
 import { fileURLToPath } from 'node:url';
-import express, { type Express } from 'express';
+import express, { type Express, type Request, type Response } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import session, { type Store } from 'express-session';
@@ -13,6 +13,7 @@ import { CustomerSession } from './models/CustomerSession.js';
 import { Restaurant } from './models/Restaurant.js';
 import { User } from './models/User.js';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
+import { requestLogger } from './middleware/requestLogger.js';
 import authRouter from './routes/auth.js';
 import { categoryRouter, menuRouter } from './routes/catalog.js';
 import { customerRouter, publicRouter } from './routes/customer.js';
@@ -143,11 +144,12 @@ export function createApplication(sessionStore?: Store): ProjectQrApplication {
   });
   app.use(express.json({
     limit: '1mb',
-    verify: (req: any, _res, buf) => {
-      req.rawBody = buf;
+    verify: (req, _res, buf) => {
+      (req as Request).rawBody = buf;
     }
   }));
   app.use(sessionMiddleware);
+  app.use(requestLogger);
   app.use('/uploads', express.static(path.resolve(env.uploadPath), { maxAge: env.NODE_ENV === 'production' ? '1d' : 0, immutable: env.NODE_ENV === 'production' }));
   app.get(['/health', '/api/health'], (_req, res) => res.json({
     status: 'ok',
@@ -183,7 +185,14 @@ export function createApplication(sessionStore?: Store): ProjectQrApplication {
     },
     transports: ['websocket', 'polling']
   });
-  io.engine.use(sessionMiddleware);
+  io.engine.use((req: Request & { _query?: Record<string, string>; url?: string }, res: Response, next: (err?: unknown) => void) => {
+    // Only run express-session on the initial Engine.IO handshake, not every long-polling frame,
+    // and skip if the response was already sent/aborted to prevent "Unable to find the session to touch".
+    if (res.headersSent || (req._query && req._query.sid) || (req.url && req.url.includes('sid='))) {
+      return next();
+    }
+    sessionMiddleware(req, res, next);
+  });
   io.use(async (socket, next) => {
     try {
       const request = socket.request as typeof socket.request & { session?: Express.Request['session'] };
@@ -225,15 +234,17 @@ export function createApplication(sessionStore?: Store): ProjectQrApplication {
     }
     socket.emit('connection:ready', { connected: true });
     const checkTimer = setInterval(async () => {
+      if (mongoose.connection.readyState !== 1) return;
       try {
         const valid = principal.type === 'staff'
           ? Boolean(await User.exists({ _id: principal.userId, active: true }) && await Restaurant.exists({ _id: principal.restaurantId, active: true }))
           : Boolean(await CustomerSession.exists({ _id: principal.customerSessionId, revokedAt: null, expiresAt: { $gt: new Date() } }));
         if (!valid) socket.disconnect(true);
       } catch {
-        socket.disconnect(true);
+        // Transient DB errors should not mass-disconnect active restaurant sockets
       }
     }, 60_000);
+    checkTimer.unref?.();
     socket.on('disconnect', () => clearInterval(checkTimer));
   });
   mountOrderRoutes(app, io);
@@ -260,7 +271,7 @@ export function createApplication(sessionStore?: Store): ProjectQrApplication {
       res.setHeader('Pragma', 'no-cache');
       res.setHeader('Expires', '0');
       res.sendFile(path.join(clientBuildPath, 'index.html'), (error) => {
-        if (error) next(error);
+        if (error && !res.headersSent) next(error);
       });
     });
   }

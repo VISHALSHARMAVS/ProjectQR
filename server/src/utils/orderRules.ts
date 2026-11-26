@@ -1,4 +1,3 @@
-import type { MenuItemDoc } from '../models/MenuItem.js';
 import type { OrderStatus } from '../models/Order.js';
 import { AppError } from './errors.js';
 

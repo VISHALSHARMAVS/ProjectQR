@@ -7,7 +7,7 @@ import { Order } from '../models/Order.js';
 import { Restaurant } from '../models/Restaurant.js';
 import { Review, type ReviewDoc } from '../models/Review.js';
 import { AppError } from '../utils/errors.js';
-import { objectIdSchema } from '../utils/validation.js';
+import { objectIdSchema, sanitizePlainText } from '../utils/validation.js';
 import { tenantFilter } from '../utils/tenant.js';
 import { getOrderSocket } from './orders.js';
 
@@ -58,6 +58,9 @@ customerReviewRouter.post('/', async (req, res) => {
     thumbsUp: d.liked !== undefined ? d.liked : (d.thumbsUp !== undefined ? d.thumbsUp : true)
   }));
 
+  const cleanComment = sanitizePlainText(parsed.data.comment);
+  const cleanTags = parsed.data.tags.map((tag) => sanitizePlainText(tag)).filter(Boolean);
+
   const review = await Review.create({
     restaurantId: req.customer!.restaurantId,
     tableId: req.customer!.tableId,
@@ -69,8 +72,8 @@ customerReviewRouter.post('/', async (req, res) => {
     customerPhone: customer?.phone || '',
     rating,
     sentiment,
-    tags: parsed.data.tags,
-    comment: parsed.data.comment,
+    tags: cleanTags,
+    comment: cleanComment,
     dishRatings: mappedDishRatings,
     status: 'NEW'
   });
@@ -102,8 +105,8 @@ customerReviewRouter.post('/', async (req, res) => {
     },
     googleReviewUrl: restaurant.googleReviewUrl || '',
     message: rating >= 4
-      ? 'Thank you! Would you mind sharing your love on Google?'
-      : 'Thank you for your candid feedback. Our manager has been alerted to make this right.'
+      ? 'Thank you for sharing your feedback with our team!'
+      : 'Thank you for your candid feedback. Our manager has been alerted to assist your table.'
   });
 });
 
@@ -118,7 +121,7 @@ customerReviewRouter.patch('/:id/google-click', async (req, res) => {
 
 restaurantReviewRouter.use(requireStaff);
 
-restaurantReviewRouter.get('/', async (req, res) => {
+restaurantReviewRouter.get('/', requirePermission('canManageReviews'), async (req, res) => {
   const reviews = await Review.find(tenantFilter(req.staff!.restaurantId))
     .sort({ createdAt: -1 })
     .limit(100) as unknown as ReviewDoc[];

@@ -10,7 +10,7 @@ export async function requireStaff(req: Request, _res: Response, next: NextFunct
   const user = await User.findById(req.session.userId).select('_id restaurantId name email role permissions active');
   const restaurantActive = user ? await Restaurant.exists({ _id: user.restaurantId, active: true }) : null;
   if (!user || !user.active || !restaurantActive) {
-    req.session.destroy(() => undefined);
+    delete req.session.userId;
     return next(new AppError(401, 'AUTH_REQUIRED', 'Your session is no longer active. Please sign in again.'));
   }
   const role = user.role as UserRole;
@@ -42,6 +42,18 @@ export function requirePermission(permission: keyof UserPermissions) {
     if (req.staff.role === 'owner') return next();
     const perms = req.staff.permissions || getDefaultPermissions(req.staff.role);
     if (!perms[permission]) {
+      return next(new AppError(403, 'FORBIDDEN', 'You do not have permission to perform this action.'));
+    }
+    next();
+  };
+}
+
+export function requireAnyPermission(...permissions: (keyof UserPermissions)[]) {
+  return (req: Request, _res: Response, next: NextFunction): void => {
+    if (!req.staff) return next(new AppError(401, 'AUTH_REQUIRED', 'Please sign in to continue.'));
+    if (req.staff.role === 'owner') return next();
+    const perms = req.staff.permissions || getDefaultPermissions(req.staff.role);
+    if (!permissions.some((p) => Boolean(perms[p]))) {
       return next(new AppError(403, 'FORBIDDEN', 'You do not have permission to perform this action.'));
     }
     next();

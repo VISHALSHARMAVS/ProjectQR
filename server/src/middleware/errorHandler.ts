@@ -6,7 +6,17 @@ export const notFoundHandler: RequestHandler = (req, _res, next) => {
   next(new AppError(404, 'ROUTE_NOT_FOUND', `No route matches ${req.method} ${req.path}.`));
 };
 
-export const errorHandler: ErrorRequestHandler = (error: unknown, _req, res, _next) => {
+export const errorHandler: ErrorRequestHandler = (error: unknown, req, res, next) => {
+  if (res.headersSent) {
+    return next(error);
+  }
+
+  const restaurantId = req.staff?.restaurantId
+    ? String(req.staff.restaurantId)
+    : req.customer?.restaurantId
+      ? String(req.customer.restaurantId)
+      : undefined;
+
   if (error instanceof AppError) {
     res.status(error.status).json({ error: { code: error.code, message: error.message } });
     return;
@@ -23,7 +33,16 @@ export const errorHandler: ErrorRequestHandler = (error: unknown, _req, res, _ne
     res.status(400).json({ error: { code: 'UPLOAD_ERROR', message: 'The image could not be uploaded. Use an image up to 5 MB.' } });
     return;
   }
-  if (error instanceof Error) console.error(error.message);
-  else console.error('Unknown server error');
+
+  console.error(JSON.stringify({
+    timestamp: new Date().toISOString(),
+    level: 'error',
+    requestId: req.requestId,
+    method: req.method,
+    route: req.path,
+    errorClass: error instanceof Error ? error.name : 'UnknownError',
+    message: error instanceof Error ? error.message : 'Unknown server error',
+    ...(restaurantId ? { restaurantId } : {})
+  }));
   res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: 'Something went wrong. Please try again.' } });
 };

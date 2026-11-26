@@ -36,8 +36,6 @@ export default function TrackingPage() {
   const [tableVacated, setTableVacated] = useState(false);
   const [upiConfirming, setUpiConfirming] = useState(false);
   const [upiRef, setUpiRef] = useState('');
-  const [showUpiInput, setShowUpiInput] = useState(true);
-  const [showUpiQr, setShowUpiQr] = useState(true);
   const [autoConfirmError, setAutoConfirmError] = useState('');
 
   const sessionQuery = useQuery({
