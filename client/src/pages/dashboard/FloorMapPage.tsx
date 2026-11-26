@@ -378,8 +378,9 @@ export default function FloorMapPage() {
                       borderRadius: 6,
                       fontSize: 11,
                       fontWeight: 700,
-                      background: cfg.border,
-                      color: cfg.text
+                      background: cfg.bg,
+                      color: cfg.text,
+                      border: `1px solid ${cfg.border}`
                     }}
                   >
                     {cfg.label}

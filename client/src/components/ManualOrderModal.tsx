@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, ApiError } from '../lib/api';
 import { formatTableLabel, money } from '../lib/format';
@@ -72,9 +72,11 @@ export function ManualOrderModal({ initialTableId, onClose, onOrderCreated }: Ma
   const categories = categoriesQuery.data?.categories ?? [];
 
   // If tableId wasn't preset and tables loaded, pick the first table
-  if (!tableId && tables.length > 0 && !initialTableId) {
-    setTableId(tables[0]._id ?? tables[0].id ?? '');
-  }
+  useEffect(() => {
+    if (!tableId && tables.length > 0 && !initialTableId) {
+      setTableId(tables[0]._id ?? tables[0].id ?? '');
+    }
+  }, [tableId, tables, initialTableId]);
 
   const filteredItems = useMemo(() => {
     const q = search.trim().toLowerCase();

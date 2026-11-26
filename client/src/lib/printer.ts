@@ -1,6 +1,16 @@
 import { formatTableLabel, money } from '../lib/format';
 import type { DayCloseReport, OrderRecord } from '../types';
 
+function escapeHtml(str: unknown): string {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 export function printOrderReceipt(
   order: OrderRecord,
   restaurantName = 'Restaurant',
@@ -40,16 +50,16 @@ export function printOrderReceipt(
     <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 6px; font-size: 13px; line-height: 1.3;">
       <div style="flex: 1; padding-right: 8px;">
         <div style="font-weight: bold;">
-          ${item.quantity} × ${item.name} ${item.selectedVariant ? `(${item.selectedVariant.name})` : ''}
+          ${item.quantity} × ${escapeHtml(item.name)} ${item.selectedVariant ? `(${escapeHtml(item.selectedVariant.name)})` : ''}
         </div>
         ${item.selectedAddons && item.selectedAddons.length > 0 ? `
           <div style="font-size: 11px; color: #444; margin-left: 12px;">
-            + ${item.selectedAddons.map((a) => a.name).join(', ')}
+            + ${item.selectedAddons.map((a) => escapeHtml(a.name)).join(', ')}
           </div>
         ` : ''}
         ${item.notes ? `
           <div style="font-size: 11px; color: #111; margin-left: 12px;">
-            *Note: ${item.notes}*
+            *Note: ${escapeHtml(item.notes)}*
           </div>
         ` : ''}
       </div>
@@ -61,7 +71,7 @@ export function printOrderReceipt(
     <!DOCTYPE html>
     <html>
       <head>
-        <title>${type} - ${order.orderNumber}</title>
+        <title>${type} - ${escapeHtml(order.orderNumber)}</title>
         <style>
           @page {
             size: 80mm auto;
@@ -84,11 +94,11 @@ export function printOrderReceipt(
       <body>
         <div class="center">
           <div style="font-size: 18px; font-weight: 900; text-transform: uppercase;">
-            ${restaurantName}
+            ${escapeHtml(restaurantName)}
           </div>
           ${!isKot && gstin ? `
             <div style="font-size: 11px; font-weight: bold; margin-top: 2px; letter-spacing: 0.5px;">
-              GSTIN: ${gstin}
+              GSTIN: ${escapeHtml(gstin)}
             </div>
           ` : ''}
           <div style="font-size: 14px; font-weight: bold; margin-top: 2px; letter-spacing: 1px;">
@@ -99,8 +109,8 @@ export function printOrderReceipt(
         <div class="divider"></div>
 
         <div style="font-size: 13px; display: flex; justify-content: space-between;">
-          <span><strong>${formatTableLabel(order.table.label)}</strong></span>
-          <span><strong>${order.orderNumber}</strong></span>
+          <span><strong>${escapeHtml(formatTableLabel(order.table.label))}</strong></span>
+          <span><strong>${escapeHtml(order.orderNumber)}</strong></span>
         </div>
         <div style="font-size: 11px; margin-top: 3px; color: #333;">
           Time: ${dateStr}
@@ -108,7 +118,7 @@ export function printOrderReceipt(
 
         ${order.notes ? `
           <div style="margin-top: 4px; padding: 4px; background: #eee; font-size: 12px; font-weight: bold;">
-            Table Note: ${order.notes}
+            Table Note: ${escapeHtml(order.notes)}
           </div>
         ` : ''}
 

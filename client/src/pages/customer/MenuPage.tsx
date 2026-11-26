@@ -201,37 +201,26 @@ export default function CustomerMenuPage() {
     return map;
   }, [cart]);
 
-  if (session.data?.tableMismatch || (session.error instanceof ApiError && (session.error.status === 401 || session.error.code === 'CUSTOMER_SESSION_TABLE_MISMATCH'))) {
-    return <Navigate to={`/order/${encodeURIComponent(token)}/verify`} replace />;
-  }
-  if (session.isLoading || menu.isLoading) return <Loading label="Loading your menu…" />;
-  if (session.error || !session.data || menu.error || !menu.data) {
-    return <ErrorPanel message="Could not load menu. Scan the QR code again or ask your waiter for assistance." />;
-  }
-
-  const { restaurant, table } = session.data;
-  const categories = menu.data.categories;
-  const items = menu.data.items;
-  const todaysWinner = menu.data.todaysWinner;
-  const bestsellerItemIds = menu.data.bestsellerItemIds ?? [];
-  const winnerMenuItem = todaysWinner ? items.find((i) => i._id === todaysWinner.menuItemId) : null;
-
+  const categories = menu.data?.categories ?? [];
+  const items = menu.data?.items ?? [];
   const queryClean = searchQuery.trim().toLowerCase();
-  const filteredItems = items.filter((item) => {
-    if (dietaryFilter !== 'ALL' && item.dietary !== dietaryFilter) return false;
-    if (queryClean) {
-      const matchName = item.name.toLowerCase().includes(queryClean);
-      const matchDesc = item.description?.toLowerCase().includes(queryClean);
-      return matchName || matchDesc;
-    }
-    return true;
-  });
 
-  const availableCategories = categories.filter((category) => {
-    return filteredItems.some((item) => item.categoryId === category._id);
-  });
+  const filteredItems = useMemo(() => {
+    return items.filter((item) => {
+      if (dietaryFilter !== 'ALL' && item.dietary !== dietaryFilter) return false;
+      if (queryClean) {
+        const matchName = item.name.toLowerCase().includes(queryClean);
+        const matchDesc = item.description?.toLowerCase().includes(queryClean);
+        return matchName || matchDesc;
+      }
+      return true;
+    });
+  }, [items, dietaryFilter, queryClean]);
 
   const categoryItems: CategoryItem[] = useMemo(() => {
+    const availableCategories = categories.filter((category) => {
+      return filteredItems.some((item) => item.categoryId === category._id);
+    });
     return availableCategories.map((category) => {
       const count = filteredItems.filter((item) => item.categoryId === category._id).length;
       return {
@@ -241,7 +230,20 @@ export default function CustomerMenuPage() {
         count
       };
     });
-  }, [availableCategories, filteredItems]);
+  }, [categories, filteredItems]);
+
+  if (session.data?.tableMismatch || (session.error instanceof ApiError && (session.error.status === 401 || session.error.code === 'CUSTOMER_SESSION_TABLE_MISMATCH'))) {
+    return <Navigate to={`/order/${encodeURIComponent(token)}/verify`} replace />;
+  }
+  if (session.isLoading || menu.isLoading) return <Loading label="Loading your menu…" />;
+  if (session.error || !session.data || menu.error || !menu.data) {
+    return <ErrorPanel message="Could not load menu. Scan the QR code again or ask your waiter for assistance." />;
+  }
+
+  const { restaurant, table } = session.data;
+  const todaysWinner = menu.data.todaysWinner;
+  const bestsellerItemIds = menu.data.bestsellerItemIds ?? [];
+  const winnerMenuItem = todaysWinner ? items.find((i) => i._id === todaysWinner.menuItemId) : null;
 
   const scrollTo = (id: string): void => {
     setActiveCategory(id);

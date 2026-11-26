@@ -1,6 +1,7 @@
 import { createHmac, randomBytes, randomInt, timingSafeEqual } from 'node:crypto';
 import { Router } from 'express';
 import { rateLimit } from 'express-rate-limit';
+import { Types } from 'mongoose';
 import { z } from 'zod';
 import { env } from '../config/env.js';
 import { requireCustomer, requireCustomerQr } from '../middleware/auth.js';
@@ -16,6 +17,7 @@ import { ServiceRequest } from '../models/ServiceRequest.js';
 import { TableCart } from '../models/TableCart.js';
 import { DevelopmentOtpDelivery, TwilioSmsDelivery, TwilioVerifyDelivery, UnconfiguredSmsDelivery, type OtpDelivery } from '../services/otpDelivery.js';
 import { AppError } from '../utils/errors.js';
+import { resolveMenuItemLinePricing } from '../utils/orderRules.js';
 import { phoneSchema } from '../utils/validation.js';
 import { getOrderSocket } from './orders.js';
 
@@ -195,7 +197,7 @@ customerRouter.post('/request-otp', otpRateLimit, async (req, res) => {
     usedFallback = true;
   }
 
-  const isMockDelivery = env.OTP_MODE === 'mock' || !isTwilioConfigured || usedFallback;
+  const isMockDelivery = (env.OTP_MODE === 'mock' || !isTwilioConfigured || usedFallback) && env.NODE_ENV !== 'production';
   const response: { message: string; expiresInSeconds: number; mockOtp?: string } = {
     message: usedFallback ? 'Verification code generated.' : 'Verification code sent.',
     expiresInSeconds: 300
@@ -223,7 +225,7 @@ customerRouter.post('/verify-otp', otpRateLimit, async (req, res) => {
   ).select('+codeHash');
   if (!challenge) throw new AppError(400, 'OTP_ATTEMPTS_EXCEEDED', 'Too many attempts or this code has expired. Request a new code.');
 
-  const isMockDelivery = env.OTP_MODE === 'mock' || !isTwilioConfigured;
+  const isMockDelivery = (env.OTP_MODE === 'mock' || !isTwilioConfigured) && env.NODE_ENV !== 'production';
   let isValidCode = false;
   if (isMockDelivery && parsed.data.code === '123456') {
     isValidCode = true;
@@ -435,10 +437,11 @@ async function getMenuHighlights(restaurantId: string): Promise<{
 
   const startOfToday = new Date();
   startOfToday.setHours(0, 0, 0, 0);
+  const rId = new Types.ObjectId(String(restaurantId));
 
   const [todaysWinnerAgg, pastMonthTopAgg] = await Promise.all([
     Order.aggregate([
-      { $match: { restaurantId, status: { $ne: 'REJECTED' }, createdAt: { $gte: startOfToday } } },
+      { $match: { restaurantId: rId, status: { $ne: 'REJECTED' }, createdAt: { $gte: startOfToday } } },
       { $unwind: '$items' },
       { $group: { _id: '$items.menuItemId', name: { $first: '$items.name' }, count: { $sum: '$items.quantity' } } },
       { $sort: { count: -1 } },
@@ -447,7 +450,7 @@ async function getMenuHighlights(restaurantId: string): Promise<{
     Order.aggregate([
       {
         $match: {
-          restaurantId,
+          restaurantId: rId,
           status: { $ne: 'REJECTED' },
           createdAt: { $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) }
         }
@@ -620,13 +623,15 @@ customerRouter.post('/cart/items', requireCustomer, requireCustomerQr, async (re
     });
   }
 
-  // Calculate unit price from base/variant + addons
-  const basePrice = parsed.data.selectedVariant ? parsed.data.selectedVariant.pricePaise : menuItem.pricePaise;
-  const addonsTotal = (parsed.data.selectedAddons || []).reduce((sum, a) => sum + a.pricePaise, 0);
-  const calculatedUnitPrice = basePrice + addonsTotal;
+  // Calculate unit price securely from database menu item definition
+  const { unitPricePaise: calculatedUnitPrice, validatedVariant, validatedAddons } = resolveMenuItemLinePricing(
+    menuItem,
+    parsed.data.selectedVariant,
+    parsed.data.selectedAddons
+  );
 
   // Match items based on menuItemId AND selected variant name
-  const variantName = parsed.data.selectedVariant?.name || '';
+  const variantName = validatedVariant?.name || '';
   const existingIndex = cart.items.findIndex((item) => {
     const itemVariantName = item.selectedVariant?.name || '';
     return String(item.menuItemId) === parsed.data.menuItemId && itemVariantName === variantName;
@@ -638,8 +643,8 @@ customerRouter.post('/cart/items', requireCustomer, requireCustomerQr, async (re
     const existing = cart.items[existingIndex];
     existing.quantity = parsed.data.quantity;
     existing.unitPricePaise = calculatedUnitPrice;
-    existing.selectedVariant = parsed.data.selectedVariant ?? null;
-    (existing as unknown as { selectedAddons: unknown[] }).selectedAddons = parsed.data.selectedAddons ?? [];
+    existing.selectedVariant = validatedVariant;
+    (existing as unknown as { selectedAddons: unknown[] }).selectedAddons = validatedAddons;
     if (parsed.data.notes) existing.notes = parsed.data.notes;
     existing.addedByName = customer?.name || 'Guest';
   } else {
@@ -648,8 +653,8 @@ customerRouter.post('/cart/items', requireCustomer, requireCustomerQr, async (re
       name: menuItem.name,
       unitPricePaise: calculatedUnitPrice,
       quantity: parsed.data.quantity,
-      selectedVariant: parsed.data.selectedVariant ?? null,
-      selectedAddons: parsed.data.selectedAddons ?? [],
+      selectedVariant: validatedVariant,
+      selectedAddons: validatedAddons,
       notes: parsed.data.notes,
       addedByName: customer?.name || 'Guest',
       addedByCustomerId: req.customer!.customerId

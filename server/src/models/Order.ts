@@ -29,8 +29,9 @@ const statusEventSchema = new Schema({
 const orderSchema = new Schema({
   restaurantId: { type: Schema.Types.ObjectId, ref: 'Restaurant', required: true, index: true },
   tableId: { type: Schema.Types.ObjectId, ref: 'DiningTable', required: true },
-  customerId: { type: Schema.Types.ObjectId, ref: 'Customer', required: true },
-  customerSessionId: { type: Schema.Types.ObjectId, ref: 'CustomerSession', required: true },
+  customerId: { type: Schema.Types.ObjectId, ref: 'Customer', required: false, default: null },
+  customerSessionId: { type: Schema.Types.ObjectId, ref: 'CustomerSession', required: false, default: null },
+  createdByStaffId: { type: Schema.Types.ObjectId, ref: 'User', required: false, default: null },
   tabId: { type: String, default: 'main', index: true },
   tabLabel: { type: String, default: 'Main Table' },
   idempotencyKey: { type: String, required: true, maxlength: 80 },
@@ -58,7 +59,10 @@ orderSchema.index({ restaurantId: 1, createdAt: -1 });
 orderSchema.index({ restaurantId: 1, status: 1, createdAt: 1 });
 orderSchema.index({ restaurantId: 1, paymentStatus: 1, settledAt: -1 });
 orderSchema.index({ restaurantId: 1, orderNumber: 1 }, { unique: true });
-orderSchema.index({ customerSessionId: 1, idempotencyKey: 1 }, { unique: true });
+orderSchema.index(
+  { customerSessionId: 1, idempotencyKey: 1 },
+  { unique: true, partialFilterExpression: { customerSessionId: { $type: 'objectId' } } }
+);
 
 export interface OrderItemSnapshot {
   menuItemId: Types.ObjectId;
@@ -74,8 +78,9 @@ export interface OrderDoc {
   _id: Types.ObjectId;
   restaurantId: Types.ObjectId;
   tableId: Types.ObjectId;
-  customerId: Types.ObjectId;
-  customerSessionId: Types.ObjectId;
+  customerId?: Types.ObjectId | null;
+  customerSessionId?: Types.ObjectId | null;
+  createdByStaffId?: Types.ObjectId | null;
   tabId?: string;
   tabLabel?: string;
   idempotencyKey: string;

@@ -7,7 +7,7 @@ import { settleOrderRecord } from './orders.js';
 
 export const webhooksRouter = Router();
 
-function verifyWebhookSignature(payload: string, signature: string, secret: string): boolean {
+function verifyWebhookSignature(payload: string | Buffer, signature: string, secret: string): boolean {
   try {
     const expected = createHmac('sha256', secret).update(payload).digest('hex');
     const a = Buffer.from(expected, 'utf8');
@@ -27,35 +27,49 @@ webhooksRouter.post('/payment', async (req, res) => {
   let transactionReference: string | undefined;
   let paymentId: string | undefined;
   let paymentMethod: 'UPI' | 'CARD' | 'OTHER' = 'UPI';
+  let paidAmountPaise: number | undefined;
 
   // 1. Razorpay standard webhook structure
-  if (body.event === 'order.paid' || body.event === 'payment.captured') {
-    const paymentEntity = body.payload?.payment?.entity || {};
-    const orderEntity = body.payload?.order?.entity || {};
-    orderIdentifier =
-      orderEntity.receipt ||
-      orderEntity.notes?.orderNumber ||
-      orderEntity.notes?.orderId ||
-      paymentEntity.notes?.orderNumber ||
-      paymentEntity.notes?.orderId ||
-      paymentEntity.order_id ||
-      body.orderId ||
-      body.orderNumber;
-    transactionReference = paymentEntity.acquirer_data?.rrn || paymentEntity.acquirer_data?.upi_transaction_id || paymentEntity.id;
-    paymentId = paymentEntity.id;
-    if (paymentEntity.method === 'card') paymentMethod = 'CARD';
-    else if (paymentEntity.method === 'upi') paymentMethod = 'UPI';
+  if (body.event) {
+    if (body.event === 'order.paid' || body.event === 'payment.captured') {
+      const paymentEntity = body.payload?.payment?.entity || {};
+      const orderEntity = body.payload?.order?.entity || {};
+      orderIdentifier =
+        orderEntity.receipt ||
+        orderEntity.notes?.orderNumber ||
+        orderEntity.notes?.orderId ||
+        paymentEntity.notes?.orderNumber ||
+        paymentEntity.notes?.orderId ||
+        paymentEntity.order_id ||
+        body.orderId ||
+        body.orderNumber;
+      transactionReference = paymentEntity.acquirer_data?.rrn || paymentEntity.acquirer_data?.upi_transaction_id || paymentEntity.id;
+      paymentId = paymentEntity.id;
+      if (typeof paymentEntity.amount === 'number') paidAmountPaise = paymentEntity.amount;
+      if (paymentEntity.method === 'card') paymentMethod = 'CARD';
+      else if (paymentEntity.method === 'upi') paymentMethod = 'UPI';
+    } else {
+      // Ignored event (e.g. payment.failed, refund)
+      return res.status(200).json({ status: 'ignored', event: body.event });
+    }
   } else {
     // 2. Universal / Custom Gateway / Soundbox payload
+    const isSuccess = body.status === 'SUCCESS' || body.status === 'PAID' || body.success === true || !body.status;
+    if (!isSuccess) {
+      return res.status(200).json({ status: 'ignored', message: 'Payment status not successful.' });
+    }
     orderIdentifier = body.orderNumber || body.orderId || body.receipt;
     transactionReference = body.transactionReference || body.utr || body.rrn || body.referenceId;
     paymentId = body.paymentId || body.id;
+    if (typeof body.amountPaise === 'number') paidAmountPaise = body.amountPaise;
+    else if (typeof body.amount === 'number') paidAmountPaise = Math.round(body.amount * 100);
     if (body.paymentMethod === 'CARD') paymentMethod = 'CARD';
   }
 
-  if (!orderIdentifier) {
+  if (typeof orderIdentifier !== 'string' || !orderIdentifier.trim()) {
     throw new AppError(400, 'INVALID_WEBHOOK_PAYLOAD', 'Could not identify order from webhook payload.');
   }
+  orderIdentifier = orderIdentifier.trim();
 
   // Find order by orderNumber or ID
   const order = await Order.findOne({
@@ -73,11 +87,19 @@ webhooksRouter.post('/payment', async (req, res) => {
     return res.json({ status: 'already_settled', orderNumber: order.orderNumber });
   }
 
-  // Check restaurant webhook secret if configured
+  // Validate amount if sent by gateway
+  if (paidAmountPaise !== undefined && paidAmountPaise < order.totalPaise) {
+    throw new AppError(400, 'UNDERPAID', `Received payment amount (${paidAmountPaise}) is less than order total (${order.totalPaise}).`);
+  }
+
+  // Enforce signature check when webhook secret is configured (fail closed)
   const restaurant = await Restaurant.findById(order.restaurantId);
-  if (restaurant?.webhookSecret && signature) {
-    const rawBody = typeof req.body === 'string' ? req.body : JSON.stringify(req.body);
-    const valid = verifyWebhookSignature(rawBody, signature, restaurant.webhookSecret);
+  if (restaurant?.webhookSecret) {
+    if (!signature) {
+      throw new AppError(401, 'MISSING_SIGNATURE', 'Webhook signature header is required.');
+    }
+    const rawPayload = (req as any).rawBody || (typeof req.body === 'string' ? req.body : JSON.stringify(req.body));
+    const valid = verifyWebhookSignature(rawPayload, signature, restaurant.webhookSecret);
     if (!valid) throw new AppError(401, 'INVALID_SIGNATURE', 'Webhook signature verification failed.');
   }
 

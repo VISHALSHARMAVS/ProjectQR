@@ -283,9 +283,7 @@ export default function LandingPage() {
 
         {/* Section: Live Product Showcase */}
         <section id="showcase">
-          <ScrollReveal delay={80}>
-            <ProductShowcase />
-          </ScrollReveal>
+          <ProductShowcase />
         </section>
 
         {/* Section 3: Benefits (A2 #7 & A5) */}

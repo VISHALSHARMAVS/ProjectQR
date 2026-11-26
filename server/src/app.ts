@@ -135,7 +135,12 @@ export function createApplication(sessionStore?: Store): ProjectQrApplication {
     }
     next();
   });
-  app.use(express.json({ limit: '1mb' }));
+  app.use(express.json({
+    limit: '1mb',
+    verify: (req: any, _res, buf) => {
+      req.rawBody = buf;
+    }
+  }));
   app.use(sessionMiddleware);
   app.use('/uploads', express.static(path.resolve(env.uploadPath), { maxAge: env.NODE_ENV === 'production' ? '1d' : 0, immutable: env.NODE_ENV === 'production' }));
   app.get(['/health', '/api/health'], (_req, res) => res.json({

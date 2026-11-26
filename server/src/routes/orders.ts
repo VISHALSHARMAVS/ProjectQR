@@ -10,7 +10,7 @@ import { Order, orderStatuses, type OrderDoc, type OrderStatus } from '../models
 import { Restaurant } from '../models/Restaurant.js';
 import { TableCart } from '../models/TableCart.js';
 import { AppError } from '../utils/errors.js';
-import { calculateSubtotal, nextOrderStatus } from '../utils/orderRules.js';
+import { calculateSubtotal, nextOrderStatus, resolveMenuItemLinePricing } from '../utils/orderRules.js';
 import { objectIdSchema } from '../utils/validation.js';
 import { tenantFilter } from '../utils/tenant.js';
 
@@ -121,20 +121,21 @@ customerOrders.post('/', async (req, res) => {
 
   const snapshotItems = parsed.data.items.map((requested) => {
     const menuItem = itemMap.get(requested.menuItemId)!;
-    // Calculate unit price: variant price (if selected) or base price + sum of selected addons
-    let basePrice = requested.selectedVariant ? requested.selectedVariant.pricePaise : menuItem.pricePaise;
-    const addonsTotal = (requested.selectedAddons || []).reduce((sum, a) => sum + a.pricePaise, 0);
-    const calculatedUnitPrice = basePrice + addonsTotal;
+    const { unitPricePaise, validatedVariant, validatedAddons } = resolveMenuItemLinePricing(
+      menuItem,
+      requested.selectedVariant,
+      requested.selectedAddons
+    );
 
     return {
       menuItemId: menuItem._id,
       name: menuItem.name,
-      unitPricePaise: calculatedUnitPrice,
+      unitPricePaise,
       quantity: requested.quantity,
-      selectedVariant: requested.selectedVariant ?? null,
-      selectedAddons: requested.selectedAddons ?? [],
+      selectedVariant: validatedVariant,
+      selectedAddons: validatedAddons,
       notes: requested.notes,
-      subtotalPaise: calculatedUnitPrice * requested.quantity
+      subtotalPaise: unitPricePaise * requested.quantity
     };
   });
 
@@ -223,11 +224,22 @@ customerOrders.post('/:id/auto-confirm', async (req, res) => {
   const parsed = autoConfirmSchema.safeParse(req.body);
   if (!parsed.success) throw new AppError(400, 'INVALID_INPUT', 'Invalid payment confirmation data.');
 
-  const order = await Order.findOne({
+  const restaurant = await Restaurant.findById(req.customer!.restaurantId);
+  if (!restaurant?.autoConfirmPayments) {
+    throw new AppError(403, 'AUTO_CONFIRM_DISABLED', 'Self-confirmation is not enabled for this restaurant. Please pay at the counter or wait for staff verification.');
+  }
+
+  const tabId = req.customer!.tabId || 'main';
+  const filter: Record<string, unknown> = {
     _id: req.params.id,
     tableId: req.customer!.tableId,
     restaurantId: req.customer!.restaurantId
-  }) as unknown as OrderDoc | null;
+  };
+  if (tabId !== 'main') {
+    filter.tabId = tabId;
+  }
+
+  const order = await Order.findOne(filter) as unknown as OrderDoc | null;
 
   if (!order) throw new AppError(404, 'NOT_FOUND', 'Order not found.');
   if (order.paymentStatus === 'PAID') {
@@ -288,19 +300,21 @@ restaurantOrders.post('/', requirePermission('canPunchOrders'), async (req, res)
 
   const snapshotItems = parsed.data.items.map((requested) => {
     const menuItem = itemMap.get(requested.menuItemId)!;
-    const basePrice = requested.selectedVariant ? requested.selectedVariant.pricePaise : menuItem.pricePaise;
-    const addonsTotal = (requested.selectedAddons || []).reduce((sum, a) => sum + a.pricePaise, 0);
-    const calculatedUnitPrice = basePrice + addonsTotal;
+    const { unitPricePaise, validatedVariant, validatedAddons } = resolveMenuItemLinePricing(
+      menuItem,
+      requested.selectedVariant,
+      requested.selectedAddons
+    );
 
     return {
       menuItemId: menuItem._id,
       name: menuItem.name,
-      unitPricePaise: calculatedUnitPrice,
+      unitPricePaise,
       quantity: requested.quantity,
-      selectedVariant: requested.selectedVariant ?? null,
-      selectedAddons: requested.selectedAddons ?? [],
+      selectedVariant: validatedVariant,
+      selectedAddons: validatedAddons,
       notes: requested.notes,
-      subtotalPaise: calculatedUnitPrice * requested.quantity
+      subtotalPaise: unitPricePaise * requested.quantity
     };
   });
 
@@ -309,6 +323,7 @@ restaurantOrders.post('/', requirePermission('canPunchOrders'), async (req, res)
   const order = new Order({
     restaurantId,
     tableId: table._id,
+    createdByStaffId: req.staff?.id || null,
     idempotencyKey: `staff-${Date.now()}-${randomInt(10000, 99999)}`,
     orderNumber: makeOrderNumber(),
     items: snapshotItems,
@@ -385,14 +400,13 @@ export async function settleOrderRecord(params: {
 
   const finalPaidPaise = Math.max(0, current.totalPaise - discountPaise);
   const now = new Date();
-  const updatedStatus = current.status === 'DELIVERED' ? current.status : 'DELIVERED';
+  // Preserve kitchen progress: only maintain current status (unless already delivered)
+  const updatedStatus = current.status;
   const methodLabel = params.autoConfirmed ? `${params.paymentMethod} (Auto-Confirmed)` : params.paymentMethod;
-  const statusHistoryEntry = updatedStatus !== current.status
-    ? [{ status: updatedStatus, at: now, note: `Settled via ${methodLabel}` }]
-    : [];
+  const statusHistoryEntry = [{ status: updatedStatus, at: now, note: `Settled payment via ${methodLabel}` }];
 
   const updated = await Order.findOneAndUpdate(
-    { _id: current._id, restaurantId: params.restaurantId },
+    { _id: current._id, restaurantId: params.restaurantId, paymentStatus: 'UNPAID', status: { $ne: 'REJECTED' } },
     {
       $set: {
         paymentStatus: 'PAID',
@@ -408,17 +422,19 @@ export async function settleOrderRecord(params: {
         ...(params.gatewayPaymentId ? { gatewayPaymentId: params.gatewayPaymentId } : {}),
         status: updatedStatus
       },
-      ...(statusHistoryEntry.length > 0 ? { $push: { statusHistory: { $each: statusHistoryEntry } } } : {})
+      $push: { statusHistory: { $each: statusHistoryEntry } }
     },
     { returnDocument: 'after' }
   ) as unknown as OrderDoc | null;
 
-  if (!updated) throw new AppError(409, 'ORDER_CHANGED', 'This order could not be updated.');
+  if (!updated) throw new AppError(409, 'ORDER_CHANGED', 'This order could not be updated or was already settled.');
 
-  await DiningTable.updateOne(
-    { _id: updated.tableId, restaurantId: updated.restaurantId },
-    { $set: { needsClearing: true } }
-  );
+  if (updated.status === 'DELIVERED') {
+    await DiningTable.updateOne(
+      { _id: updated.tableId, restaurantId: updated.restaurantId },
+      { $set: { needsClearing: true } }
+    );
+  }
 
   const [table, customerSession] = await Promise.all([
     DiningTable.findOne({ _id: updated.tableId, restaurantId: updated.restaurantId }).select('label needsClearing'),
