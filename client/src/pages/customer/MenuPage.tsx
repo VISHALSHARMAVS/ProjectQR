@@ -217,10 +217,13 @@ export default function CustomerMenuPage() {
     });
   }, [items, dietaryFilter, queryClean]);
 
-  const categoryItems: CategoryItem[] = useMemo(() => {
-    const availableCategories = categories.filter((category) => {
+  const availableCategories = useMemo(() => {
+    return categories.filter((category) => {
       return filteredItems.some((item) => item.categoryId === category._id);
     });
+  }, [categories, filteredItems]);
+
+  const categoryItems: CategoryItem[] = useMemo(() => {
     return availableCategories.map((category) => {
       const count = filteredItems.filter((item) => item.categoryId === category._id).length;
       return {
@@ -230,7 +233,7 @@ export default function CustomerMenuPage() {
         count
       };
     });
-  }, [categories, filteredItems]);
+  }, [availableCategories, filteredItems]);
 
   if (session.data?.tableMismatch || (session.error instanceof ApiError && (session.error.status === 401 || session.error.code === 'CUSTOMER_SESSION_TABLE_MISMATCH'))) {
     return <Navigate to={`/order/${encodeURIComponent(token)}/verify`} replace />;
