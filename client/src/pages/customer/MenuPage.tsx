@@ -235,6 +235,13 @@ export default function CustomerMenuPage() {
     });
   }, [availableCategories, filteredItems]);
 
+  // Initialize activeCategory with the first category when loaded
+  useEffect(() => {
+    if (!activeCategory && availableCategories.length > 0) {
+      setActiveCategory(availableCategories[0]._id);
+    }
+  }, [availableCategories, activeCategory]);
+
   // Auto-sync active category on scroll using lightweight IntersectionObserver
   useEffect(() => {
     if (!availableCategories.length) return;
@@ -279,9 +286,7 @@ export default function CustomerMenuPage() {
     setActiveCategory(id);
     const target = document.getElementById(`category-${id}`);
     if (target) {
-      const yOffset = -55;
-      const y = target.getBoundingClientRect().top + window.pageYOffset + yOffset;
-      window.scrollTo({ top: y, behavior: 'smooth' });
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
       target.classList.add('category-highlight-flash');
       window.setTimeout(() => target.classList.remove('category-highlight-flash'), 1200);
     }

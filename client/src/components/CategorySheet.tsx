@@ -106,8 +106,12 @@ export function CategorySheet({
                 aria-selected={isActive}
                 className={`zomato-sheet-item ${isActive ? 'active' : ''}`}
                 onClick={() => {
-                  onSelectCategory(category.id);
                   onClose();
+                  window.requestAnimationFrame(() => {
+                    window.setTimeout(() => {
+                      onSelectCategory(category.id);
+                    }, 40);
+                  });
                 }}
               >
                 <div className="zomato-sheet-item-info">
