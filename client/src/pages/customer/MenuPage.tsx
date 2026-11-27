@@ -9,6 +9,7 @@ import { ReviewModal } from '../../components/ReviewModal';
 import { CategorySheet, type CategoryItem } from '../../components/CategorySheet';
 import { ThemeToggle } from '../../components/ThemeToggle';
 import { useOrderSocket } from '../../hooks/useOrderSocket';
+import { localizeText, t, useGuestLang } from '../../lib/i18n';
 import { getBrandStyle } from '../../lib/theme';
 import type { Category, CustomerHistory, DietaryType, MenuItem, MenuItemAddon, MenuItemVariant, RestaurantInfo, TableCartLine } from '../../types';
 
@@ -38,6 +39,7 @@ export default function CustomerMenuPage() {
   const [reviewOpen, setReviewOpen] = useState(false);
   useOrderSocket(true);
   const session = useQuery({ queryKey: ['customer-session', token], queryFn: () => api.get<CustomerSession>(`/customer/session?token=${encodeURIComponent(token)}`), retry: false });
+  const [lang] = useGuestLang(session.data?.restaurant?.defaultLanguage);
   const hasValidSession = Boolean(session.data && !session.data.tableMismatch);
   const menu = useQuery({ queryKey: ['customer-menu', token], queryFn: () => api.get<CustomerMenu>(`/customer/menu?token=${encodeURIComponent(token)}`), enabled: hasValidSession, retry: false });
   const tableCartQuery = useQuery({
@@ -238,12 +240,12 @@ export default function CustomerMenuPage() {
       const count = filteredItems.filter((item) => item.categoryId === category._id).length;
       return {
         id: category._id,
-        name: category.name,
-        description: category.description,
+        name: localizeText(category.name, category.translations, lang, 'name'),
+        description: localizeText(category.description, category.translations, lang, 'description'),
         count
       };
     });
-  }, [availableCategories, filteredItems]);
+  }, [availableCategories, filteredItems, lang]);
 
   const effectiveActiveCategory = activeCategory || availableCategories[0]?._id || '';
 
@@ -440,7 +442,7 @@ export default function CustomerMenuPage() {
           <input
             type="search"
             className="menu-search-input"
-            placeholder={`Search in ${restaurant.name}…`}
+            placeholder={t('searchDishes', lang)}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             aria-label="Search menu"
@@ -601,7 +603,7 @@ export default function CustomerMenuPage() {
                 className={`category-chip ${effectiveActiveCategory === category._id ? 'active' : ''}`}
                 onClick={() => scrollTo(category._id)}
               >
-                {category.name}
+                {localizeText(category.name, category.translations, lang, 'name')}
               </button>
             ))}
           </nav>
@@ -640,7 +642,7 @@ export default function CustomerMenuPage() {
               }}
             >
               <h2 style={{ margin: 0 }}>
-                {category.name} <span className="muted" style={{ fontSize: 13, fontWeight: 600 }}>({categoryItems.length})</span>
+                {localizeText(category.name, category.translations, lang, 'name')} <span className="muted" style={{ fontSize: 13, fontWeight: 600 }}>({categoryItems.length})</span>
               </h2>
               <svg
                 width="18"
@@ -685,7 +687,7 @@ export default function CustomerMenuPage() {
                       ) : null}
                     </div>
 
-                    <h3 className="swiggy-dish-title">{item.name}</h3>
+                    <h3 className="swiggy-dish-title">{localizeText(item.name, item.translations, lang, 'name')}</h3>
 
                     <div className="swiggy-dish-price">
                       {item.variants && item.variants.length > 0
@@ -693,7 +695,7 @@ export default function CustomerMenuPage() {
                         : money(item.pricePaise)}
                     </div>
 
-                    {item.description && <p className="swiggy-dish-desc">{item.description}</p>}
+                    {item.description && <p className="swiggy-dish-desc">{localizeText(item.description, item.translations, lang, 'description')}</p>}
                   </div>
 
                   <div className="swiggy-media-col">

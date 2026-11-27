@@ -22,6 +22,7 @@ const restaurantSchema = new Schema({
   webhookSecret: { type: String, trim: true, default: '' },
   enableDishReviews: { type: Boolean, default: true },
   requireCustomerOtp: { type: Boolean, default: false },
+  defaultLanguage: { type: String, enum: ['en', 'hi', 'mr'], default: 'en' },
   active: { type: Boolean, default: true }
 }, { timestamps: true });
 
@@ -45,6 +46,7 @@ export interface RestaurantDoc {
   webhookSecret?: string;
   enableDishReviews?: boolean;
   requireCustomerOtp?: boolean;
+  defaultLanguage?: 'en' | 'hi' | 'mr';
   active: boolean;
 }
 export const Restaurant = model('Restaurant', restaurantSchema);

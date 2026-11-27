@@ -9,8 +9,28 @@ import { ReviewModal } from '../../components/ReviewModal';
 import { ThemeToggle } from '../../components/ThemeToggle';
 import { useOrderSocket } from '../../hooks/useOrderSocket';
 import { playPaymentSuccessChime } from '../../lib/audio';
+import { t, useGuestLang } from '../../lib/i18n';
 import { getBrandStyle } from '../../lib/theme';
 import type { OrderRecord, OrderStatus, RestaurantInfo } from '../../types';
+
+interface PaymentIntentResponse {
+  paymentIntent: {
+    mode: 'razorpay_checkout' | 'cashfree_checkout' | 'upi_intent';
+    provider: string;
+    orderId: string;
+    orderNumber: string;
+    amountPaise: number;
+    currency: 'INR';
+    restaurantName: string;
+    gatewayOrderId?: string;
+    gatewayKeyId?: string;
+    paymentSessionId?: string;
+    upiUri?: string;
+    upiId?: string;
+    supportsAutoWebhook: boolean;
+    supportsManualUtr: boolean;
+  };
+}
 
 interface OrderResponse { order: OrderRecord }
 interface SessionResponse {
@@ -37,12 +57,20 @@ export default function TrackingPage() {
   const [upiConfirming, setUpiConfirming] = useState(false);
   const [upiRef, setUpiRef] = useState('');
   const [autoConfirmError, setAutoConfirmError] = useState('');
+  const [billSheetOpen, setBillSheetOpen] = useState(false);
+  const [selectedPayMethod, setSelectedPayMethod] = useState<'CASH' | 'CARD' | 'UPI' | null>(null);
+  const [billRequesting, setBillRequesting] = useState(false);
+  const [billRequestedMethod, setBillRequestedMethod] = useState<'CASH' | 'CARD' | null>(null);
+  const [billError, setBillError] = useState('');
+  const [intentLoading, setIntentLoading] = useState(false);
+  const [paymentIntent, setPaymentIntent] = useState<PaymentIntentResponse['paymentIntent'] | null>(null);
 
   const sessionQuery = useQuery({
     queryKey: ['customer-session', token],
     queryFn: () => api.get<SessionResponse>(`/customer/session?token=${encodeURIComponent(token)}`),
     retry: false
   });
+  const [lang] = useGuestLang(sessionQuery.data?.restaurant?.defaultLanguage);
 
   const orderQuery = useQuery({
     queryKey: ['customer-order', orderId, token],
@@ -85,6 +113,71 @@ export default function TrackingPage() {
       setAutoConfirmError(err instanceof ApiError ? err.message : 'Could not confirm payment. Please ask staff for assistance.');
     } finally {
       setUpiConfirming(false);
+    }
+  };
+
+  const handleRequestCashOrCardBill = async (method: 'CASH' | 'CARD') => {
+    setBillError('');
+    setBillRequesting(true);
+    try {
+      await api.post(`/customer/service-request?token=${encodeURIComponent(token)}`, {
+        token,
+        type: 'BILL',
+        notes: `Payment method: ${method === 'CASH' ? 'Cash' : 'Card'} (Order #${orderQuery.data?.order.orderNumber ?? ''})`
+      });
+      setBillRequestedMethod(method);
+      setBillSheetOpen(false);
+    } catch (err: unknown) {
+      setBillError(err instanceof ApiError ? err.message : 'Could not send bill request. Please call a waiter.');
+    } finally {
+      setBillRequesting(false);
+    }
+  };
+
+  const handleSelectUpiPayment = async () => {
+    setBillError('');
+    setIntentLoading(true);
+    try {
+      const res = await api.post<PaymentIntentResponse>(
+        `/customer/orders/${encodeURIComponent(orderId)}/payment-intent?token=${encodeURIComponent(token)}`,
+        {}
+      );
+      setPaymentIntent(res.paymentIntent);
+      setBillSheetOpen(false);
+    } catch (err: unknown) {
+      setBillError(err instanceof ApiError ? err.message : 'UPI payment is unavailable right now. Please choose Cash or Card.');
+    } finally {
+      setIntentLoading(false);
+    }
+  };
+
+  const handleOpenGatewayCheckout = () => {
+    if (!paymentIntent) return;
+    if (paymentIntent.mode === 'razorpay_checkout' && paymentIntent.gatewayKeyId && paymentIntent.gatewayOrderId) {
+      const win = window as unknown as { Razorpay?: new (opts: Record<string, unknown>) => { open: () => void } };
+      const launch = () => {
+        if (!win.Razorpay) return;
+        const rzp = new win.Razorpay({
+          key: paymentIntent.gatewayKeyId,
+          amount: paymentIntent.amountPaise,
+          currency: paymentIntent.currency,
+          name: paymentIntent.restaurantName,
+          description: `Order #${paymentIntent.orderNumber}`,
+          order_id: paymentIntent.gatewayOrderId,
+          handler: () => {
+            void queryClient.invalidateQueries({ queryKey: ['customer-order', orderId, token] });
+          }
+        });
+        rzp.open();
+      };
+      if (win.Razorpay) {
+        launch();
+      } else {
+        const script = document.createElement('script');
+        script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+        script.onload = launch;
+        document.body.appendChild(script);
+      }
     }
   };
 
@@ -340,180 +433,250 @@ export default function TrackingPage() {
           </div>
         ) : !rejected ? (
           <div style={{ marginTop: 16, padding: '16px', background: 'var(--paper-elevated)', border: '1px solid var(--line)', borderRadius: 12 }}>
-            {sessionQuery.data?.restaurant?.upiId ? (
-              (() => {
-                const upiParams = `pa=${encodeURIComponent(sessionQuery.data.restaurant.upiId)}&pn=${encodeURIComponent(sessionQuery.data.restaurant.name)}&am=${(order.totalPaise / 100).toFixed(2)}&tn=${encodeURIComponent(`Order ${order.orderNumber}`)}&cu=INR`;
-                const isAndroid = typeof navigator !== 'undefined' && /android/i.test(navigator.userAgent);
-                const genericUpiHref = isAndroid
-                  ? `intent://pay?${upiParams}#Intent;scheme=upi;end`
-                  : `upi://pay?${upiParams}`;
-                return (
-              <>
+            {billRequestedMethod ? (
+              <div style={{ textAlign: 'center', padding: '6px 0' }}>
+                <div style={{ fontSize: 28, marginBottom: 6 }}>{billRequestedMethod === 'CASH' ? '💵' : '💳'}</div>
+                <strong style={{ display: 'block', fontSize: 14, color: 'var(--green)', marginBottom: 4 }}>
+                  {t('billRequestedBanner', lang, { method: billRequestedMethod === 'CASH' ? t('payCash', lang) : t('payCard', lang) })}
+                </strong>
+                <button
+                  type="button"
+                  className="btn ghost small"
+                  style={{ marginTop: 8, fontSize: 12 }}
+                  onClick={() => {
+                    setBillRequestedMethod(null);
+                    setBillSheetOpen(true);
+                  }}
+                >
+                  Change payment method
+                </button>
+              </div>
+            ) : paymentIntent ? (
+              <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 12 }}>
                   <div style={{ minWidth: 0, flex: '1 1 160px' }}>
                     <strong style={{ fontSize: 14, display: 'block', color: 'var(--ink)' }}>
-                      Pay via UPI
+                      {t('payViaUpiTitle', lang)} ({money(order.totalPaise)})
                     </strong>
                     <span className="muted" style={{ fontSize: 11 }}>
-                      Scan QR or choose your preferred UPI app
+                      {paymentIntent.supportsAutoWebhook ? 'Auto-confirms on payment' : 'Fast UPI verification'}
                     </span>
                   </div>
-                  <span
-                    className="pill green"
-                    style={{
-                      fontSize: 10,
-                      fontWeight: 700,
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      whiteSpace: 'nowrap',
-                      flexShrink: 0,
-                      lineHeight: 1.2
-                    }}
-                  >
-                    UPI AVAILABLE
-                  </span>
-                </div>
-
-                {/* 1-Tap Open UPI App (Android intent chooser or standard UPI URI) */}
-                <a
-                  href={genericUpiHref}
-                  className="btn full"
-                  style={{
-                    background: 'var(--green)',
-                    color: '#ffffff',
-                    fontWeight: 750,
-                    fontSize: 14,
-                    marginBottom: 8,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: 8,
-                    textDecoration: 'none',
-                    boxShadow: '0 4px 12px rgba(49, 91, 67, 0.2)'
-                  }}
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    <rect x="2" y="5" width="20" height="14" rx="2" />
-                    <line x1="2" y1="10" x2="22" y2="10" />
-                  </svg>
-                  <span>Open UPI App to Pay {money(order.totalPaise)}</span>
-                </a>
-
-                {/* Direct App Quick-Launchers (GPay / PhonePe / Paytm) */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginBottom: 12 }}>
-                  <a
-                    href={`tez://upi/pay?${upiParams}`}
-                    className="btn secondary small"
-                    style={{ justifyContent: 'center', fontSize: 12, fontWeight: 600, textDecoration: 'none' }}
-                  >
-                    GPay
-                  </a>
-                  <a
-                    href={`phonepe://pay?${upiParams}`}
-                    className="btn secondary small"
-                    style={{ justifyContent: 'center', fontSize: 12, fontWeight: 600, textDecoration: 'none' }}
-                  >
-                    PhonePe
-                  </a>
-                  <a
-                    href={`paytmmp://pay?${upiParams}`}
-                    className="btn secondary small"
-                    style={{ justifyContent: 'center', fontSize: 12, fontWeight: 600, textDecoration: 'none' }}
-                  >
-                    Paytm
-                  </a>
-                </div>
-
-                {/* Scannable Dynamic QR Code - Visible by Default */}
-                <div style={{ textAlign: 'center', margin: '12px 0', padding: 14, background: '#ffffff', borderRadius: 12, border: '1px solid var(--line)' }}>
-                  <img
-                    src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&margin=4&data=${encodeURIComponent(`upi://pay?pa=${sessionQuery.data.restaurant.upiId}&pn=${encodeURIComponent(sessionQuery.data.restaurant.name)}&am=${(order.totalPaise / 100).toFixed(2)}&tn=${encodeURIComponent(`Order ${order.orderNumber}`)}&cu=INR`)}`}
-                    alt="Scan to pay via any UPI app"
-                    style={{ width: 180, height: 180, margin: '0 auto', display: 'block', borderRadius: 8 }}
-                  />
-                  <div style={{ fontSize: 12, color: '#111827', marginTop: 8, fontWeight: 700 }}>
-                    Scan with Google Pay, PhonePe, Paytm, or BHIM
-                  </div>
-                  <div style={{ fontSize: 13, color: 'var(--green)', fontWeight: 800, marginTop: 2 }}>
-                    Amount: {money(order.totalPaise)}
-                  </div>
-                  <div style={{ fontSize: 11, color: '#6b7280', marginTop: 4 }}>
-                    UPI ID: <strong style={{ color: '#111827' }}>{sessionQuery.data.restaurant.upiId}</strong>
-                    <button
-                      type="button"
-                      className="btn ghost small"
-                      style={{ fontSize: 10, padding: '1px 6px', marginLeft: 6 }}
-                      onClick={() => {
-                        if (sessionQuery.data?.restaurant?.upiId) {
-                          void navigator.clipboard.writeText(sessionQuery.data.restaurant.upiId);
-                        }
-                      }}
-                    >
-                      Copy
-                    </button>
-                  </div>
-                </div>
-
-                {/* Mandatory UTR Entry after payment */}
-                <div style={{ marginTop: 14, padding: 12, background: 'var(--paper)', borderRadius: 10, border: '1px solid var(--line)' }}>
-                  <label htmlFor="upi-ref" style={{ fontSize: 12, fontWeight: 700, display: 'block', marginBottom: 4, color: 'var(--ink)' }}>
-                    Already paid in your UPI app?
-                  </label>
-                  <p className="muted" style={{ fontSize: 11, margin: '0 0 8px' }}>
-                    Enter the 12-digit UPI Reference / UTR Number from your payment receipt screen to confirm:
-                  </p>
-                  <div style={{ display: 'flex', gap: 6 }}>
-                    <input
-                      id="upi-ref"
-                      className="input"
-                      placeholder="e.g. 423456789012"
-                      value={upiRef}
-                      onChange={(e) => setUpiRef(e.target.value.replace(/[^0-9a-zA-Z]/g, ''))}
-                      maxLength={30}
-                      style={{ fontSize: 13, flex: 1 }}
-                    />
-                    <button
-                      type="button"
-                      className="btn"
-                      style={{
-                        background: 'var(--green, #315b43)',
-                        color: '#ffffff',
-                        fontWeight: 750,
-                        fontSize: 13,
-                        whiteSpace: 'nowrap'
-                      }}
-                      onClick={handleAutoConfirmPayment}
-                      disabled={upiConfirming || upiRef.trim().length < 6}
-                    >
-                      {upiConfirming ? 'Verifying…' : 'Submit UTR ✓'}
-                    </button>
-                  </div>
-                </div>
-
-                <div style={{ display: 'flex', justifyContent: 'center', marginTop: 10 }}>
                   <button
                     type="button"
                     className="btn ghost small"
-                    style={{ fontSize: 11, padding: '4px 8px', color: 'var(--muted)' }}
-                    onClick={() => setAssistanceOpen(true)}
+                    style={{ fontSize: 11 }}
+                    onClick={() => {
+                      setPaymentIntent(null);
+                      setBillSheetOpen(true);
+                    }}
                   >
-                    Pay with Cash / Card via Waiter
+                    ← Change
                   </button>
                 </div>
-              </>
-                );
-              })()
+
+                {paymentIntent.mode === 'razorpay_checkout' ? (
+                  <button
+                    type="button"
+                    className="btn full"
+                    style={{ background: '#072654', color: '#ffffff', fontWeight: 700, minHeight: 44 }}
+                    onClick={handleOpenGatewayCheckout}
+                  >
+                    {t('payWithGateway', lang, { amount: (order.totalPaise / 100).toFixed(0) })}
+                  </button>
+                ) : paymentIntent.upiUri ? (
+                  (() => {
+                    const upiParams = paymentIntent.upiUri.replace(/^upi:\/\/pay\?/, '');
+                    const isAndroid = typeof navigator !== 'undefined' && /android/i.test(navigator.userAgent);
+                    const genericUpiHref = isAndroid
+                      ? `intent://pay?${upiParams}#Intent;scheme=upi;end`
+                      : paymentIntent.upiUri;
+                    return (
+                      <>
+                        <a
+                          href={genericUpiHref}
+                          className="btn full"
+                          style={{
+                            background: 'var(--green)',
+                            color: '#ffffff',
+                            fontWeight: 750,
+                            fontSize: 14,
+                            marginBottom: 8,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: 8,
+                            textDecoration: 'none',
+                            boxShadow: '0 4px 12px rgba(49, 91, 67, 0.2)'
+                          }}
+                        >
+                          <span>{t('openUpiApp', lang)} · {money(order.totalPaise)}</span>
+                        </a>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginBottom: 12 }}>
+                          <a href={`tez://upi/pay?${upiParams}`} className="btn secondary small" style={{ justifyContent: 'center', fontSize: 12, fontWeight: 600, textDecoration: 'none' }}>GPay</a>
+                          <a href={`phonepe://pay?${upiParams}`} className="btn secondary small" style={{ justifyContent: 'center', fontSize: 12, fontWeight: 600, textDecoration: 'none' }}>PhonePe</a>
+                          <a href={`paytmmp://pay?${upiParams}`} className="btn secondary small" style={{ justifyContent: 'center', fontSize: 12, fontWeight: 600, textDecoration: 'none' }}>Paytm</a>
+                        </div>
+
+                        <div style={{ textAlign: 'center', margin: '12px 0', padding: 14, background: '#ffffff', borderRadius: 12, border: '1px solid var(--line)' }}>
+                          <img
+                            src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&margin=4&data=${encodeURIComponent(paymentIntent.upiUri)}`}
+                            alt="Scan to pay via any UPI app"
+                            style={{ width: 180, height: 180, margin: '0 auto', display: 'block', borderRadius: 8 }}
+                          />
+                          <div style={{ fontSize: 12, color: '#111827', marginTop: 8, fontWeight: 700 }}>
+                            {t('orScanQr', lang)}
+                          </div>
+                          {paymentIntent.upiId && (
+                            <div style={{ fontSize: 11, color: '#6b7280', marginTop: 4 }}>
+                              UPI ID: <strong style={{ color: '#111827' }}>{paymentIntent.upiId}</strong>
+                            </div>
+                          )}
+                        </div>
+
+                        {paymentIntent.supportsManualUtr && sessionQuery.data?.restaurant?.autoConfirmPayments && (
+                          <div style={{ marginTop: 14, padding: 12, background: 'var(--paper)', borderRadius: 10, border: '1px solid var(--line)' }}>
+                            <label htmlFor="upi-ref" style={{ fontSize: 12, fontWeight: 700, display: 'block', marginBottom: 4, color: 'var(--ink)' }}>
+                              {t('enterUtrPrompt', lang)}
+                            </label>
+                            <div style={{ display: 'flex', gap: 6 }}>
+                              <input
+                                id="upi-ref"
+                                className="input"
+                                placeholder="e.g. 423456789012"
+                                value={upiRef}
+                                onChange={(e) => setUpiRef(e.target.value.replace(/[^0-9a-zA-Z]/g, ''))}
+                                maxLength={30}
+                                style={{ fontSize: 13, flex: 1 }}
+                              />
+                              <button
+                                type="button"
+                                className="btn"
+                                style={{ background: 'var(--green, #315b43)', color: '#ffffff', fontWeight: 750, fontSize: 13, whiteSpace: 'nowrap' }}
+                                onClick={handleAutoConfirmPayment}
+                                disabled={upiConfirming || upiRef.trim().length < 6}
+                              >
+                                {upiConfirming ? t('confirming', lang) : t('confirmUpiPayment', lang)}
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    );
+                  })()
+                ) : (
+                  <p className="muted" style={{ fontSize: 12, margin: 0 }}>
+                    Payment session initialized ({paymentIntent.provider}). Please complete payment in your gateway window.
+                  </p>
+                )}
+              </div>
+            ) : billSheetOpen ? (
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                  <strong style={{ fontSize: 14, color: 'var(--ink)' }}>
+                    {t('choosePaymentMethod', lang)} ({money(order.totalPaise)})
+                  </strong>
+                  <button
+                    type="button"
+                    className="btn ghost small"
+                    style={{ fontSize: 11 }}
+                    onClick={() => {
+                      setBillSheetOpen(false);
+                      setSelectedPayMethod(null);
+                      setBillError('');
+                    }}
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                <div style={{ display: 'grid', gap: 8, marginBottom: 12 }}>
+                  {(['CASH', 'CARD', 'UPI'] as const).map((method) => {
+                    const isSelected = selectedPayMethod === method;
+                    const upiAvailable = Boolean(
+                      sessionQuery.data?.restaurant?.upiId ||
+                      (sessionQuery.data?.restaurant?.paymentGateway && sessionQuery.data.restaurant.paymentGateway !== 'direct_upi')
+                    );
+                    const disabled = method === 'UPI' && !upiAvailable;
+                    const icon = method === 'CASH' ? '💵' : method === 'CARD' ? '💳' : '📱';
+                    const title = method === 'CASH' ? t('payCash', lang) : method === 'CARD' ? t('payCard', lang) : t('payUpi', lang);
+                    const hint = method === 'CASH' ? t('payCashHint', lang) : method === 'CARD' ? t('payCardHint', lang) : t('payUpiHint', lang);
+                    return (
+                      <button
+                        key={method}
+                        type="button"
+                        disabled={disabled || intentLoading || billRequesting}
+                        onClick={() => {
+                          if (method === 'UPI') {
+                            setSelectedPayMethod('UPI');
+                            void handleSelectUpiPayment();
+                          } else {
+                            setSelectedPayMethod(method);
+                          }
+                        }}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 12,
+                          padding: '12px 14px',
+                          borderRadius: 10,
+                          border: isSelected ? '2px solid var(--green)' : '1px solid var(--line)',
+                          background: isSelected ? 'var(--soft-green)' : 'var(--paper)',
+                          cursor: disabled ? 'not-allowed' : 'pointer',
+                          opacity: disabled ? 0.5 : 1,
+                          textAlign: 'left'
+                        }}
+                      >
+                        <span style={{ fontSize: 20 }}>{icon}</span>
+                        <div style={{ flex: 1 }}>
+                          <strong style={{ display: 'block', fontSize: 13, color: 'var(--ink)' }}>{title}</strong>
+                          <span className="muted" style={{ fontSize: 11 }}>{hint}</span>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {(selectedPayMethod === 'CASH' || selectedPayMethod === 'CARD') && (
+                  <button
+                    type="button"
+                    className="btn full"
+                    disabled={billRequesting}
+                    onClick={() => void handleRequestCashOrCardBill(selectedPayMethod)}
+                    style={{
+                      background: 'var(--green, #315b43)',
+                      color: '#ffffff',
+                      fontWeight: 700,
+                      minHeight: 44
+                    }}
+                  >
+                    {billRequesting
+                      ? t('sendingBillRequest', lang)
+                      : t('sendBillRequest', lang, { method: selectedPayMethod === 'CASH' ? t('payCash', lang) : t('payCard', lang) })}
+                  </button>
+                )}
+
+                {intentLoading && (
+                  <p className="muted" style={{ fontSize: 12, textAlign: 'center', margin: '8px 0 0' }}>
+                    {t('openingCheckout', lang)}
+                  </p>
+                )}
+                {billError && (
+                  <div className="form-error" style={{ marginTop: 10, fontSize: 12 }}>
+                    {billError}
+                  </div>
+                )}
+              </div>
             ) : (
-              /* When restaurant has no UPI ID configured: Show standard bill & cash/card payment */
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                   <div>
                     <strong style={{ fontSize: 14, display: 'block', color: 'var(--ink)' }}>
-                      Bill & Payment ({money(order.totalPaise)})
+                      {t('total', lang)} · {money(order.totalPaise)}
                     </strong>
                     <span className="muted" style={{ fontSize: 11 }}>
-                      Pay with Cash or Card directly at your table or counter
+                      Cash, Card, or UPI
                     </span>
                   </div>
                   <span className="pill gray" style={{ fontSize: 10, fontWeight: 700 }}>
@@ -536,9 +699,9 @@ export default function TrackingPage() {
                     gap: 8,
                     boxShadow: '0 4px 12px rgba(49, 91, 67, 0.2)'
                   }}
-                  onClick={() => setAssistanceOpen(true)}
+                  onClick={() => setBillSheetOpen(true)}
                 >
-                  <span>Request Bill from Waiter</span>
+                  <span>🧾 {t('askForBill', lang)}</span>
                 </button>
               </div>
             )}

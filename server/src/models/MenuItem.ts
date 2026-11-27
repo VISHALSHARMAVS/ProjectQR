@@ -10,11 +10,23 @@ const addonOptionSchema = new Schema({
   pricePaise: { type: Number, required: true, min: 0, max: 100000000, validate: Number.isSafeInteger }
 }, { _id: false });
 
+const itemTranslationSchema = new Schema({
+  name: { type: String, trim: true, maxlength: 120, default: '' },
+  description: { type: String, trim: true, maxlength: 500, default: '' }
+}, { _id: false });
+
 const menuItemSchema = new Schema({
   restaurantId: { type: Schema.Types.ObjectId, ref: 'Restaurant', required: true, index: true },
   categoryId: { type: Schema.Types.ObjectId, ref: 'Category', required: true, index: true },
   name: { type: String, required: true, trim: true, maxlength: 120 },
   description: { type: String, trim: true, maxlength: 500, default: '' },
+  translations: {
+    type: new Schema({
+      hi: { type: itemTranslationSchema, default: () => ({}) },
+      mr: { type: itemTranslationSchema, default: () => ({}) }
+    }, { _id: false }),
+    default: () => ({})
+  },
   pricePaise: { type: Number, required: true, min: 0, max: 100000000, validate: Number.isSafeInteger },
   variants: { type: [variantOptionSchema], default: [] },
   addons: { type: [addonOptionSchema], default: [] },
@@ -30,12 +42,17 @@ menuItemSchema.index({ restaurantId: 1, categoryId: 1, available: 1, displayOrde
 
 export interface MenuItemVariant { name: string; pricePaise: number }
 export interface MenuItemAddon { name: string; pricePaise: number }
+export interface MenuItemTranslations {
+  hi?: { name?: string; description?: string };
+  mr?: { name?: string; description?: string };
+}
 export interface MenuItemDoc {
   _id: Types.ObjectId;
   restaurantId: Types.ObjectId;
   categoryId: Types.ObjectId;
   name: string;
   description: string;
+  translations?: MenuItemTranslations;
   pricePaise: number;
   variants: MenuItemVariant[];
   addons: MenuItemAddon[];

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { api, ApiError } from '../lib/api';
+import { t, useGuestLang } from '../lib/i18n';
 import { Modal } from './ui';
 import type { DishRatingPayload, ReviewRootCauseTag, SubmitReviewPayload } from '../types';
 
@@ -60,6 +61,7 @@ export function ReviewModal({
   const [submittedReviewId, setSubmittedReviewId] = useState<string | null>(null);
   const [googleClicked, setGoogleClicked] = useState(false);
   const [submitError, setSubmitError] = useState('');
+  const [lang] = useGuestLang();
 
   const effectiveRating = hoverRating ?? rating;
   const isHighRating = rating >= 4;
@@ -130,7 +132,7 @@ export function ReviewModal({
 
   return (
     <Modal
-      title={submittedReviewId ? 'Thank You!' : 'Rate Your Experience'}
+      title={submittedReviewId ? t('thankYouHeading', lang) : t('rateYourExperienceTitle', lang)}
       onClose={onClose}
       width={480}
     >
@@ -140,19 +142,17 @@ export function ReviewModal({
             <div style={{ fontSize: 48, marginBottom: 12 }}>
               {isHighRating ? '🎉' : '🙏'}
             </div>
-            <h3 style={{ fontSize: 19, margin: '0 0 8px', color: isHighRating ? '#15803d' : '#991b1b', wordBreak: 'break-word' }}>
-              {isHighRating ? 'Thank you so much!' : 'Your feedback was delivered to our manager.'}
+            <h3 style={{ fontSize: 19, margin: '0 0 8px', color: isHighRating ? '#15803d' : 'var(--ink)', wordBreak: 'break-word' }}>
+              {isHighRating ? t('thankYouHeading', lang) : t('apologyHeading', lang)}
             </h3>
             <p className="muted" style={{ fontSize: 13, margin: '0 0 18px', lineHeight: 1.5, wordBreak: 'break-word' }}>
-              {isHighRating
-                ? 'Your feedback means the world to our chefs and floor team. We look forward to serving you again!'
-                : 'Our duty manager has received your instant table alert. A staff member will attend to your table shortly to address your concerns.'}
+              {isHighRating ? t('thankYouBody', lang) : t('apologyBody', lang)}
             </p>
 
             {googleReviewUrl && (
               <div style={{ padding: 14, background: 'var(--paper-elevated)', border: '1px solid var(--line)', borderRadius: 12, marginBottom: 18, boxSizing: 'border-box', maxWidth: '100%' }}>
                 <p style={{ margin: '0 0 10px', fontSize: 13, fontWeight: 600, color: 'var(--ink)', lineHeight: 1.4 }}>
-                  Want to share your dining experience publicly on Google Maps?
+                  {t('googlePrompt', lang)}
                 </p>
                 <button
                   type="button"
@@ -173,7 +173,7 @@ export function ReviewModal({
                   }}
                   onClick={handleGoogleClick}
                 >
-                  <span>{googleClicked ? 'Opened Google Maps' : 'Open Google Maps Reviews'}</span>
+                  <span>{googleClicked ? t('openedGoogleReview', lang) : t('addGoogleReview', lang)}</span>
                 </button>
               </div>
             )}
@@ -183,7 +183,7 @@ export function ReviewModal({
               className="btn secondary full"
               onClick={onClose}
             >
-              Done
+              {t('done', lang)}
             </button>
           </div>
         ) : (
@@ -374,17 +374,13 @@ export function ReviewModal({
                   minHeight: 46,
                   fontWeight: 700,
                   fontSize: 14,
-                  background: isHighRating ? 'var(--green, #315b43)' : '#dc2626',
+                  background: 'var(--green, #315b43)',
                   color: '#ffffff'
                 }}
                 disabled={submitMutation.isPending}
                 onClick={() => submitMutation.mutate()}
               >
-                {submitMutation.isPending
-                  ? 'Submitting…'
-                  : isHighRating
-                  ? 'Submit Review ✓'
-                  : '🚨 Alert Duty Manager & Submit Feedback'}
+                {submitMutation.isPending ? t('submitting', lang) : t('submitFeedback', lang)}
               </button>
 
               <button
@@ -392,7 +388,7 @@ export function ReviewModal({
                 className="btn ghost full"
                 onClick={onClose}
               >
-                Maybe later
+                {t('maybeLater', lang)}
               </button>
             </div>
           </div>

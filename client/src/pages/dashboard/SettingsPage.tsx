@@ -26,6 +26,7 @@ interface SettingsForm {
   paymentGateway: 'direct_upi' | 'razorpay' | 'cashfree' | 'custom';
   webhookSecret: string;
   enableDishReviews: boolean;
+  defaultLanguage: 'en' | 'hi' | 'mr';
 }
 
 const colorPresets = BRAND_COLOR_PRESETS;
@@ -61,7 +62,8 @@ export default function SettingsPage() {
     autoConfirmPayments: overrides.autoConfirmPayments ?? restaurant?.autoConfirmPayments ?? false,
     paymentGateway: overrides.paymentGateway ?? restaurant?.paymentGateway ?? 'direct_upi',
     webhookSecret: overrides.webhookSecret ?? restaurant?.webhookSecret ?? '',
-    enableDishReviews: overrides.enableDishReviews ?? restaurant?.enableDishReviews ?? true
+    enableDishReviews: overrides.enableDishReviews ?? restaurant?.enableDishReviews ?? true,
+    defaultLanguage: overrides.defaultLanguage ?? restaurant?.defaultLanguage ?? 'en'
   };
 
   const handleLogoChange = async (file: File | null) => {
@@ -130,7 +132,8 @@ export default function SettingsPage() {
         autoConfirmPayments: response.restaurant.autoConfirmPayments ?? false,
         paymentGateway: response.restaurant.paymentGateway ?? 'direct_upi',
         webhookSecret: response.restaurant.webhookSecret ?? '',
-        enableDishReviews: response.restaurant.enableDishReviews ?? true
+        enableDishReviews: response.restaurant.enableDishReviews ?? true,
+        defaultLanguage: response.restaurant.defaultLanguage ?? 'en'
       });
       setMessage('Restaurant settings, logo and branding saved successfully!');
       setError('');
@@ -615,6 +618,26 @@ export default function SettingsPage() {
             </span>
           </div>
         </label>
+      </div>
+
+      <div className="field">
+        <label htmlFor="restaurant-default-language" style={{ color: 'var(--ink)', fontWeight: 650 }}>
+          Default Guest Language
+        </label>
+        <select
+          id="restaurant-default-language"
+          className="input"
+          disabled={!canEdit}
+          value={form.defaultLanguage}
+          onChange={(e) => setOverrides((current) => ({ ...current, defaultLanguage: e.target.value as 'en' | 'hi' | 'mr' }))}
+        >
+          <option value="en">English (Default)</option>
+          <option value="hi">हिन्दी (Hindi)</option>
+          <option value="mr">मराठी (Marathi)</option>
+        </select>
+        <span className="muted" style={{ fontSize: 11, marginTop: 4, display: 'block' }}>
+          Guests see this language first when scanning a table QR, and can switch once on the welcome screen.
+        </span>
       </div>
 
       <div className="notice">Table QR codes use the public app URL configured by the restaurant operator.</div>

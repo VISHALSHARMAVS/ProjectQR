@@ -5,6 +5,7 @@ import { ApiError, api } from '../../lib/api';
 import { Loading } from '../../components/ui';
 import { ThemeToggle } from '../../components/ThemeToggle';
 import { formatTableLabel } from '../../lib/format';
+import { GUEST_LANG_LABELS, t, useGuestLang, type GuestLang } from '../../lib/i18n';
 import { getBrandStyle } from '../../lib/theme';
 import type { CustomerTabInfo, RestaurantInfo } from '../../types';
 
@@ -31,6 +32,7 @@ export default function VerifyPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const tableQuery = useQuery({ queryKey: ['public-table', token], queryFn: () => api.get<TableLanding>(`/public/tables/${encodeURIComponent(token)}`), retry: false });
+  const [lang, setLang] = useGuestLang(tableQuery.data?.restaurant?.defaultLanguage);
   const sessionQuery = useQuery({ queryKey: ['customer-session', token], queryFn: () => api.get<VerifiedSession>(`/customer/session?token=${encodeURIComponent(token)}`), retry: false });
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
@@ -109,15 +111,50 @@ export default function VerifyPage() {
           <p>{formatTableLabel(table.label)}</p>
         </div>
       </div>
-      <ThemeToggle variant="compact" />
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div
+          role="group"
+          aria-label={t('languageLabel', lang)}
+          style={{
+            display: 'inline-flex',
+            background: 'var(--paper-elevated)',
+            border: '1px solid var(--line)',
+            borderRadius: 999,
+            padding: 2,
+            gap: 2
+          }}
+        >
+          {(['en', 'hi', 'mr'] as GuestLang[]).map((code) => (
+            <button
+              key={code}
+              type="button"
+              onClick={() => setLang(code)}
+              aria-pressed={lang === code}
+              style={{
+                border: 'none',
+                borderRadius: 999,
+                padding: '4px 9px',
+                fontSize: 11,
+                fontWeight: lang === code ? 700 : 500,
+                background: lang === code ? 'var(--green)' : 'transparent',
+                color: lang === code ? '#ffffff' : 'var(--ink)',
+                cursor: 'pointer'
+              }}
+            >
+              {GUEST_LANG_LABELS[code]}
+            </button>
+          ))}
+        </div>
+        <ThemeToggle variant="compact" />
+      </div>
     </header>
     <section className="customer-intro">
-      <span className="eyebrow">Welcome</span>
-      <h2>Who’s joining<br />us today?</h2>
+      <span className="eyebrow">{t('welcome', lang)}</span>
+      <h2>{t('whosJoining', lang)}</h2>
       <p>
         {isStrictOtp
-          ? `Enter your mobile number to verify your session at ${formatTableLabel(table.label)}.`
-          : `Enter your name to browse the menu and order together with everyone at ${formatTableLabel(table.label)}.`}
+          ? t('enterPhonePrompt', lang, { table: formatTableLabel(table.label) })
+          : t('enterNamePrompt', lang, { table: formatTableLabel(table.label) })}
       </p>
     </section>
 
@@ -164,7 +201,7 @@ export default function VerifyPage() {
           }}
         >
           <div className="field">
-            <label htmlFor="quick-name">Your Name</label>
+            <label htmlFor="quick-name">{t('yourName', lang)}</label>
             <input
               className="input"
               id="quick-name"
@@ -174,7 +211,7 @@ export default function VerifyPage() {
               maxLength={100}
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Rahul, Priya, Alex"
+              placeholder={t('namePlaceholder', lang)}
               autoFocus
             />
             <span className="muted" style={{ fontSize: 11 }}>

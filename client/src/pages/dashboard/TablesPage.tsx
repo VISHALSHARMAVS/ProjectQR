@@ -127,14 +127,14 @@ export default function TablesPage() {
           className={`btn ${bulkMode ? '' : 'secondary'}`}
           onClick={() => { setBulkMode(true); setError(''); setBulkSuccess(''); }}
         >
-          ⚡ Bulk Generator
+          Bulk Generator
         </button>
         <button
           type="button"
           className={`btn ${!bulkMode ? '' : 'secondary'}`}
           onClick={() => { setBulkMode(false); setError(''); setBulkSuccess(''); }}
         >
-          ➕ Single Table
+          Single Table
         </button>
       </div>
     </div>
@@ -156,8 +156,7 @@ export default function TablesPage() {
         }}
         onSubmit={handleBulkGenerate}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-          <span style={{ fontSize: 18 }}>⚡</span>
+        <div style={{ marginBottom: 8 }}>
           <strong style={{ fontSize: 15 }}>Bulk Generate Table QR Codes</strong>
         </div>
         <p className="muted" style={{ margin: '0 0 14px', fontSize: 12 }}>
@@ -218,7 +217,7 @@ export default function TablesPage() {
               disabled={bulkLoading}
               style={{ minHeight: 42 }}
             >
-              {bulkLoading ? 'Generating…' : '⚡ Generate All Tables'}
+              {bulkLoading ? 'Generating…' : 'Generate All Tables'}
             </button>
           </div>
         </div>
@@ -239,8 +238,7 @@ export default function TablesPage() {
           if (label.trim()) create.mutate();
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-          <span style={{ fontSize: 18 }}>🪑</span>
+        <div style={{ marginBottom: 8 }}>
           <strong style={{ fontSize: 15 }}>Add Single Dining Table</strong>
         </div>
         <p className="muted" style={{ margin: '0 0 12px', fontSize: 12 }}>
@@ -274,7 +272,7 @@ export default function TablesPage() {
             disabled={create.isPending || !label.trim()}
             style={{ whiteSpace: 'nowrap' }}
           >
-            {create.isPending ? 'Adding…' : '➕ Add Table'}
+            {create.isPending ? 'Adding…' : 'Add Table'}
           </button>
         </div>
       </form>
@@ -301,10 +299,7 @@ export default function TablesPage() {
             {query.data.tables.map((table) => (
               <tr key={table.id ?? table._id}>
                 <td>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span style={{ fontSize: 16 }}>🪑</span>
-                    <strong style={{ fontSize: 14 }}>{table.label}</strong>
-                  </div>
+                  <strong style={{ fontSize: 14 }}>{table.label}</strong>
                 </td>
                 <td>
                   <span className="muted" style={{ fontSize: 13 }}>
@@ -313,12 +308,12 @@ export default function TablesPage() {
                 </td>
                 <td>
                   <span className={`pill ${table.active ? '' : 'gray'}`}>
-                    {table.active ? '● Active' : '○ Inactive'}
+                    {table.active ? 'Active' : 'Inactive'}
                   </span>
                 </td>
                 <td>
                   <button className="btn secondary small" onClick={() => void getQr(table)} disabled={qrLoading}>
-                    📱 View QR
+                    View QR
                   </button>
                 </td>
                 <td style={{ textAlign: 'right' }}>
@@ -332,7 +327,7 @@ export default function TablesPage() {
                         setError('');
                       }}
                     >
-                      ✏️ Edit
+                      Edit
                     </button>
                     {table.active ? (
                       <button
@@ -413,7 +408,7 @@ export default function TablesPage() {
           </div>
 
           <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink)', marginTop: 4 }}>
-            📱 Scan with camera to view menu & order
+            Scan with camera to view menu &amp; order
           </div>
           <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 2 }}>
             No app download required · Direct table service
@@ -437,7 +432,7 @@ export default function TablesPage() {
             style={{ background: qr.brandColor || undefined, borderColor: qr.brandColor || undefined }}
             onClick={() => window.print()}
           >
-            🖨️ Print table sign
+            Print table sign
           </button>
         </div>
       </Modal>

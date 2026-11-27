@@ -7,8 +7,9 @@ import { CustomerSession } from '../models/CustomerSession.js';
 import { DiningTable } from '../models/DiningTable.js';
 import { MenuItem } from '../models/MenuItem.js';
 import { Order, orderStatuses, type OrderDoc, type OrderStatus } from '../models/Order.js';
-import { Restaurant } from '../models/Restaurant.js';
+import { Restaurant, type RestaurantDoc } from '../models/Restaurant.js';
 import { TableCart } from '../models/TableCart.js';
+import { resolvePaymentAdapter } from '../services/paymentAdapters.js';
 import { AppError } from '../utils/errors.js';
 import { calculateSubtotal, nextOrderStatus, resolveMenuItemLinePricing } from '../utils/orderRules.js';
 import { objectIdSchema } from '../utils/validation.js';
@@ -211,6 +212,41 @@ customerOrders.get('/:id', async (req, res) => {
   if (!order) throw new AppError(404, 'NOT_FOUND', 'Order not found.');
   const table = await DiningTable.findOne({ _id: order.tableId, restaurantId: order.restaurantId }).select('label needsClearing');
   res.json({ order: serializeOrder(order, { label: table?.label ?? 'Table', needsClearing: Boolean(table?.needsClearing) }) });
+});
+
+customerOrders.post('/:id/payment-intent', async (req, res) => {
+  if (!objectIdSchema.safeParse(req.params.id).success) throw new AppError(400, 'INVALID_ID', 'Invalid order identifier.');
+
+  const tabId = req.customer!.tabId || 'main';
+  const filter: Record<string, unknown> = {
+    _id: req.params.id,
+    tableId: req.customer!.tableId,
+    restaurantId: req.customer!.restaurantId
+  };
+  if (tabId !== 'main') {
+    filter.tabId = tabId;
+  }
+
+  const order = await Order.findOne(filter) as unknown as OrderDoc | null;
+  if (!order) throw new AppError(404, 'NOT_FOUND', 'Order not found.');
+  if (order.paymentStatus === 'PAID') {
+    throw new AppError(409, 'ALREADY_PAID', 'This order has already been paid.');
+  }
+  if (order.status === 'REJECTED') {
+    throw new AppError(409, 'ORDER_REJECTED', 'Cannot initiate payment for a rejected order.');
+  }
+
+  const restaurant = await Restaurant.findById(req.customer!.restaurantId) as unknown as RestaurantDoc | null;
+  if (!restaurant) throw new AppError(404, 'RESTAURANT_NOT_FOUND', 'Restaurant not found.');
+
+  const adapter = resolvePaymentAdapter(restaurant);
+  const paymentIntent = await adapter.createPaymentIntent(order, restaurant);
+
+  if (paymentIntent.gatewayOrderId && order.gatewayOrderId !== paymentIntent.gatewayOrderId) {
+    await Order.updateOne({ _id: order._id }, { $set: { gatewayOrderId: paymentIntent.gatewayOrderId } });
+  }
+
+  res.json({ paymentIntent });
 });
 
 const autoConfirmSchema = z.object({

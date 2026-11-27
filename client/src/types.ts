@@ -21,6 +21,7 @@ export interface RestaurantInfo {
   gatewayKeySecret?: string;
   webhookSecret?: string;
   enableDishReviews?: boolean;
+  defaultLanguage?: 'en' | 'hi' | 'mr';
   active?: boolean;
 }
 
@@ -46,12 +47,23 @@ export interface StaffUser {
   createdAt?: string;
 }
 
+export interface LocalizedTextFields {
+  name?: string;
+  description?: string;
+}
+
+export interface EntityTranslations {
+  hi?: LocalizedTextFields;
+  mr?: LocalizedTextFields;
+}
+
 export interface Category {
   _id: string;
   name: string;
   description: string;
   displayOrder: number;
   active: boolean;
+  translations?: EntityTranslations;
 }
 
 export type DietaryType = 'VEG' | 'NON_VEG' | 'EGG';
@@ -81,6 +93,7 @@ export interface MenuItem {
   displayOrder: number;
   isBestseller?: boolean;
   isChefSpecial?: boolean;
+  translations?: EntityTranslations;
 }
 
 export interface TableRecord {

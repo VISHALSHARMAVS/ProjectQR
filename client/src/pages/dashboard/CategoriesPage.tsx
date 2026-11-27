@@ -7,8 +7,26 @@ import type { Category } from '../../types';
 
 interface CategoryPayload { categories: Category[] }
 interface MenuPayload { items: Array<{ _id: string; categoryId: string }> }
-interface CategoryForm { name: string; description: string; displayOrder: string; active: boolean }
-const blank: CategoryForm = { name: '', description: '', displayOrder: '0', active: true };
+interface CategoryForm {
+  name: string;
+  description: string;
+  displayOrder: string;
+  active: boolean;
+  hiName: string;
+  hiDescription: string;
+  mrName: string;
+  mrDescription: string;
+}
+const blank: CategoryForm = {
+  name: '',
+  description: '',
+  displayOrder: '0',
+  active: true,
+  hiName: '',
+  hiDescription: '',
+  mrName: '',
+  mrDescription: ''
+};
 
 export default function CategoriesPage() {
   const client = useQueryClient();
@@ -29,7 +47,16 @@ export default function CategoriesPage() {
   }, [menuQuery.data?.items]);
   const save = useMutation({
     mutationFn: () => {
-      const body = { name: form.name.trim(), description: form.description.trim(), displayOrder: Number(form.displayOrder || 0), active: form.active };
+      const body = {
+        name: form.name.trim(),
+        description: form.description.trim(),
+        displayOrder: Number(form.displayOrder || 0),
+        active: form.active,
+        translations: {
+          hi: { name: form.hiName.trim(), description: form.hiDescription.trim() },
+          mr: { name: form.mrName.trim(), description: form.mrDescription.trim() }
+        }
+      };
       return editing ? api.patch(`/categories/${editing._id}`, body) : api.post('/categories', body);
     },
     onSuccess: async () => { setError(''); setModalOpen(false); setEditing(null); setForm(blank); await client.invalidateQueries({ queryKey: ['staff-categories'] }); },
@@ -42,7 +69,16 @@ export default function CategoriesPage() {
   });
   const open = (category?: Category): void => {
     setError(''); setEditing(category ?? null); setModalOpen(true);
-    setForm(category ? { name: category.name, description: category.description, displayOrder: String(category.displayOrder), active: category.active } : { ...blank });
+    setForm(category ? {
+      name: category.name,
+      description: category.description,
+      displayOrder: String(category.displayOrder),
+      active: category.active,
+      hiName: category.translations?.hi?.name ?? '',
+      hiDescription: category.translations?.hi?.description ?? '',
+      mrName: category.translations?.mr?.name ?? '',
+      mrDescription: category.translations?.mr?.description ?? ''
+    } : { ...blank });
   };
   if (query.isLoading) return <Loading />;
   if (query.error || !query.data) return <ErrorPanel message="Categories could not be loaded." retry={() => void query.refetch()} />;
@@ -132,7 +168,7 @@ export default function CategoriesPage() {
         </table>
       )}
     </section>
-    {modalOpen && <Modal title={editing ? 'Edit category' : 'Add category'} onClose={() => { if (!save.isPending) { setModalOpen(false); setError(''); } }}><form className="form-grid" onSubmit={(event) => { event.preventDefault(); save.mutate(); }}><div className="field"><label htmlFor="category-name">Name</label><input className="input" id="category-name" required maxLength={80} value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} /></div><div className="field"><label htmlFor="category-description">Description</label><textarea className="textarea" id="category-description" maxLength={300} value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} /></div><div className="field"><label htmlFor="category-order">Display order</label><input className="input" id="category-order" type="number" min="0" value={form.displayOrder} onChange={(event) => setForm({ ...form, displayOrder: event.target.value })} /></div><label style={{ display: 'flex', alignItems: 'center', gap: 9, fontSize: 13 }}><input type="checkbox" checked={form.active} onChange={(event) => setForm({ ...form, active: event.target.checked })} /> Show category to customers</label>{error && <div className="form-error">{error}</div>}<button className="btn full" disabled={save.isPending}>{save.isPending ? 'Saving…' : 'Save category'}</button></form></Modal>}
+    {modalOpen && <Modal title={editing ? 'Edit category' : 'Add category'} onClose={() => { if (!save.isPending) { setModalOpen(false); setError(''); } }}><form className="form-grid" onSubmit={(event) => { event.preventDefault(); save.mutate(); }}><div className="field"><label htmlFor="category-name">Name</label><input className="input" id="category-name" required maxLength={80} value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} /></div><div className="field"><label htmlFor="category-description">Description</label><textarea className="textarea" id="category-description" maxLength={300} value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} /></div><div className="field"><label htmlFor="category-order">Display order</label><input className="input" id="category-order" type="number" min="0" value={form.displayOrder} onChange={(event) => setForm({ ...form, displayOrder: event.target.value })} /></div><details style={{ padding: '10px 14px', background: 'var(--paper-elevated)', borderRadius: 10, border: '1px solid var(--line)' }}><summary style={{ fontSize: 13, fontWeight: 650, cursor: 'pointer', color: 'var(--ink)' }}>Hindi &amp; Marathi Translations (Optional)</summary><div className="form-grid" style={{ marginTop: 12 }}><div className="field"><label htmlFor="cat-hi-name">Hindi Name</label><input id="cat-hi-name" className="input" maxLength={80} value={form.hiName} onChange={(e) => setForm({ ...form, hiName: e.target.value })} placeholder="e.g. स्टार्टर्स" /></div><div className="field"><label htmlFor="cat-mr-name">Marathi Name</label><input id="cat-mr-name" className="input" maxLength={80} value={form.mrName} onChange={(e) => setForm({ ...form, mrName: e.target.value })} placeholder="e.g. स्टार्टर्स" /></div></div></details><label style={{ display: 'flex', alignItems: 'center', gap: 9, fontSize: 13 }}><input type="checkbox" checked={form.active} onChange={(event) => setForm({ ...form, active: event.target.checked })} /> Show category to customers</label>{error && <div className="form-error">{error}</div>}<button className="btn full" disabled={save.isPending}>{save.isPending ? 'Saving…' : 'Save category'}</button></form></Modal>}
     {deleting && <Modal title="Delete category?" onClose={() => { setDeleting(null); setError(''); }}><p className="muted">Delete “{deleting.name}”? Categories with menu items must be emptied first.</p>{error && <div className="form-error" style={{ marginBottom: 12 }}>{error}</div>}<div className="toolbar" style={{ justifyContent: 'end' }}><button className="btn secondary" onClick={() => { setDeleting(null); setError(''); }}>Cancel</button><button className="btn danger" onClick={() => remove.mutate(deleting)} disabled={remove.isPending}>{remove.isPending ? 'Deleting…' : 'Delete category'}</button></div></Modal>}
   </>;
 }

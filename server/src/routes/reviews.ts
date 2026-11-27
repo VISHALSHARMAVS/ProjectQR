@@ -105,8 +105,8 @@ customerReviewRouter.post('/', async (req, res) => {
     },
     googleReviewUrl: restaurant.googleReviewUrl || '',
     message: rating >= 4
-      ? 'Thank you for sharing your feedback with our team!'
-      : 'Thank you for your candid feedback. Our manager has been alerted to assist your table.'
+      ? 'Thank you so much for your wonderful feedback! We are delighted you enjoyed your experience.'
+      : 'We are sorry for the inconvenience. Our manager has been informed and is coming to assist you shortly.'
   });
 });
 

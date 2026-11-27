@@ -24,6 +24,10 @@ interface FormState {
   displayOrder: string;
   isBestseller: boolean;
   isChefSpecial: boolean;
+  hiName: string;
+  hiDescription: string;
+  mrName: string;
+  mrDescription: string;
 }
 
 const blank: FormState = {
@@ -39,7 +43,11 @@ const blank: FormState = {
   preparationMinutes: '',
   displayOrder: '0',
   isBestseller: false,
-  isChefSpecial: false
+  isChefSpecial: false,
+  hiName: '',
+  hiDescription: '',
+  mrName: '',
+  mrDescription: ''
 };
 
 export default function MenuPage() {
@@ -95,7 +103,11 @@ export default function MenuPage() {
         preparationMinutes: form.preparationMinutes ? Number(form.preparationMinutes) : null,
         displayOrder: Number(form.displayOrder || 0),
         isBestseller: form.isBestseller,
-        isChefSpecial: form.isChefSpecial
+        isChefSpecial: form.isChefSpecial,
+        translations: {
+          hi: { name: form.hiName.trim(), description: form.hiDescription.trim() },
+          mr: { name: form.mrName.trim(), description: form.mrDescription.trim() }
+        }
       };
 
       const response = editing
@@ -146,7 +158,11 @@ export default function MenuPage() {
         preparationMinutes: item.preparationMinutes ? String(item.preparationMinutes) : '',
         displayOrder: String(item.displayOrder),
         isBestseller: item.isBestseller ?? false,
-        isChefSpecial: item.isChefSpecial ?? false
+        isChefSpecial: item.isChefSpecial ?? false,
+        hiName: item.translations?.hi?.name ?? '',
+        hiDescription: item.translations?.hi?.description ?? '',
+        mrName: item.translations?.mr?.name ?? '',
+        mrDescription: item.translations?.mr?.description ?? ''
       });
     } else {
       setForm({ ...blank, categoryId: activeCategories[0]?._id ?? '' });
@@ -537,6 +553,30 @@ export default function MenuPage() {
                 <span style={{ fontWeight: 600 }}>Chef’s Recommendation</span>
               </label>
             </div>
+
+            <details style={{ padding: '10px 14px', background: 'var(--paper-elevated)', borderRadius: 10, border: '1px solid var(--line)' }}>
+              <summary style={{ fontSize: 13, fontWeight: 650, cursor: 'pointer', color: 'var(--ink)' }}>
+                Hindi &amp; Marathi Translations (Optional)
+              </summary>
+              <div className="form-grid" style={{ marginTop: 12 }}>
+                <div className="field">
+                  <label htmlFor="item-hi-name">Hindi Name (हिन्दी नाम)</label>
+                  <input id="item-hi-name" className="input" maxLength={120} value={form.hiName} onChange={(e) => update('hiName', e.target.value)} placeholder="e.g. पनीर टिक्का" />
+                </div>
+                <div className="field">
+                  <label htmlFor="item-hi-desc">Hindi Description</label>
+                  <textarea id="item-hi-desc" className="textarea" rows={2} maxLength={500} value={form.hiDescription} onChange={(e) => update('hiDescription', e.target.value)} />
+                </div>
+                <div className="field">
+                  <label htmlFor="item-mr-name">Marathi Name (मराठी नाव)</label>
+                  <input id="item-mr-name" className="input" maxLength={120} value={form.mrName} onChange={(e) => update('mrName', e.target.value)} placeholder="e.g. पनीर टिक्का" />
+                </div>
+                <div className="field">
+                  <label htmlFor="item-mr-desc">Marathi Description</label>
+                  <textarea id="item-mr-desc" className="textarea" rows={2} maxLength={500} value={form.mrDescription} onChange={(e) => update('mrDescription', e.target.value)} />
+                </div>
+              </div>
+            </details>
 
             {error && <div className="form-error" role="alert">{error}</div>}
 

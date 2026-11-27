@@ -25,7 +25,7 @@ export const publicRouter = Router();
 publicRouter.get('/tables/:token', async (req, res) => {
   const table = await DiningTable.findOne({ qrToken: req.params.token, active: true }).select('restaurantId label capacity active currentPin currentPinExpiresAt');
   if (!table) throw new AppError(404, 'INVALID_QR', 'This table QR code is invalid or no longer active.');
-  const restaurant = await Restaurant.findOne({ _id: table.restaurantId, active: true }).select('name slug description logoUrl brandColor bannerUrl welcomeTagline gstin gstPercentage requireCustomerOtp upiId googleReviewUrl autoConfirmPayments paymentGateway enableDishReviews');
+  const restaurant = await Restaurant.findOne({ _id: table.restaurantId, active: true }).select('name slug description logoUrl brandColor bannerUrl welcomeTagline gstin gstPercentage requireCustomerOtp upiId googleReviewUrl autoConfirmPayments paymentGateway enableDishReviews defaultLanguage');
   if (!restaurant) throw new AppError(404, 'RESTAURANT_UNAVAILABLE', 'This restaurant is not currently accepting orders.');
   const now = new Date();
   const hasActiveParty = Boolean(
@@ -399,7 +399,8 @@ customerRouter.post('/verify-otp', otpRateLimit, async (req, res) => {
       googleReviewUrl: restaurant.googleReviewUrl,
       autoConfirmPayments: restaurant.autoConfirmPayments,
       paymentGateway: restaurant.paymentGateway,
-      enableDishReviews: restaurant.enableDishReviews
+      enableDishReviews: restaurant.enableDishReviews,
+      defaultLanguage: restaurant.defaultLanguage || 'en'
     },
     table: { id: table.id, label: table.label, pin: party.tablePin },
     tab: {
@@ -415,7 +416,7 @@ customerRouter.post('/verify-otp', otpRateLimit, async (req, res) => {
 customerRouter.get('/session', requireCustomer, async (req, res) => {
   const [customer, restaurant, table] = await Promise.all([
     Customer.findById(req.customer!.customerId).select('name'),
-    Restaurant.findById(req.customer!.restaurantId).select('name logoUrl brandColor bannerUrl welcomeTagline upiId googleReviewUrl autoConfirmPayments paymentGateway enableDishReviews'),
+    Restaurant.findById(req.customer!.restaurantId).select('name logoUrl brandColor bannerUrl welcomeTagline upiId googleReviewUrl autoConfirmPayments paymentGateway enableDishReviews defaultLanguage'),
     DiningTable.findOne({ _id: req.customer!.tableId, restaurantId: req.customer!.restaurantId }).select('label qrToken currentPin currentPinExpiresAt')
   ]);
   if (!customer || !restaurant || !table) throw new AppError(401, 'CUSTOMER_SESSION_EXPIRED', 'This ordering session is no longer available.');
@@ -508,7 +509,8 @@ customerRouter.post('/switch-table', requireCustomer, async (req, res) => {
       googleReviewUrl: restaurant.googleReviewUrl,
       autoConfirmPayments: restaurant.autoConfirmPayments,
       paymentGateway: restaurant.paymentGateway,
-      enableDishReviews: restaurant.enableDishReviews
+      enableDishReviews: restaurant.enableDishReviews,
+      defaultLanguage: restaurant.defaultLanguage || 'en'
     },
     table: { id: table.id, label: table.label, pin: party.tablePin },
     tab: {
@@ -674,7 +676,8 @@ customerRouter.post('/quick-join', quickJoinRateLimit, async (req, res) => {
       googleReviewUrl: restaurant.googleReviewUrl,
       autoConfirmPayments: restaurant.autoConfirmPayments,
       paymentGateway: restaurant.paymentGateway,
-      enableDishReviews: restaurant.enableDishReviews
+      enableDishReviews: restaurant.enableDishReviews,
+      defaultLanguage: restaurant.defaultLanguage || 'en'
     },
     table: { id: table.id, label: table.label, pin: party.tablePin },
     tab: {

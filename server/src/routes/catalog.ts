@@ -7,11 +7,21 @@ import { requirePermission, requireRoles, requireStaff } from '../middleware/aut
 import { getOrderSocket } from './orders.js';
 import { saveMenuImage } from '../services/imageStorage.js';
 import { AppError } from '../utils/errors.js';
-import { objectIdSchema } from '../utils/validation.js';
+import { objectIdSchema, sanitizePlainText } from '../utils/validation.js';
 import { tenantFilter } from '../utils/tenant.js';
 
+const translationEntrySchema = z.object({
+  name: z.string().trim().max(120).transform((value) => sanitizePlainText(value)).default(''),
+  description: z.string().trim().max(500).transform((value) => sanitizePlainText(value)).default('')
+}).default({ name: '', description: '' });
+
+const translationsSchema = z.object({
+  hi: translationEntrySchema,
+  mr: translationEntrySchema
+}).optional();
+
 export const categoryRouter = Router();
-const categoryInput = z.object({ name: z.string().trim().min(1).max(80), description: z.string().trim().max(300).default(''), displayOrder: z.number().int().min(0).max(10000).default(0), active: z.boolean().default(true) });
+const categoryInput = z.object({ name: z.string().trim().min(1).max(80), description: z.string().trim().max(300).default(''), displayOrder: z.number().int().min(0).max(10000).default(0), active: z.boolean().default(true), translations: translationsSchema });
 const categoryPatch = categoryInput.partial();
 
 categoryRouter.use(requireStaff, requireRoles('owner', 'manager', 'staff', 'cashier', 'waiter'));
@@ -65,7 +75,8 @@ const menuFields = {
   preparationMinutes: z.number().int().min(1).max(600).nullable().default(null),
   displayOrder: z.number().int().min(0).max(10000).default(0),
   isBestseller: z.boolean().default(false),
-  isChefSpecial: z.boolean().default(false)
+  isChefSpecial: z.boolean().default(false),
+  translations: translationsSchema
 };
 const menuInput = z.object(menuFields);
 const menuPatch = menuInput.partial();
