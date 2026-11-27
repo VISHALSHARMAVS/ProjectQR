@@ -385,9 +385,32 @@ export default function CustomerMenuPage() {
         </div>
       </header>
 
-      <div style={{ paddingTop: 16 }}>
-        <span className="eyebrow">Made fresh for you</span>
-        <h1 className="heading-4" style={{ margin: '4px 0 12px' }}>The menu</h1>
+      <div style={{ paddingTop: 14 }}>
+        <div
+          style={{
+            marginBottom: 14,
+            padding: '14px 16px',
+            background: 'var(--paper)',
+            border: '1px solid var(--line)',
+            borderRadius: 16
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 }}>
+            <div style={{ minWidth: 0 }}>
+              <h1 className="heading-4" style={{ margin: 0, fontSize: 20, lineHeight: 1.25 }}>
+                {restaurant.name}
+              </h1>
+              {(restaurant.description || restaurant.welcomeTagline) && (
+                <p className="muted" style={{ margin: '4px 0 0', fontSize: 12.5, lineHeight: 1.4 }}>
+                  {restaurant.description || restaurant.welcomeTagline}
+                </p>
+              )}
+            </div>
+            <span className="pill green" style={{ fontSize: 11, fontWeight: 700, whiteSpace: 'nowrap', flexShrink: 0 }}>
+              {formatTableLabel(table.label)}
+            </span>
+          </div>
+        </div>
 
         {table.pin && session.data?.tab?.isHost && (
           <div style={{
