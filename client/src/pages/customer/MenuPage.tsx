@@ -71,6 +71,10 @@ export default function CustomerMenuPage() {
   const [dietaryFilter, setDietaryFilter] = useState<'ALL' | DietaryType>('ALL');
   const [bestsellerOnly, setBestsellerOnly] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [collapsedCategories, setCollapsedCategories] = useState<Record<string, boolean>>({});
+  const toggleCategoryCollapse = (catId: string) => {
+    setCollapsedCategories((prev) => ({ ...prev, [catId]: !prev[catId] }));
+  };
   const [assistanceOpen, setAssistanceOpen] = useState(false);
 
   // Customization Modal State (for Variants and Add-ons)
@@ -590,13 +594,50 @@ export default function CustomerMenuPage() {
           />
         </div>
       ) : (
-        availableCategories.map((category) => (
+        availableCategories.map((category) => {
+          const categoryItems = filteredItems.filter((item) => item.categoryId === category._id);
+          const isCollapsed = Boolean(collapsedCategories[category._id]);
+          return (
           <section className="menu-section" id={`category-${category._id}`} key={category._id}>
-            <h2>{category.name}</h2>
-            {category.description && (
-              <p className="muted" style={{ margin: '-6px 0 10px', fontSize: 12 }}>{category.description}</p>
+            <button
+              type="button"
+              onClick={() => toggleCategoryCollapse(category._id)}
+              aria-expanded={!isCollapsed}
+              style={{
+                width: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                background: 'transparent',
+                border: 'none',
+                padding: '6px 0',
+                cursor: 'pointer',
+                textAlign: 'left',
+                color: 'var(--ink)'
+              }}
+            >
+              <h2 style={{ margin: 0 }}>
+                {category.name} <span className="muted" style={{ fontSize: 13, fontWeight: 600 }}>({categoryItems.length})</span>
+              </h2>
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                style={{ transform: isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)', transition: 'transform 160ms ease', flexShrink: 0 }}
+                aria-hidden="true"
+              >
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
+            </button>
+            {category.description && !isCollapsed && (
+              <p className="muted" style={{ margin: '2px 0 10px', fontSize: 12 }}>{category.description}</p>
             )}
-            {filteredItems.filter((item) => item.categoryId === category._id).map((item) => {
+            {!isCollapsed && categoryItems.map((item) => {
               const qty = quantityById.get(item._id) ?? 0;
               const hasCustomizations = (item.variants && item.variants.length > 0) || (item.addons && item.addons.length > 0);
               const isWinner = todaysWinner?.menuItemId === item._id;
@@ -691,7 +732,8 @@ export default function CustomerMenuPage() {
               );
             })}
           </section>
-        ))
+          );
+        })
       )}
 
       {/* GST Inclusive Notice Footer */}

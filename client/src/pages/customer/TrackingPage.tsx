@@ -341,31 +341,50 @@ export default function TrackingPage() {
         ) : !rejected ? (
           <div style={{ marginTop: 16, padding: '16px', background: 'var(--paper-elevated)', border: '1px solid var(--line)', borderRadius: 12 }}>
             {sessionQuery.data?.restaurant?.upiId ? (
+              (() => {
+                const upiParams = `pa=${encodeURIComponent(sessionQuery.data.restaurant.upiId)}&pn=${encodeURIComponent(sessionQuery.data.restaurant.name)}&am=${(order.totalPaise / 100).toFixed(2)}&tn=${encodeURIComponent(`Order ${order.orderNumber}`)}&cu=INR`;
+                const isAndroid = typeof navigator !== 'undefined' && /android/i.test(navigator.userAgent);
+                const genericUpiHref = isAndroid
+                  ? `intent://pay?${upiParams}#Intent;scheme=upi;end`
+                  : `upi://pay?${upiParams}`;
+                return (
               <>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                  <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 12 }}>
+                  <div style={{ minWidth: 0, flex: '1 1 160px' }}>
                     <strong style={{ fontSize: 14, display: 'block', color: 'var(--ink)' }}>
                       Pay via UPI
                     </strong>
                     <span className="muted" style={{ fontSize: 11 }}>
-                      Scan QR or tap to open your preferred UPI app
+                      Scan QR or choose your preferred UPI app
                     </span>
                   </div>
-                  <span className="pill green" style={{ fontSize: 10, fontWeight: 700 }}>
+                  <span
+                    className="pill green"
+                    style={{
+                      fontSize: 10,
+                      fontWeight: 700,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      whiteSpace: 'nowrap',
+                      flexShrink: 0,
+                      lineHeight: 1.2
+                    }}
+                  >
                     UPI AVAILABLE
                   </span>
                 </div>
 
-                {/* 1-Tap Open UPI App */}
+                {/* 1-Tap Open UPI App (Android intent chooser or standard UPI URI) */}
                 <a
-                  href={`upi://pay?pa=${encodeURIComponent(sessionQuery.data.restaurant.upiId)}&pn=${encodeURIComponent(sessionQuery.data.restaurant.name)}&am=${(order.totalPaise / 100).toFixed(2)}&tn=${encodeURIComponent(`Order ${order.orderNumber}`)}&cu=INR`}
+                  href={genericUpiHref}
                   className="btn full"
                   style={{
                     background: 'var(--green)',
                     color: '#ffffff',
                     fontWeight: 750,
                     fontSize: 14,
-                    marginBottom: 10,
+                    marginBottom: 8,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -374,9 +393,37 @@ export default function TrackingPage() {
                     boxShadow: '0 4px 12px rgba(49, 91, 67, 0.2)'
                   }}
                 >
-                  <span>⚡</span>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <rect x="2" y="5" width="20" height="14" rx="2" />
+                    <line x1="2" y1="10" x2="22" y2="10" />
+                  </svg>
                   <span>Open UPI App to Pay {money(order.totalPaise)}</span>
                 </a>
+
+                {/* Direct App Quick-Launchers (GPay / PhonePe / Paytm) */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginBottom: 12 }}>
+                  <a
+                    href={`tez://upi/pay?${upiParams}`}
+                    className="btn secondary small"
+                    style={{ justifyContent: 'center', fontSize: 12, fontWeight: 600, textDecoration: 'none' }}
+                  >
+                    GPay
+                  </a>
+                  <a
+                    href={`phonepe://pay?${upiParams}`}
+                    className="btn secondary small"
+                    style={{ justifyContent: 'center', fontSize: 12, fontWeight: 600, textDecoration: 'none' }}
+                  >
+                    PhonePe
+                  </a>
+                  <a
+                    href={`paytmmp://pay?${upiParams}`}
+                    className="btn secondary small"
+                    style={{ justifyContent: 'center', fontSize: 12, fontWeight: 600, textDecoration: 'none' }}
+                  >
+                    Paytm
+                  </a>
+                </div>
 
                 {/* Scannable Dynamic QR Code - Visible by Default */}
                 <div style={{ textAlign: 'center', margin: '12px 0', padding: 14, background: '#ffffff', borderRadius: 12, border: '1px solid var(--line)' }}>
@@ -455,6 +502,8 @@ export default function TrackingPage() {
                   </button>
                 </div>
               </>
+                );
+              })()
             ) : (
               /* When restaurant has no UPI ID configured: Show standard bill & cash/card payment */
               <div>

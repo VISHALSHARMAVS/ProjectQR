@@ -10,7 +10,6 @@ import { printOrderReceipt } from '../../lib/printer';
 import { useStaff } from '../../hooks/useStaff';
 import { ItemStockModal } from '../../components/ItemStockModal';
 import { ManualOrderModal } from '../../components/ManualOrderModal';
-import { ThemeToggle } from '../../components/ThemeToggle';
 import type { OrderRecord, OrderStatus } from '../../types';
 
 interface OrderList { orders: OrderRecord[] }
@@ -43,6 +42,12 @@ const next: Partial<Record<OrderStatus, { status: OrderStatus; label: string }>>
 export default function OrdersPage({ kitchen = false }: { kitchen?: boolean }) {
   const queryClient = useQueryClient();
   const staff = useStaff();
+  const userRole = staff.data?.user.role;
+  const perms = staff.data?.user.permissions;
+  const canSettleBills = userRole === 'owner' || Boolean(perms?.canSettleBills);
+  const canPunchOrders = userRole === 'owner' || Boolean(perms?.canPunchOrders);
+  const canManageStock = userRole === 'owner' || Boolean(perms?.canManageStock);
+  const canManageReviews = userRole === 'owner' || Boolean(perms?.canManageReviews);
   const restaurant = staff.data?.restaurant;
   const restaurantName = restaurant?.name || 'Restaurant';
   const gstin = restaurant?.gstin;
@@ -203,7 +208,7 @@ export default function OrdersPage({ kitchen = false }: { kitchen?: boolean }) {
         <p className="muted" style={{ margin: '6px 0 0', fontSize: 13 }}>Orders sync live across your team in real time.</p>
       </div>
       <div className="toolbar" style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-        {!kitchen && (
+        {!kitchen && canPunchOrders && (
           <button
             type="button"
             className="btn small"
@@ -214,7 +219,7 @@ export default function OrdersPage({ kitchen = false }: { kitchen?: boolean }) {
             ➕ Punch New Order
           </button>
         )}
-        {!kitchen && (staff.data?.user.role === 'owner' || staff.data?.user.permissions?.canManageReviews) && (
+        {!kitchen && canManageReviews && (
           <Link
             to="/dashboard/reviews"
             className="btn secondary small"
@@ -224,15 +229,16 @@ export default function OrdersPage({ kitchen = false }: { kitchen?: boolean }) {
             ⭐ Reviews & Alerts
           </Link>
         )}
-        <button
-          type="button"
-          className="btn secondary small"
-          onClick={() => setStockModalOpen(true)}
-          title="Mark dishes In Stock or Sold Out"
-        >
-          📦 Item Stock
-        </button>
-        <ThemeToggle variant="compact" />
+        {canManageStock && (
+          <button
+            type="button"
+            className="btn secondary small"
+            onClick={() => setStockModalOpen(true)}
+            title="Mark dishes In Stock or Sold Out"
+          >
+            📦 Item Stock
+          </button>
+        )}
         <button
           type="button"
           className={`btn small ${soundEnabled ? 'secondary' : 'ghost'}`}
@@ -473,7 +479,7 @@ export default function OrdersPage({ kitchen = false }: { kitchen?: boolean }) {
                   >
                     🧾 Bill
                   </button>
-                  {!kitchen && order.status !== 'REJECTED' && order.paymentStatus !== 'PAID' && (
+                  {!kitchen && canSettleBills && order.status !== 'REJECTED' && order.paymentStatus !== 'PAID' && (
                     <button
                       type="button"
                       className="btn small"
