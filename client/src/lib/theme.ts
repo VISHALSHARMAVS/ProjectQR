@@ -65,8 +65,7 @@ export function useTheme() {
 
   useEffect(() => {
     // Initial application
-    const resolved = applyTheme(theme);
-    setResolvedTheme(resolved);
+    applyTheme(theme);
 
     // Watch for system OS theme changes when in 'system' mode
     if (typeof window !== 'undefined' && window.matchMedia) {

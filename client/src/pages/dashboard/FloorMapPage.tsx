@@ -75,6 +75,7 @@ const statusConfig: Record<TableLiveState, { label: string; bg: string; border: 
 export default function FloorMapPage() {
   const queryClient = useQueryClient();
   const [selectedTable, setSelectedTable] = useState<LiveTableInfo | null>(null);
+  const [now] = useState(() => Date.now());
   const [punchOrderTableId, setPunchOrderTableId] = useState<string | null>(null);
   const [filterState, setFilterState] = useState<string>('ALL');
   const [reviewAlertToast, setReviewAlertToast] = useState<{ tableLabel: string; rating: number; comment?: string } | null>(null);
@@ -558,7 +559,7 @@ export default function FloorMapPage() {
                       ))}
                     </ul>
                     <div style={{ textAlign: 'right', marginTop: 8, fontSize: 12, color: 'var(--muted)' }}>
-                      Total: <strong>{money(ord.totalPaise)}</strong> · {elapsedSince(ord.createdAt, Date.now())}
+                      Total: <strong>{money(ord.totalPaise)}</strong> · {elapsedSince(ord.createdAt, now)}
                     </div>
                   </div>
                 ))}

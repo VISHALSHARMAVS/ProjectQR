@@ -371,7 +371,7 @@ export default function OrdersPage({ kitchen = false }: { kitchen?: boolean }) {
     {orders.length === 0 ? <section className="surface"><EmptyState title={filter === 'NEW' ? 'No new orders' : 'No orders in this view'} description="New customer orders will appear here as soon as they are placed." /></section> : <section className="order-grid">{orders.map((order) => {
       const action = next[order.status];
       const isActiveStatus = ['NEW', 'ACCEPTED', 'PREPARING'].includes(order.status);
-      const currentTime = now || Date.now();
+      const currentTime = now;
       const elapsedMinutes = Math.floor((currentTime - new Date(order.createdAt).getTime()) / 60_000);
 
       let urgencyClass = '';

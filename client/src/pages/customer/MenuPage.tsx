@@ -64,7 +64,8 @@ export default function CustomerMenuPage() {
     }
   });
 
-  const cart = tableCartQuery.data?.items ?? [];
+  const tableCartData = tableCartQuery.data;
+  const cart = useMemo(() => tableCartData?.items ?? [], [tableCartData]);
   const [activeCategory, setActiveCategory] = useState('');
   const [categoryMenuOpen, setCategoryMenuOpen] = useState(false);
   const [dietaryFilter, setDietaryFilter] = useState<'ALL' | DietaryType>('ALL');
@@ -195,16 +196,14 @@ export default function CustomerMenuPage() {
     });
   };
 
-  const quantityById = useMemo(() => {
-    const map = new Map<string, number>();
-    for (const line of cart) {
-      map.set(line.menuItemId, (map.get(line.menuItemId) || 0) + line.quantity);
-    }
-    return map;
-  }, [cart]);
+  const quantityById = new Map<string, number>();
+  for (const line of cart) {
+    quantityById.set(line.menuItemId, (quantityById.get(line.menuItemId) || 0) + line.quantity);
+  }
 
-  const categories = menu.data?.categories ?? [];
-  const items = menu.data?.items ?? [];
+  const menuData = menu.data;
+  const categories = useMemo(() => menuData?.categories ?? [], [menuData]);
+  const items = useMemo(() => menuData?.items ?? [], [menuData]);
   const todaysWinner = menu.data?.todaysWinner;
   const bestsellerItemIds = useMemo(() => menu.data?.bestsellerItemIds ?? [], [menu.data?.bestsellerItemIds]);
   const queryClean = searchQuery.trim().toLowerCase();
@@ -242,12 +241,7 @@ export default function CustomerMenuPage() {
     });
   }, [availableCategories, filteredItems]);
 
-  // Initialize activeCategory with the first category when loaded
-  useEffect(() => {
-    if (!activeCategory && availableCategories.length > 0) {
-      setActiveCategory(availableCategories[0]._id);
-    }
-  }, [availableCategories, activeCategory]);
+  const effectiveActiveCategory = activeCategory || availableCategories[0]?._id || '';
 
   // Auto-sync active category on scroll using lightweight IntersectionObserver
   useEffect(() => {
@@ -577,7 +571,7 @@ export default function CustomerMenuPage() {
               <button
                 key={category._id}
                 id={`chip-${category._id}`}
-                className={`category-chip ${activeCategory === category._id ? 'active' : ''}`}
+                className={`category-chip ${effectiveActiveCategory === category._id ? 'active' : ''}`}
                 onClick={() => scrollTo(category._id)}
               >
                 {category.name}
@@ -876,7 +870,7 @@ export default function CustomerMenuPage() {
         isOpen={categoryMenuOpen}
         onClose={() => setCategoryMenuOpen(false)}
         categories={categoryItems}
-        activeCategoryId={activeCategory}
+        activeCategoryId={effectiveActiveCategory}
         onSelectCategory={scrollTo}
         restaurantName={restaurant.name}
       />

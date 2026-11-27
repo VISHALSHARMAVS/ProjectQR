@@ -9,14 +9,12 @@ interface ScrollRevealProps {
 
 export function ScrollReveal({ children, delay = 0, className = '', style }: ScrollRevealProps) {
   const ref = useRef<HTMLDivElement>(null);
-  const [isVisible, setIsVisible] = useState(false);
+  const [isVisible, setIsVisible] = useState(
+    () => typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  );
 
   useEffect(() => {
-    // Respect prefers-reduced-motion per SKILL.md B7
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      setIsVisible(true);
-      return;
-    }
+    if (isVisible) return;
 
     const el = ref.current;
     if (!el) return;
@@ -34,7 +32,7 @@ export function ScrollReveal({ children, delay = 0, className = '', style }: Scr
     observer.observe(el);
 
     return () => observer.disconnect();
-  }, []);
+  }, [isVisible]);
 
   return (
     <div

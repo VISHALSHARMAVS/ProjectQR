@@ -48,8 +48,8 @@ export function ItemStockModal({ onClose }: ItemStockModalProps) {
     onError: (cause) => setError(cause instanceof ApiError ? cause.message : 'Could not update item availability.')
   });
 
-  const items = menuQuery.data?.items ?? [];
-  const categories = categoriesQuery.data?.categories ?? [];
+  const items = useMemo(() => menuQuery.data?.items ?? [], [menuQuery.data?.items]);
+  const categories = useMemo(() => categoriesQuery.data?.categories ?? [], [categoriesQuery.data?.categories]);
 
   const categoryMap = useMemo(() => {
     return new Map(categories.map((c) => [c._id, c.name]));

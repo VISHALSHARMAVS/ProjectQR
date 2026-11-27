@@ -11,13 +11,14 @@ export function TaglineReveal({
 }: TaglineRevealProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const words = tagline.split(' ');
-  const [progress, setProgress] = useState(0);
+  const [progress, setProgress] = useState(() =>
+    typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      ? words.length
+      : 0
+  );
 
   useEffect(() => {
-    // Check prefers-reduced-motion per SKILL.md B7 & B11
-    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
-    if (mediaQuery.matches) {
-      setProgress(words.length);
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
       return;
     }
 

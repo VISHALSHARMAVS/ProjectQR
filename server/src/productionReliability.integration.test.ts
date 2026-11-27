@@ -1,3 +1,4 @@
+import { createHmac } from 'node:crypto';
 import { mkdtemp, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
@@ -292,5 +293,121 @@ describe('Mesa Production Reliability & QA Remediation Regression Suite', () => 
     });
     unauthSocket.close();
     expect(unauthError).toMatch(/Authentication required/i);
+  });
+
+  it('prevents concurrent duplicate order status transitions, enforces webhook signature/underpay/duplicate idempotency, and isolates tenants', async () => {
+    const restA: TestAgent = supertest.agent(app!.httpServer);
+    const restB: TestAgent = supertest.agent(app!.httpServer);
+
+    await restA.post('/api/auth/register').send({
+      restaurantName: 'Tenant Alpha',
+      ownerName: 'Alpha Owner',
+      email: 'alpha-rel@test.com',
+      password: 'Password12345!'
+    }).expect(201);
+
+    await restB.post('/api/auth/register').send({
+      restaurantName: 'Tenant Beta',
+      ownerName: 'Beta Owner',
+      email: 'beta-rel@test.com',
+      password: 'Password12345!'
+    }).expect(201);
+
+    await restA.patch('/api/restaurant/settings').send({
+      autoConfirmPayments: true,
+      webhookSecret: 'alpha_whsec_test_123'
+    }).expect(200);
+
+    const catA = await restA.post('/api/categories').send({ name: 'Starters', displayOrder: 1 }).expect(201);
+    const itemA = await restA.post('/api/menu').send({
+      categoryId: catA.body.category._id,
+      name: 'Paneer Tikka',
+      description: 'Smoky paneer',
+      pricePaise: 25000,
+      dietary: 'VEG',
+      available: true
+    }).expect(201);
+    const tblA = await restA.post('/api/tables').send({ label: 'Table 1' }).expect(201);
+    const qrA = await restA.post(`/api/tables/${tblA.body.table.id}/qr`).expect(200);
+    const qrTokenA = new URL(qrA.body.url as string).pathname.split('/').pop()!;
+
+    // Customer places an order at Tenant Alpha
+    const guestA: TestAgent = supertest.agent(app!.httpServer);
+    await guestA.post('/api/customer/quick-join').send({ token: qrTokenA, name: 'Diner Alpha' }).expect(200);
+    const orderRes = await guestA.post('/api/customer/orders').send({
+      token: qrTokenA,
+      idempotencyKey: 'alpha-order-idemp-key-001',
+      items: [{ menuItemId: itemA.body.item._id, quantity: 2 }]
+    }).expect(201);
+    const orderId = orderRes.body.order.id as string;
+    const totalPaise = orderRes.body.order.totalPaise as number;
+    expect(totalPaise).toBe(50000);
+
+    // Cross-tenant isolation: Tenant Beta cannot read or mutate Tenant Alpha's order, table, or menu
+    await restB.get(`/api/restaurant/orders/${orderId}`).expect(404);
+    await restB.patch(`/api/restaurant/orders/${orderId}/status`).send({ status: 'ACCEPTED' }).expect(404);
+    await restB.patch(`/api/tables/${tblA.body.table.id}`).send({ label: 'Hacked' }).expect(404);
+
+    // Concurrent staff status update: 2 simultaneous NEW -> ACCEPTED transitions on same order
+    const [t1, t2] = await Promise.all([
+      restA.patch(`/api/restaurant/orders/${orderId}/status`).send({ status: 'ACCEPTED' }),
+      restA.patch(`/api/restaurant/orders/${orderId}/status`).send({ status: 'ACCEPTED' })
+    ]);
+    const statuses = [t1.status, t2.status].sort((a, b) => a - b);
+    expect(statuses).toEqual([200, 409]);
+
+    // Webhook 1: Invalid signature rejected (401)
+    const underpayPayload = JSON.stringify({
+      event: 'payment.captured',
+      payload: { payment: { entity: { id: 'pay_bad_sig', order_id: orderId, amount: totalPaise, method: 'upi' } } }
+    });
+    await supertest(app!.httpServer)
+      .post('/api/webhooks/payment')
+      .set('Content-Type', 'application/json')
+      .set('x-razorpay-signature', 'deadbeef')
+      .send(underpayPayload)
+      .expect(401);
+
+    // Webhook 2: Underpayment rejected (400 UNDERPAID)
+    const underpayBody = JSON.stringify({
+      event: 'payment.captured',
+      payload: { payment: { entity: { id: 'pay_under', order_id: orderId, amount: 1000, method: 'upi' } } }
+    });
+    const underpaySig = createHmac('sha256', 'alpha_whsec_test_123').update(underpayBody).digest('hex');
+    const underRes = await supertest(app!.httpServer)
+      .post('/api/webhooks/payment')
+      .set('Content-Type', 'application/json')
+      .set('x-razorpay-signature', underpaySig)
+      .send(underpayBody)
+      .expect(400);
+    expect(underRes.body.error.code).toBe('UNDERPAID');
+
+    // Webhook 3: Valid signed webhook settles order (200)
+    const validBody = JSON.stringify({
+      event: 'payment.captured',
+      payload: { payment: { entity: { id: 'pay_ok_1', order_id: orderId, amount: totalPaise, method: 'upi' } } }
+    });
+    const validSig = createHmac('sha256', 'alpha_whsec_test_123').update(validBody).digest('hex');
+    const okRes = await supertest(app!.httpServer)
+      .post('/api/webhooks/payment')
+      .set('Content-Type', 'application/json')
+      .set('x-razorpay-signature', validSig)
+      .send(validBody)
+      .expect(200);
+    expect(okRes.body.success).toBe(true);
+
+    // Webhook 4: Duplicate webhook delivery returns already_settled without double-counting
+    const dupRes = await supertest(app!.httpServer)
+      .post('/api/webhooks/payment')
+      .set('Content-Type', 'application/json')
+      .set('x-razorpay-signature', validSig)
+      .send(validBody)
+      .expect(200);
+    expect(dupRes.body.status).toBe('already_settled');
+
+    // Verify Day Close reflects exact single settlement (₹500.00)
+    const dayClose = await restA.get('/api/restaurant/day-close').expect(200);
+    expect(dayClose.body.report.grossSalesPaise).toBe(50000);
+    expect(dayClose.body.report.tenders.upiPaise).toBe(50000);
   });
 });
