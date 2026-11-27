@@ -440,7 +440,7 @@ export default function CustomerMenuPage() {
           <input
             type="search"
             className="menu-search-input"
-            placeholder="Search dishes, drinks, ingredients…"
+            placeholder={`Search in ${restaurant.name}…`}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             aria-label="Search menu"
@@ -883,19 +883,24 @@ export default function CustomerMenuPage() {
       )}
 
       {/* Floating Zomato-style Menu Category FAB */}
-      {availableCategories.length > 0 && (
+      {availableCategories.length > 0 && !categoryMenuOpen && (
         <button
           type="button"
           className={`floating-menu-fab ${cart.length > 0 ? 'has-cart' : ''}`}
-          style={{ bottom: cart.length > 0 ? 80 : 24 }}
+          style={{
+            bottom: cart.length > 0 ? 80 : 24,
+            background: '#27272a',
+            color: '#ffffff',
+            border: '1px solid rgba(255, 255, 255, 0.14)',
+            padding: '10px 18px'
+          }}
           onClick={() => setCategoryMenuOpen(true)}
           aria-label="Open menu categories"
         >
-          <svg className="fab-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/><path d="M6 6h10"/><path d="M6 10h10"/>
+          <svg className="fab-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/>
           </svg>
           <span className="fab-label">Menu</span>
-          <span className="fab-badge">{availableCategories.length}</span>
         </button>
       )}
 
@@ -938,6 +943,7 @@ export default function CustomerMenuPage() {
         activeCategoryId={effectiveActiveCategory}
         onSelectCategory={scrollTo}
         restaurantName={restaurant.name}
+        bottomOffset={cart.length > 0 ? 80 : 24}
       />
 
       <CustomerAssistanceModal

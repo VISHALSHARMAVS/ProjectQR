@@ -14,6 +14,7 @@ interface CategorySheetProps {
   activeCategoryId?: string;
   onSelectCategory: (categoryId: string) => void;
   restaurantName?: string;
+  bottomOffset?: number;
 }
 
 export function CategorySheet({
@@ -22,7 +23,7 @@ export function CategorySheet({
   categories,
   activeCategoryId,
   onSelectCategory,
-  restaurantName
+  bottomOffset = 24
 }: CategorySheetProps) {
   const sheetRef = useRef<HTMLDivElement>(null);
 
@@ -48,10 +49,8 @@ export function CategorySheet({
 
   if (!isOpen) return null;
 
-  const totalDishes = categories.reduce((sum, c) => sum + c.count, 0);
-
   return (
-    <div className="zomato-sheet-root">
+    <div className="zomato-sheet-root" style={{ paddingBottom: bottomOffset }}>
       {/* Tap outside to dismiss */}
       <div
         className="zomato-sheet-backdrop"
@@ -66,34 +65,6 @@ export function CategorySheet({
         aria-modal="true"
         aria-label="Menu categories"
       >
-        {/* Grab handle indicator */}
-        <div className="zomato-sheet-handle-wrap" onClick={onClose}>
-          <div className="zomato-sheet-handle" />
-        </div>
-
-        {/* Header */}
-        <div className="zomato-sheet-header">
-          <div>
-            <div className="zomato-sheet-eyebrow">
-              {restaurantName || 'Browse Menu'}
-            </div>
-            <h2 className="zomato-sheet-title">Menu Categories</h2>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <span className="zomato-sheet-count-pill">
-              {totalDishes} {totalDishes === 1 ? 'dish' : 'dishes'}
-            </span>
-            <button
-              type="button"
-              className="zomato-sheet-close-btn"
-              onClick={onClose}
-              aria-label="Close categories"
-            >
-              ✕
-            </button>
-          </div>
-        </div>
-
         {/* Category List */}
         <div className="zomato-sheet-list" role="listbox">
           {categories.map((category) => {
@@ -105,6 +76,13 @@ export function CategorySheet({
                 role="option"
                 aria-selected={isActive}
                 className={`zomato-sheet-item ${isActive ? 'active' : ''}`}
+                style={{
+                  padding: '12px 16px',
+                  background: 'transparent',
+                  border: 'none',
+                  borderRadius: 12,
+                  color: isActive ? 'var(--green)' : 'var(--ink)'
+                }}
                 onClick={() => {
                   onClose();
                   window.requestAnimationFrame(() => {
@@ -116,24 +94,54 @@ export function CategorySheet({
               >
                 <div className="zomato-sheet-item-info">
                   <div className="zomato-sheet-item-row">
-                    {isActive && <span className="zomato-sheet-active-dot" aria-hidden="true" />}
-                    <span className="zomato-sheet-item-name">{category.name}</span>
+                    <span
+                      className="zomato-sheet-item-name"
+                      style={{
+                        fontWeight: isActive ? 700 : 500,
+                        color: isActive ? 'var(--green)' : 'var(--ink)'
+                      }}
+                    >
+                      {category.name}
+                    </span>
                   </div>
-                  {category.description && (
-                    <p className="zomato-sheet-item-desc">{category.description}</p>
-                  )}
                 </div>
 
                 <div className="zomato-sheet-item-meta">
-                  <span className="zomato-sheet-dish-count">
+                  <span
+                    className="zomato-sheet-dish-count"
+                    style={{
+                      fontWeight: isActive ? 700 : 500,
+                      color: isActive ? 'var(--green)' : 'var(--muted)'
+                    }}
+                  >
                     {category.count}
                   </span>
-                  <span className="zomato-sheet-arrow" aria-hidden="true">→</span>
                 </div>
               </button>
             );
           })}
         </div>
+      </div>
+
+      {/* Matching Close Pill directly below popup */}
+      <div style={{ display: 'flex', justifyContent: 'flex-end', paddingRight: 16, position: 'relative', zIndex: 1002 }}>
+        <button
+          type="button"
+          className="floating-menu-fab"
+          style={{
+            position: 'static',
+            background: '#27272a',
+            color: '#ffffff',
+            border: '1px solid rgba(255, 255, 255, 0.14)',
+            padding: '10px 18px',
+            borderRadius: 999
+          }}
+          onClick={onClose}
+          aria-label="Close menu categories"
+        >
+          <span aria-hidden="true" style={{ fontSize: 14, lineHeight: 1 }}>✕</span>
+          <span className="fab-label">Close</span>
+        </button>
       </div>
     </div>
   );
