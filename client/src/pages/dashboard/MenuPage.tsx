@@ -52,6 +52,9 @@ export default function MenuPage() {
   const [image, setImage] = useState<File | null>(null);
   const [error, setError] = useState('');
   const [deleteItem, setDeleteItem] = useState<MenuItem | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('ALL');
+  const [dietaryFilter, setDietaryFilter] = useState<'ALL' | DietaryType>('ALL');
 
   const activeCategories = categoriesQuery.data?.categories.filter((category) => category.active) ?? [];
 
@@ -211,12 +214,92 @@ export default function MenuPage() {
         </div>
       )}
 
+      <section className="surface" style={{ padding: 14, marginBottom: 14, borderRadius: 14 }}>
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+          <input
+            type="search"
+            className="input"
+            aria-label="Search menu items"
+            placeholder="Search dishes by name…"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            style={{ flex: '1 1 220px', minHeight: 38 }}
+          />
+          <select
+            className="select"
+            aria-label="Filter by category"
+            value={categoryFilter}
+            onChange={(e) => setCategoryFilter(e.target.value)}
+            style={{ flex: '0 1 200px', minHeight: 38 }}
+          >
+            <option value="ALL">All categories</option>
+            {categories.map((cat) => (
+              <option key={cat._id} value={cat._id}>{cat.name}</option>
+            ))}
+          </select>
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            {(['ALL', 'VEG', 'NON_VEG', 'EGG'] as const).map((diet) => (
+              <button
+                key={diet}
+                type="button"
+                className={`btn small ${dietaryFilter === diet ? '' : 'secondary'}`}
+                onClick={() => setDietaryFilter(diet)}
+                style={{ borderRadius: 20 }}
+              >
+                {diet === 'ALL' ? 'All' : diet === 'VEG' ? 'Veg' : diet === 'NON_VEG' ? 'Non-Veg' : 'Egg'}
+              </button>
+            ))}
+          </div>
+          {(searchQuery || categoryFilter !== 'ALL' || dietaryFilter !== 'ALL') && (
+            <button
+              type="button"
+              className="btn ghost small"
+              onClick={() => {
+                setSearchQuery('');
+                setCategoryFilter('ALL');
+                setDietaryFilter('ALL');
+              }}
+            >
+              Clear filters
+            </button>
+          )}
+        </div>
+      </section>
+
+      {(() => {
+        const q = searchQuery.trim().toLowerCase();
+        const filteredItems = items.filter((item) => {
+          if (q && !item.name.toLowerCase().includes(q) && !item.description.toLowerCase().includes(q)) return false;
+          if (categoryFilter !== 'ALL' && item.categoryId !== categoryFilter) return false;
+          if (dietaryFilter !== 'ALL' && (item.dietary || 'VEG') !== dietaryFilter) return false;
+          return true;
+        });
+
+        return (
       <section className="surface table-wrap">
         {items.length === 0 ? (
           <EmptyState
             title="Your menu is ready to grow"
             description="Add your first item so customers can start browsing."
             action={activeCategories.length > 0 ? <button className="btn small" onClick={() => openEdit()}>Add a menu item</button> : undefined}
+          />
+        ) : filteredItems.length === 0 ? (
+          <EmptyState
+            title="No matching dishes"
+            description="No menu items match your current search or filters."
+            action={
+              <button
+                type="button"
+                className="btn secondary small"
+                onClick={() => {
+                  setSearchQuery('');
+                  setCategoryFilter('ALL');
+                  setDietaryFilter('ALL');
+                }}
+              >
+                Clear filters
+              </button>
+            }
           />
         ) : (
           <table className="data-table">
@@ -232,7 +315,7 @@ export default function MenuPage() {
               </tr>
             </thead>
             <tbody>
-              {items.map((item) => (
+              {filteredItems.map((item) => (
                 <tr key={item._id}>
                   <td>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -298,6 +381,8 @@ export default function MenuPage() {
           </table>
         )}
       </section>
+        );
+      })()}
 
       {modalOpen && (
         <Modal

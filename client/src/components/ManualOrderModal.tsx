@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, ApiError } from '../lib/api';
 import { formatTableLabel, money } from '../lib/format';
@@ -67,16 +67,11 @@ export function ManualOrderModal({ initialTableId, onClose, onOrderCreated }: Ma
     queryFn: () => api.get<CategoriesResponse>('/categories')
   });
 
-  const tables = (tablesQuery.data?.tables ?? []).filter((t) => t.active);
-  const items = menuQuery.data?.items ?? [];
-  const categories = categoriesQuery.data?.categories ?? [];
+  const tables = useMemo(() => (tablesQuery.data?.tables ?? []).filter((t) => t.active), [tablesQuery.data?.tables]);
+  const items = useMemo(() => menuQuery.data?.items ?? [], [menuQuery.data?.items]);
+  const categories = useMemo(() => categoriesQuery.data?.categories ?? [], [categoriesQuery.data?.categories]);
 
-  // If tableId wasn't preset and tables loaded, pick the first table
-  useEffect(() => {
-    if (!tableId && tables.length > 0 && !initialTableId) {
-      setTableId(tables[0]._id ?? tables[0].id ?? '');
-    }
-  }, [tableId, tables, initialTableId]);
+  const effectiveTableId = tableId || initialTableId || tables[0]?._id || tables[0]?.id || '';
 
   const filteredItems = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -158,7 +153,7 @@ export function ManualOrderModal({ initialTableId, onClose, onOrderCreated }: Ma
   const createOrderMutation = useMutation({
     mutationFn: () =>
       api.post<{ order: OrderRecord }>('/restaurant/orders', {
-        tableId,
+        tableId: effectiveTableId,
         items: cart.map((c) => ({
           menuItemId: c.menuItem._id,
           quantity: c.quantity,
@@ -192,7 +187,7 @@ export function ManualOrderModal({ initialTableId, onClose, onOrderCreated }: Ma
             <select
               className="select"
               id="punch-table"
-              value={tableId}
+              value={effectiveTableId}
               onChange={(e) => setTableId(e.target.value)}
             >
               {tables.map((t) => (
@@ -360,7 +355,7 @@ export function ManualOrderModal({ initialTableId, onClose, onOrderCreated }: Ma
                 type="button"
                 className="btn full"
                 style={{ background: 'var(--green)', borderColor: 'transparent', fontWeight: 800 }}
-                disabled={cart.length === 0 || !tableId || createOrderMutation.isPending}
+                disabled={cart.length === 0 || !effectiveTableId || createOrderMutation.isPending}
                 onClick={() => createOrderMutation.mutate()}
               >
                 {createOrderMutation.isPending ? 'Sending to Kitchen…' : `🍳 Send Order to Kitchen (${money(totalPaise)})`}

@@ -15,15 +15,15 @@ import { OtpChallenge } from '../models/OtpChallenge.js';
 import { Restaurant } from '../models/Restaurant.js';
 import { ServiceRequest } from '../models/ServiceRequest.js';
 import { TableCart } from '../models/TableCart.js';
-import { DevelopmentOtpDelivery, TwilioSmsDelivery, TwilioVerifyDelivery, UnconfiguredSmsDelivery, type OtpDelivery } from '../services/otpDelivery.js';
+import { DevelopmentOtpDelivery, TwilioSmsDelivery, TwilioVerifyDelivery, type OtpDelivery } from '../services/otpDelivery.js';
 import { AppError } from '../utils/errors.js';
 import { resolveMenuItemLinePricing } from '../utils/orderRules.js';
-import { phoneSchema } from '../utils/validation.js';
+import { phoneSchema, sanitizePlainText } from '../utils/validation.js';
 import { getOrderSocket } from './orders.js';
 
 export const publicRouter = Router();
 publicRouter.get('/tables/:token', async (req, res) => {
-  const table = await DiningTable.findOne({ qrToken: req.params.token, active: true }).select('restaurantId label active currentPin currentPinExpiresAt');
+  const table = await DiningTable.findOne({ qrToken: req.params.token, active: true }).select('restaurantId label capacity active currentPin currentPinExpiresAt');
   if (!table) throw new AppError(404, 'INVALID_QR', 'This table QR code is invalid or no longer active.');
   const restaurant = await Restaurant.findOne({ _id: table.restaurantId, active: true }).select('name slug description logoUrl brandColor bannerUrl welcomeTagline gstin gstPercentage requireCustomerOtp upiId googleReviewUrl autoConfirmPayments paymentGateway enableDishReviews');
   if (!restaurant) throw new AppError(404, 'RESTAURANT_UNAVAILABLE', 'This restaurant is not currently accepting orders.');
@@ -33,7 +33,21 @@ publicRouter.get('/tables/:token', async (req, res) => {
     table.currentPinExpiresAt &&
     new Date(table.currentPinExpiresAt) > now
   );
-  res.json({ restaurant, table: { id: table.id, label: table.label, hasActiveParty } });
+  const activeGuestsCount = await CustomerSession.countDocuments({
+    tableId: table._id,
+    revokedAt: null,
+    expiresAt: { $gt: now }
+  });
+  res.json({
+    restaurant,
+    table: {
+      id: table.id,
+      label: table.label,
+      hasActiveParty,
+      capacity: table.capacity ?? null,
+      activeGuestsCount
+    }
+  });
 });
 
 export const customerRouter = Router();
@@ -116,15 +130,55 @@ async function resolveTableParty(
   options?: { pin?: string; separateTab?: boolean }
 ): Promise<{ tabId: string; tabLabel: string; isHost: boolean; tablePin: string | null }> {
   const now = new Date();
-  const hasActiveParty = Boolean(
-    table.currentPin &&
-    table.currentPinExpiresAt &&
-    new Date(table.currentPinExpiresAt) > now
+  let currentTable = table;
+  let hasActiveParty = Boolean(
+    currentTable.currentPin &&
+    currentTable.currentPinExpiresAt &&
+    new Date(currentTable.currentPinExpiresAt) > now
   );
 
   let tabId = 'main';
   let tabLabel = 'Main Table';
   let isHost = false;
+
+  if (!hasActiveParty) {
+    const generatedPin = String(randomInt(1000, 10000));
+    const claimed = await DiningTable.findOneAndUpdate(
+      {
+        _id: currentTable._id,
+        $or: [
+          { currentPin: null },
+          { currentPinExpiresAt: null },
+          { currentPinExpiresAt: { $lte: now } }
+        ]
+      },
+      {
+        $set: {
+          currentPin: generatedPin,
+          currentPinExpiresAt: new Date(now.getTime() + 4 * 60 * 60 * 1000)
+        }
+      },
+      { returnDocument: 'after' }
+    );
+    if (claimed) {
+      currentTable = claimed as unknown as import('../models/DiningTable.js').DiningTableDoc;
+      return {
+        tabId: 'main',
+        tabLabel: 'Main Table',
+        isHost: true,
+        tablePin: currentTable.currentPin ?? null
+      };
+    }
+    const refreshed = await DiningTable.findById(currentTable._id);
+    if (refreshed) {
+      currentTable = refreshed as unknown as import('../models/DiningTable.js').DiningTableDoc;
+      hasActiveParty = Boolean(
+        currentTable.currentPin &&
+        currentTable.currentPinExpiresAt &&
+        new Date(currentTable.currentPinExpiresAt) > now
+      );
+    }
+  }
 
   if (hasActiveParty) {
     if (options?.separateTab) {
@@ -133,7 +187,7 @@ async function resolveTableParty(
       isHost = false;
     } else {
       const pin = (options?.pin || '').trim();
-      if (!pin || pin !== table.currentPin) {
+      if (!pin || pin !== currentTable.currentPin) {
         throw new AppError(
           403,
           'INVALID_TABLE_PIN',
@@ -144,21 +198,87 @@ async function resolveTableParty(
       tabLabel = 'Main Table';
       isHost = false;
     }
-  } else {
-    const generatedPin = String(randomInt(1000, 10000));
-    table.currentPin = generatedPin;
-    table.currentPinExpiresAt = new Date(now.getTime() + 4 * 60 * 60 * 1000);
-    await (table as unknown as import('mongoose').Document).save();
-    tabId = 'main';
-    tabLabel = 'Main Table';
-    isHost = true;
   }
 
   return {
     tabId,
     tabLabel,
     isHost,
-    tablePin: tabId === 'main' ? (table.currentPin ?? null) : null
+    tablePin: tabId === 'main' ? (currentTable.currentPin ?? null) : null
+  };
+}
+
+async function createBoundedCustomerSession(params: {
+  table: import('../models/DiningTable.js').DiningTableDoc;
+  restaurantId: Types.ObjectId;
+  customerId: Types.ObjectId;
+  party: { tabId: string; tabLabel: string; isHost: boolean };
+  previousSessionId?: string;
+}): Promise<{ customerSession: import('../models/CustomerSession.js').CustomerSessionDoc; expiresAt: Date }> {
+  const { table, restaurantId, customerId, party, previousSessionId } = params;
+  const now = new Date();
+  const capacity = typeof table.capacity === 'number' && table.capacity > 0 ? table.capacity : null;
+
+  if (capacity !== null) {
+    const activeFilter: Record<string, unknown> = {
+      tableId: table._id,
+      revokedAt: null,
+      expiresAt: { $gt: now }
+    };
+    if (previousSessionId && Types.ObjectId.isValid(previousSessionId)) {
+      activeFilter._id = { $ne: new Types.ObjectId(previousSessionId) };
+    }
+    const activeCount = await CustomerSession.countDocuments(activeFilter);
+    if (activeCount >= capacity) {
+      throw new AppError(
+        409,
+        'TABLE_FULL',
+        `This table has reached its maximum capacity of ${capacity} ${capacity === 1 ? 'guest' : 'guests'}.`
+      );
+    }
+  }
+
+  if (previousSessionId) {
+    await CustomerSession.updateOne(
+      { _id: previousSessionId, revokedAt: null },
+      { $set: { revokedAt: new Date() } }
+    );
+  }
+
+  const expiresAt = new Date(Date.now() + 4 * 60 * 60 * 1000);
+  const customerSession = await CustomerSession.create({
+    customerId,
+    restaurantId,
+    tableId: table._id,
+    tabId: party.tabId,
+    tabLabel: party.tabLabel,
+    isHost: party.isHost,
+    expiresAt
+  });
+
+  if (capacity !== null) {
+    const activeSessions = await CustomerSession.find({
+      tableId: table._id,
+      revokedAt: null,
+      expiresAt: { $gt: now }
+    })
+      .sort({ createdAt: 1, _id: 1 })
+      .select('_id')
+      .lean();
+    const position = activeSessions.findIndex((s) => String(s._id) === String(customerSession._id));
+    if (position === -1 || position >= capacity) {
+      await CustomerSession.deleteOne({ _id: customerSession._id });
+      throw new AppError(
+        409,
+        'TABLE_FULL',
+        `This table has reached its maximum capacity of ${capacity} ${capacity === 1 ? 'guest' : 'guests'}.`
+      );
+    }
+  }
+
+  return {
+    customerSession: customerSession as unknown as import('../models/CustomerSession.js').CustomerSessionDoc,
+    expiresAt
   };
 }
 
@@ -244,28 +364,24 @@ customerRouter.post('/verify-otp', otpRateLimit, async (req, res) => {
   }
   const consumed = await OtpChallenge.updateOne({ _id: challenge._id, verifiedAt: null, attempts: challenge.attempts }, { $set: { verifiedAt: new Date() } });
   if (consumed.modifiedCount !== 1) throw new AppError(400, 'OTP_ALREADY_USED', 'This code has already been used. Request a new code.');
+  const cleanName = sanitizePlainText(parsed.data.name);
+  if (cleanName.length < 2) throw new AppError(400, 'INVALID_INPUT', 'Please enter a valid name (at least 2 characters).');
   const customer = await Customer.findOneAndUpdate(
     { phone: parsed.data.phone },
-    { $set: { name: challenge.customerName, phone: parsed.data.phone } },
+    { $set: { name: cleanName, phone: parsed.data.phone } },
     { upsert: true, returnDocument: 'after', runValidators: true }
   );
-  const party = await resolveTableParty(table, parsed.data.name, {
+  const party = await resolveTableParty(table, cleanName, {
     pin: parsed.data.pin,
     separateTab: parsed.data.separateTab
   });
 
-  if (req.session.customerSessionId) {
-    await CustomerSession.updateOne({ _id: req.session.customerSessionId, revokedAt: null }, { $set: { revokedAt: new Date() } });
-  }
-  const expiresAt = new Date(Date.now() + 4 * 60 * 60 * 1000);
-  const customerSession = await CustomerSession.create({
-    customerId: customer._id,
+  const { customerSession, expiresAt } = await createBoundedCustomerSession({
+    table,
     restaurantId: restaurant._id,
-    tableId: table._id,
-    tabId: party.tabId,
-    tabLabel: party.tabLabel,
-    isHost: party.isHost,
-    expiresAt
+    customerId: customer._id,
+    party,
+    previousSessionId: req.session.customerSessionId
   });
   await regenerateSession(req);
   req.session.customerSessionId = String(customerSession._id);
@@ -367,21 +483,12 @@ customerRouter.post('/switch-table', requireCustomer, async (req, res) => {
     separateTab: parsed.data.separateTab
   });
 
-  // Revoke previous table session
-  if (req.session.customerSessionId) {
-    await CustomerSession.updateOne({ _id: req.session.customerSessionId, revokedAt: null }, { $set: { revokedAt: new Date() } });
-  }
-
-  // Create new active session at new table
-  const expiresAt = new Date(Date.now() + 4 * 60 * 60 * 1000);
-  const customerSession = await CustomerSession.create({
-    customerId: req.customer!.customerId,
+  const { customerSession, expiresAt } = await createBoundedCustomerSession({
+    table,
     restaurantId: restaurant._id,
-    tableId: table._id,
-    tabId: party.tabId,
-    tabLabel: party.tabLabel,
-    isHost: party.isHost,
-    expiresAt
+    customerId: req.customer!.customerId,
+    party,
+    previousSessionId: req.session.customerSessionId
   });
 
   await regenerateSession(req);
@@ -517,36 +624,40 @@ const quickJoinSchema = z.object({
 customerRouter.post('/quick-join', quickJoinRateLimit, async (req, res) => {
   const parsed = quickJoinSchema.safeParse(req.body);
   if (!parsed.success) throw new AppError(400, 'INVALID_INPUT', 'Please enter your name.');
+  const cleanName = sanitizePlainText(parsed.data.name);
+  if (cleanName.length < 2) throw new AppError(400, 'INVALID_INPUT', 'Please enter a valid name (at least 2 characters).');
+
   const { table, restaurant } = await resolveActiveTable(parsed.data.token);
 
   if (restaurant.requireCustomerOtp) {
     throw new AppError(403, 'OTP_REQUIRED', 'This restaurant requires phone number verification via OTP.');
   }
 
-  const party = await resolveTableParty(table, parsed.data.name, {
+  const party = await resolveTableParty(table, cleanName, {
     pin: parsed.data.pin,
     separateTab: parsed.data.separateTab
   });
 
   const guestPhone = `guest-${table._id.toString().slice(-6)}-${randomBytes(4).toString('hex')}`;
   const customer = await Customer.create({
-    name: parsed.data.name,
+    name: cleanName,
     phone: guestPhone
   });
 
-  if (req.session.customerSessionId) {
-    await CustomerSession.updateOne({ _id: req.session.customerSessionId, revokedAt: null }, { $set: { revokedAt: new Date() } });
+  let customerSession: import('../models/CustomerSession.js').CustomerSessionDoc;
+  let expiresAt: Date;
+  try {
+    ({ customerSession, expiresAt } = await createBoundedCustomerSession({
+      table,
+      restaurantId: restaurant._id,
+      customerId: customer._id,
+      party,
+      previousSessionId: req.session.customerSessionId
+    }));
+  } catch (err) {
+    await Customer.deleteOne({ _id: customer._id }).catch(() => undefined);
+    throw err;
   }
-  const expiresAt = new Date(Date.now() + 4 * 60 * 60 * 1000);
-  const customerSession = await CustomerSession.create({
-    customerId: customer._id,
-    restaurantId: restaurant._id,
-    tableId: table._id,
-    tabId: party.tabId,
-    tabLabel: party.tabLabel,
-    isHost: party.isHost,
-    expiresAt
-  });
   await regenerateSession(req);
   req.session.customerSessionId = String(customerSession._id);
   res.json({
@@ -613,15 +724,7 @@ customerRouter.post('/cart/items', requireCustomer, requireCustomerQr, async (re
   if (!menuItem) throw new AppError(409, 'ITEM_UNAVAILABLE', 'This menu item is currently unavailable.');
 
   const tabId = req.customer!.tabId || 'main';
-  let cart = await TableCart.findOne({ tableId: req.customer!.tableId, tabId, restaurantId: req.customer!.restaurantId });
-  if (!cart) {
-    cart = new TableCart({
-      restaurantId: req.customer!.restaurantId,
-      tableId: req.customer!.tableId,
-      tabId,
-      items: []
-    });
-  }
+  const cleanNotes = sanitizePlainText(parsed.data.notes);
 
   // Calculate unit price securely from database menu item definition
   const { unitPricePaise: calculatedUnitPrice, validatedVariant, validatedAddons } = resolveMenuItemLinePricing(
@@ -630,40 +733,68 @@ customerRouter.post('/cart/items', requireCustomer, requireCustomerQr, async (re
     parsed.data.selectedAddons
   );
 
-  // Match items based on menuItemId AND selected variant name
   const variantName = validatedVariant?.name || '';
-  const existingIndex = cart.items.findIndex((item) => {
-    const itemVariantName = item.selectedVariant?.name || '';
-    return String(item.menuItemId) === parsed.data.menuItemId && itemVariantName === variantName;
-  });
 
-  if (parsed.data.quantity <= 0) {
-    if (existingIndex >= 0) cart.items.splice(existingIndex, 1);
-  } else if (existingIndex >= 0 && cart.items[existingIndex]) {
-    const existing = cart.items[existingIndex];
-    existing.quantity = parsed.data.quantity;
-    existing.unitPricePaise = calculatedUnitPrice;
-    existing.selectedVariant = validatedVariant;
-    (existing as unknown as { selectedAddons: unknown[] }).selectedAddons = validatedAddons;
-    if (parsed.data.notes) existing.notes = parsed.data.notes;
-    existing.addedByName = customer?.name || 'Guest';
-  } else {
-    cart.items.push({
-      menuItemId: menuItem._id,
-      name: menuItem.name,
-      unitPricePaise: calculatedUnitPrice,
-      quantity: parsed.data.quantity,
-      selectedVariant: validatedVariant,
-      selectedAddons: validatedAddons,
-      notes: parsed.data.notes,
-      addedByName: customer?.name || 'Guest',
-      addedByCustomerId: req.customer!.customerId
+  // Atomic upsert + retry loop for concurrent cart creation/updates on the same tab
+  let savedCart: import('../models/TableCart.js').TableCartDoc | null = null;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    let cart;
+    try {
+      cart = await TableCart.findOneAndUpdate(
+        { restaurantId: req.customer!.restaurantId, tableId: req.customer!.tableId, tabId },
+        { $setOnInsert: { restaurantId: req.customer!.restaurantId, tableId: req.customer!.tableId, tabId, items: [] } },
+        { upsert: true, returnDocument: 'after' }
+      );
+    } catch (err) {
+      if (err && typeof err === 'object' && 'code' in err && err.code === 11000 && attempt < 2) {
+        continue;
+      }
+      throw err;
+    }
+    if (!cart) continue;
+
+    const existingIndex = cart.items.findIndex((item) => {
+      const itemVariantName = item.selectedVariant?.name || '';
+      return String(item.menuItemId) === parsed.data.menuItemId && itemVariantName === variantName;
     });
+
+    if (parsed.data.quantity <= 0) {
+      if (existingIndex >= 0) cart.items.splice(existingIndex, 1);
+    } else if (existingIndex >= 0 && cart.items[existingIndex]) {
+      const existing = cart.items[existingIndex];
+      existing.quantity = parsed.data.quantity;
+      existing.unitPricePaise = calculatedUnitPrice;
+      existing.selectedVariant = validatedVariant;
+      (existing as unknown as { selectedAddons: unknown[] }).selectedAddons = validatedAddons;
+      if (cleanNotes) existing.notes = cleanNotes;
+      existing.addedByName = customer?.name || 'Guest';
+    } else {
+      cart.items.push({
+        menuItemId: menuItem._id,
+        name: menuItem.name,
+        unitPricePaise: calculatedUnitPrice,
+        quantity: parsed.data.quantity,
+        selectedVariant: validatedVariant,
+        selectedAddons: validatedAddons,
+        notes: cleanNotes,
+        addedByName: customer?.name || 'Guest',
+        addedByCustomerId: req.customer!.customerId
+      });
+    }
+
+    try {
+      savedCart = (await cart.save()) as unknown as import('../models/TableCart.js').TableCartDoc;
+      break;
+    } catch (err) {
+      if (err && typeof err === 'object' && 'name' in err && err.name === 'VersionError' && attempt < 2) {
+        continue;
+      }
+      throw err;
+    }
   }
+  if (!savedCart) throw new AppError(409, 'CART_CONFLICT', 'Could not update cart due to concurrent edits. Please try again.');
 
-  await cart.save();
-
-  const serializedItems = cart.items.map((item) => ({
+  const serializedItems = savedCart.items.map((item) => ({
     menuItemId: String(item.menuItemId),
     name: item.name,
     unitPricePaise: item.unitPricePaise,

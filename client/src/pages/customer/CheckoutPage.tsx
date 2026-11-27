@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import { useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
 import { api, ApiError } from '../../lib/api';
@@ -31,11 +31,13 @@ function CartItemNoteInput({
   onSave: (notes: string) => void;
 }) {
   const [value, setValue] = useState(initialNotes);
+  const [prevInitialNotes, setPrevInitialNotes] = useState(initialNotes);
   const timerRef = useRef<number | null>(null);
 
-  useEffect(() => {
+  if (prevInitialNotes !== initialNotes) {
+    setPrevInitialNotes(initialNotes);
     setValue(initialNotes);
-  }, [initialNotes]);
+  }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const nextVal = e.target.value;

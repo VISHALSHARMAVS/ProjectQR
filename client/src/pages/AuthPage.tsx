@@ -24,6 +24,7 @@ export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
   const [error, setError] = useState('');
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [successMessage, setSuccessMessage] = useState('');
+  const [prevMode, setPrevMode] = useState(mode);
   const redirectTimerRef = useRef<number | null>(null);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -31,11 +32,12 @@ export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
   const staff = useStaff();
   const isRegister = mode === 'register';
 
-  useEffect(() => {
+  if (prevMode !== mode) {
+    setPrevMode(mode);
     setError('');
     setFieldErrors({});
     setSuccessMessage('');
-  }, [mode]);
+  }
 
   useEffect(() => {
     return () => {

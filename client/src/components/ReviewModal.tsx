@@ -149,10 +149,10 @@ export function ReviewModal({
                 : 'Our duty manager has received your instant table alert. A staff member will attend to your table shortly to address your concerns.'}
             </p>
 
-            {isHighRating && googleReviewUrl && (
+            {googleReviewUrl && (
               <div style={{ padding: 14, background: 'var(--paper-elevated)', border: '1px solid var(--line)', borderRadius: 12, marginBottom: 18, boxSizing: 'border-box', maxWidth: '100%' }}>
                 <p style={{ margin: '0 0 10px', fontSize: 13, fontWeight: 600, color: 'var(--ink)', lineHeight: 1.4 }}>
-                  Would you take 10 seconds to share this on Google Maps? It helps small restaurants like ours tremendously!
+                  Want to share your dining experience publicly on Google Maps?
                 </p>
                 <button
                   type="button"
@@ -173,8 +173,7 @@ export function ReviewModal({
                   }}
                   onClick={handleGoogleClick}
                 >
-                  <span>⭐</span>
-                  <span>{googleClicked ? 'Opened Google Reviews' : 'Post 5 Stars on Google Maps'}</span>
+                  <span>{googleClicked ? 'Opened Google Maps' : 'Open Google Maps Reviews'}</span>
                 </button>
               </div>
             )}

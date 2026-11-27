@@ -87,6 +87,7 @@ export interface TableRecord {
   _id: string;
   id?: string;
   label: string;
+  capacity?: number | null;
   active: boolean;
   pin?: string | null;
   createdAt?: string;
@@ -104,6 +105,8 @@ export type TableLiveState = 'VACANT' | 'NEEDS_CLEARING' | 'SEATED' | 'PREPARING
 export interface LiveTableInfo {
   id: string;
   label: string;
+  capacity?: number | null;
+  activeGuestsCount?: number;
   active: boolean;
   needsClearing?: boolean;
   state: TableLiveState;

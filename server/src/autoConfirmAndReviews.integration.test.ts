@@ -1,3 +1,4 @@
+import { createHmac } from 'node:crypto';
 import { mkdtemp, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
@@ -176,23 +177,27 @@ describe('Auto-Confirm UPI Payments & Human Psychology Review System', () => {
     }).expect(201);
     const order2Id = order2Res.body.order.id;
 
-    // Test Webhook Payment Settlement (Razorpay style webhook)
-    const webhookRes = await supertest(app!.httpServer)
-      .post('/api/webhooks/payment')
-      .send({
-        event: 'payment.captured',
-        payload: {
-          payment: {
-            entity: {
-              id: 'pay_rzp_mock12345',
-              order_id: order2Id,
-              amount: order2Res.body.order.totalPaise,
-              method: 'upi',
-              vpa: 'aditya@okhdfcbank'
-            }
+    // Test Webhook Payment Settlement (Razorpay style signed webhook)
+    const webhookPayload = JSON.stringify({
+      event: 'payment.captured',
+      payload: {
+        payment: {
+          entity: {
+            id: 'pay_rzp_mock12345',
+            order_id: order2Id,
+            amount: order2Res.body.order.totalPaise,
+            method: 'upi',
+            vpa: 'aditya@okhdfcbank'
           }
         }
-      })
+      }
+    });
+    const webhookSignature = createHmac('sha256', 'test_whsec_secret123').update(webhookPayload).digest('hex');
+    const webhookRes = await supertest(app!.httpServer)
+      .post('/api/webhooks/payment')
+      .set('Content-Type', 'application/json')
+      .set('x-razorpay-signature', webhookSignature)
+      .send(webhookPayload)
       .expect(200);
     expect(webhookRes.body.success).toBe(true);
     expect(webhookRes.body.orderId).toBe(order2Id);

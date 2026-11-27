@@ -67,9 +67,9 @@ export default function ReviewsPage() {
   if (query.isLoading) return <Loading label="Loading customer reviews & feedback…" />;
   if (query.error || !query.data) {
     return (
-      <main className="dashboard-content">
+      <div className="dashboard-content">
         <div className="form-error">Could not load reviews. Please refresh.</div>
-      </main>
+      </div>
     );
   }
 
@@ -85,7 +85,7 @@ export default function ReviewsPage() {
   const unresolvedCount = summary.unresolvedComplaints;
 
   return (
-    <main className="dashboard-content">
+    <div className="dashboard-content">
       <header className="page-header" style={{ marginBottom: 20 }}>
         <div>
           <span className="eyebrow">Customer Experience & Recovery</span>
@@ -564,6 +564,6 @@ export default function ReviewsPage() {
           </div>
         </Modal>
       )}
-    </main>
+    </div>
   );
 }

@@ -2,7 +2,7 @@ import { randomInt } from 'node:crypto';
 import { Router } from 'express';
 import type { Server } from 'socket.io';
 import { z } from 'zod';
-import { requireCustomer, requireCustomerQr, requirePermission, requireRoles, requireStaff } from '../middleware/auth.js';
+import { requireCustomer, requireCustomerQr, requirePermission, requireStaff } from '../middleware/auth.js';
 import { CustomerSession } from '../models/CustomerSession.js';
 import { DiningTable } from '../models/DiningTable.js';
 import { MenuItem } from '../models/MenuItem.js';

@@ -30,7 +30,7 @@ describe('resolvePublicAppUrl', () => {
     const mockReq = {
       get: (header: string) => header === 'host' ? 'trymesa.onrender.com' : undefined,
       secure: true
-    } as any;
+    } as unknown as import('express').Request;
     expect(resolvePublicAppUrl(mockReq)).toBe('https://trymesa.onrender.com');
   });
 
@@ -38,7 +38,7 @@ describe('resolvePublicAppUrl', () => {
     const mockReq = {
       get: (header: string) => header === 'host' ? 'projectqr-preview.onrender.com' : undefined,
       secure: true
-    } as any;
+    } as unknown as import('express').Request;
     expect(resolvePublicAppUrl(mockReq)).toBe('https://trymesa.onrender.com');
   });
 });
