@@ -716,10 +716,8 @@ p, body, .body-1, .body-2, .body-3, .body-4, .body-5, .body-6 {
   background: var(--paper-elevated);
 }
 .swiggy-btn-anchor {
-  position: absolute;
-  bottom: -14px;
-  left: 50%;
-  transform: translateX(-50%);
+  position: relative;
+  margin-top: -18px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -728,12 +726,19 @@ p, body, .body-1, .body-2, .body-3, .body-4, .body-5, .body-6 {
 .swiggy-add-btn {
   background: var(--paper);
   color: var(--green);
-  border: 1.5px solid var(--line);
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: 600;
-  padding: 8px 12px;
-  box-shadow: var(--shadow);
+  border: 1.5px solid var(--green);
+  border-radius: 10px;
+  font-size: 13.5px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  min-width: 104px;
+  height: 36px;
+  padding: 0 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   cursor: pointer;
   white-space: nowrap;
   transition: all 200ms var(--ease-base);

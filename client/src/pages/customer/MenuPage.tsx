@@ -696,7 +696,7 @@ export default function CustomerMenuPage() {
                     {item.description && <p className="swiggy-dish-desc">{item.description}</p>}
                   </div>
 
-                  <div className="media-col">
+                  <div className="swiggy-media-col">
                     <div className="swiggy-img-wrap">
                       {item.imageUrl ? (
                         <img src={item.imageUrl} alt={item.name} loading="lazy" />
