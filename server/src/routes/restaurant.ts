@@ -18,7 +18,7 @@ import { getOrderSocket } from './orders.js';
 import { saveMenuImage } from '../services/imageStorage.js';
 import { hashPassword } from '../services/password.js';
 import { AppError } from '../utils/errors.js';
-import { labelSchema, objectIdSchema } from '../utils/validation.js';
+import { labelSchema, objectIdSchema, phoneSchema } from '../utils/validation.js';
 import { tenantFilter } from '../utils/tenant.js';
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024, files: 1 } });
@@ -639,7 +639,7 @@ staffRouter.use(requireStaff, requireRoles('owner'));
 
 staffRouter.get('/', async (req, res) => {
   const users = await User.find(tenantFilter(req.staff!.restaurantId))
-    .select('name email role permissions active createdAt')
+    .select('name email phone role permissions active createdAt')
     .sort({ createdAt: 1 })
     .lean();
   res.json({
@@ -656,7 +656,8 @@ staffRouter.get('/', async (req, res) => {
 staffRouter.post('/', async (req, res) => {
   const parsed = z.object({
     name: z.string().trim().min(2, 'Name must be at least 2 characters').max(100, 'Name cannot exceed 100 characters'),
-    email: z.string().email('Please enter a valid email address').trim().toLowerCase(),
+    email: z.union([z.literal(''), z.string().email('Please enter a valid email address').trim().toLowerCase()]).optional(),
+    phone: z.union([z.literal(''), phoneSchema]).optional(),
     password: z.string().min(8, 'Password must be at least 8 characters').refine((value) => Buffer.byteLength(value, 'utf8') <= 72, 'Password must be at most 72 bytes'),
     role: z.preprocess(
       (val) => typeof val === 'string' ? val.trim().toLowerCase() : val,
@@ -665,7 +666,19 @@ staffRouter.post('/', async (req, res) => {
     permissions: permissionSchema.optional()
   }).safeParse(req.body);
   if (!parsed.success) throw new AppError(400, 'INVALID_INPUT', parsed.error.issues[0]?.message ?? 'Check the staff details.');
-  if (await User.exists({ email: parsed.data.email })) throw new AppError(409, 'EMAIL_IN_USE', 'An account with that email already exists.');
+
+  const cleanEmail = parsed.data.email?.trim() ? parsed.data.email.trim().toLowerCase() : undefined;
+  const cleanPhone = parsed.data.phone?.trim() ? parsed.data.phone.trim() : undefined;
+  if (!cleanEmail && !cleanPhone) {
+    throw new AppError(400, 'INVALID_INPUT', 'Provide at least an email address or a mobile number for the staff member.');
+  }
+
+  if (cleanEmail && await User.exists({ email: cleanEmail })) {
+    throw new AppError(409, 'EMAIL_IN_USE', 'An account with that email already exists.');
+  }
+  if (cleanPhone && await User.exists({ phone: cleanPhone })) {
+    throw new AppError(409, 'PHONE_IN_USE', 'An account with that mobile number already exists.');
+  }
 
   const role = parsed.data.role as UserRole;
   const permissions = {
@@ -676,7 +689,8 @@ staffRouter.post('/', async (req, res) => {
   const user = await User.create({
     restaurantId: req.staff!.restaurantId,
     name: parsed.data.name,
-    email: parsed.data.email,
+    ...(cleanEmail ? { email: cleanEmail } : {}),
+    ...(cleanPhone ? { phone: cleanPhone } : {}),
     passwordHash: await hashPassword(parsed.data.password),
     role,
     permissions
@@ -686,7 +700,8 @@ staffRouter.post('/', async (req, res) => {
     user: {
       id: user.id,
       name: user.name,
-      email: user.email,
+      email: user.email ?? '',
+      phone: user.phone ?? '',
       role: user.role,
       permissions: user.permissions,
       active: user.active,

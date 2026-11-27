@@ -5,6 +5,7 @@ import type { UserPermissions, UserRole } from '../models/User.js';
 declare module 'express-session' {
   interface SessionData {
     userId?: string;
+    tokenVersion?: number;
     customerSessionId?: string;
   }
 }
@@ -16,7 +17,8 @@ declare global {
         id: Types.ObjectId;
         restaurantId: Types.ObjectId;
         name: string;
-        email: string;
+        email?: string;
+        phone?: string;
         role: UserRole;
         permissions?: UserPermissions;
       };

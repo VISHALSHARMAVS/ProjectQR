@@ -10,17 +10,32 @@ interface FieldErrors {
   restaurantName?: string;
   ownerName?: string;
   email?: string;
+  identifier?: string;
   password?: string;
+  code?: string;
+}
+
+interface OtpResponse {
+  message: string;
+  expiresInSeconds?: number;
+  mockOtp?: string;
 }
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const HAS_LETTER_AND_DIGIT = /^(?=.*[a-zA-Z])(?=.*\d).{10,72}$/;
 
-export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
+export default function AuthPage({ mode }: { mode: 'login' | 'register' | 'forgot' }) {
   const [restaurantName, setRestaurantName] = useState('');
   const [ownerName, setOwnerName] = useState('');
   const [email, setEmail] = useState('');
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
+  const [code, setCode] = useState('');
+  const [website, setWebsite] = useState(''); // Honeypot
   const [showPassword, setShowPassword] = useState(false);
+  const [awaitingVerify, setAwaitingVerify] = useState(false);
+  const [mockOtpHint, setMockOtpHint] = useState('');
+  const [resendCooldown, setResendCooldown] = useState(0);
   const [error, setError] = useState('');
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [successMessage, setSuccessMessage] = useState('');
@@ -31,12 +46,17 @@ export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
   const queryClient = useQueryClient();
   const staff = useStaff();
   const isRegister = mode === 'register';
+  const isForgot = mode === 'forgot';
 
   if (prevMode !== mode) {
     setPrevMode(mode);
     setError('');
     setFieldErrors({});
     setSuccessMessage('');
+    setAwaitingVerify(false);
+    setCode('');
+    setMockOtpHint('');
+    setResendCooldown(0);
   }
 
   useEffect(() => {
@@ -47,26 +67,24 @@ export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
     };
   }, []);
 
-  const mutation = useMutation({
-    mutationFn: async () => isRegister
-      ? api.post<StaffIdentity>('/auth/register', {
-          restaurantName: restaurantName.trim(),
-          ownerName: ownerName.trim(),
-          email: email.trim(),
-          password
-        })
-      : api.post<StaffIdentity>('/auth/login', {
-          email: email.trim(),
-          password
-        }),
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const timer = window.setInterval(() => {
+      setResendCooldown((prev) => (prev > 0 ? prev - 1 : 0));
+    }, 1000);
+    return () => window.clearInterval(timer);
+  }, [resendCooldown]);
+
+  const loginMutation = useMutation({
+    mutationFn: () =>
+      api.post<StaffIdentity>('/auth/login', {
+        identifier: identifier.trim(),
+        password
+      }),
     onSuccess: async (data) => {
       setError('');
       setFieldErrors({});
-      setSuccessMessage(
-        isRegister
-          ? 'Restaurant account created! Redirecting to your dashboard…'
-          : 'Signed in! Redirecting to your dashboard…'
-      );
+      setSuccessMessage('Signed in! Redirecting to your dashboard…');
       if (data?.user && data?.restaurant) {
         queryClient.setQueryData(['staff', 'me'], data);
       }
@@ -78,49 +96,146 @@ export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
     },
     onError: (cause: Error) => {
       setSuccessMessage('');
-      setError(
-        cause instanceof ApiError
-          ? cause.message
-          : isRegister
-            ? 'Could not create your restaurant account. Please try again.'
-            : 'Could not sign in. Please try again.'
-      );
+      setError(cause instanceof ApiError ? cause.message : 'Could not sign in. Please try again.');
+    }
+  });
+
+  const registerRequestMutation = useMutation({
+    mutationFn: () =>
+      api.post<OtpResponse>('/auth/register-request', {
+        restaurantName: restaurantName.trim(),
+        ownerName: ownerName.trim(),
+        email: email.trim(),
+        password,
+        website
+      }),
+    onSuccess: (resp) => {
+      setError('');
+      setFieldErrors({});
+      setAwaitingVerify(true);
+      setResendCooldown(60);
+      setMockOtpHint(resp.mockOtp ?? '');
+      if (resp.mockOtp) setCode(resp.mockOtp);
+    },
+    onError: (cause: Error) => {
+      setError(cause instanceof ApiError ? cause.message : 'Could not send verification email. Please try again.');
+    }
+  });
+
+  const registerVerifyMutation = useMutation({
+    mutationFn: () =>
+      api.post<StaffIdentity>('/auth/register-verify', {
+        email: email.trim(),
+        code: code.trim()
+      }),
+    onSuccess: async (data) => {
+      setError('');
+      setFieldErrors({});
+      setSuccessMessage('Email verified & restaurant created! Redirecting…');
+      if (data?.user && data?.restaurant) {
+        queryClient.setQueryData(['staff', 'me'], data);
+      }
+      await queryClient.invalidateQueries({ queryKey: ['staff', 'me'] });
+      redirectTimerRef.current = window.setTimeout(() => {
+        navigate('/dashboard', { replace: true });
+      }, 650);
+    },
+    onError: (cause: Error) => {
+      setError(cause instanceof ApiError ? cause.message : 'Could not verify code. Please try again.');
+    }
+  });
+
+  const forgotRequestMutation = useMutation({
+    mutationFn: () =>
+      api.post<OtpResponse>('/auth/forgot-password', {
+        identifier: identifier.trim(),
+        website
+      }),
+    onSuccess: (resp) => {
+      setError('');
+      setFieldErrors({});
+      setAwaitingVerify(true);
+      setResendCooldown(60);
+      setMockOtpHint(resp.mockOtp ?? '');
+      if (resp.mockOtp) setCode(resp.mockOtp);
+    },
+    onError: (cause: Error) => {
+      setError(cause instanceof ApiError ? cause.message : 'Could not send reset code. Please try again.');
+    }
+  });
+
+  const resetPasswordMutation = useMutation({
+    mutationFn: () =>
+      api.post<{ success: boolean; message: string }>('/auth/reset-password', {
+        identifier: identifier.trim(),
+        code: code.trim(),
+        newPassword: password
+      }),
+    onSuccess: (resp) => {
+      setError('');
+      setFieldErrors({});
+      setSuccessMessage(resp.message || 'Password updated! Redirecting to sign in…');
+      redirectTimerRef.current = window.setTimeout(() => {
+        navigate('/login', { replace: true });
+      }, 1200);
+    },
+    onError: (cause: Error) => {
+      setError(cause instanceof ApiError ? cause.message : 'Could not reset password. Please check the code and try again.');
     }
   });
 
   if (staff.data && !successMessage) return <Navigate to="/dashboard" replace />;
 
+  const isPending =
+    loginMutation.isPending ||
+    registerRequestMutation.isPending ||
+    registerVerifyMutation.isPending ||
+    forgotRequestMutation.isPending ||
+    resetPasswordMutation.isPending;
+
   function validate(): FieldErrors {
     const next: FieldErrors = {};
-    if (isRegister) {
-      if (restaurantName.trim().length < 2) {
-        next.restaurantName = 'Enter your restaurant name (at least 2 characters).';
-      } else if (restaurantName.trim().length > 120) {
-        next.restaurantName = 'Restaurant name must be 120 characters or fewer.';
+
+    if (isRegister && !awaitingVerify) {
+      if (restaurantName.trim().length < 2) next.restaurantName = 'Enter your restaurant name (at least 2 characters).';
+      else if (restaurantName.trim().length > 120) next.restaurantName = 'Restaurant name must be 120 characters or fewer.';
+
+      if (ownerName.trim().length < 2) next.ownerName = 'Enter your name (at least 2 characters).';
+      else if (ownerName.trim().length > 100) next.ownerName = 'Your name must be 100 characters or fewer.';
+
+      const trimmedEmail = email.trim();
+      if (!trimmedEmail) next.email = 'Enter your email address.';
+      else if (!EMAIL_REGEX.test(trimmedEmail)) next.email = 'Enter a valid email address.';
+
+      if (!HAS_LETTER_AND_DIGIT.test(password)) {
+        next.password = 'Use at least 10 characters with at least one letter and one number.';
       }
-      if (ownerName.trim().length < 2) {
-        next.ownerName = 'Enter your name (at least 2 characters).';
-      } else if (ownerName.trim().length > 100) {
-        next.ownerName = 'Your name must be 100 characters or fewer.';
+    } else if (isRegister && awaitingVerify) {
+      if (!/^\d{6}$/.test(code.trim())) {
+        next.code = 'Enter the 6-digit verification code sent to your email.';
       }
+    } else if (isForgot && !awaitingVerify) {
+      if (identifier.trim().length < 3) {
+        next.identifier = 'Enter your registered email address or mobile number.';
+      }
+    } else if (isForgot && awaitingVerify) {
+      if (!/^\d{6}$/.test(code.trim())) {
+        next.code = 'Enter the 6-digit reset code.';
+      }
+      if (!HAS_LETTER_AND_DIGIT.test(password)) {
+        next.password = 'New password must be at least 10 characters with a letter and a number.';
+      }
+    } else {
+      if (identifier.trim().length < 3) next.identifier = 'Enter your email address or mobile number.';
+      if (!password) next.password = 'Enter your password.';
     }
-    const trimmedEmail = email.trim();
-    if (!trimmedEmail) {
-      next.email = 'Enter your email address.';
-    } else if (!EMAIL_REGEX.test(trimmedEmail)) {
-      next.email = 'Enter a valid email address.';
-    }
-    if (!password) {
-      next.password = isRegister ? 'Create a password (at least 10 characters).' : 'Enter your password.';
-    } else if (isRegister && password.length < 10) {
-      next.password = 'Password must be at least 10 characters.';
-    }
+
     return next;
   }
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (mutation.isPending || successMessage) return;
+    if (isPending || successMessage) return;
     setError('');
     const nextErrors = validate();
     setFieldErrors(nextErrors);
@@ -128,8 +243,37 @@ export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
       setError('Please fix the highlighted fields below.');
       return;
     }
-    mutation.mutate();
+
+    if (isRegister) {
+      if (awaitingVerify) registerVerifyMutation.mutate();
+      else registerRequestMutation.mutate();
+    } else if (isForgot) {
+      if (awaitingVerify) resetPasswordMutation.mutate();
+      else forgotRequestMutation.mutate();
+    } else {
+      loginMutation.mutate();
+    }
   }
+
+  const heading = isRegister
+    ? awaitingVerify
+      ? 'Verify your email'
+      : 'Create your restaurant'
+    : isForgot
+      ? awaitingVerify
+        ? 'Enter reset code'
+        : 'Reset your password'
+      : 'Welcome back';
+
+  const subtitle = isRegister
+    ? awaitingVerify
+      ? `Enter the 6-digit code sent to ${email.trim()}.`
+      : 'Start with a verified restaurant account, your menu, and tables.'
+    : isForgot
+      ? awaitingVerify
+        ? `Enter the 6-digit code sent to ${identifier.trim()} and choose a new password.`
+        : 'Enter your email or mobile number and we will send a 6-digit reset code.'
+      : 'Sign in with your email or mobile number.';
 
   return (
     <main className="auth-shell">
@@ -167,13 +311,25 @@ export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
           </div>
 
           <span className="eyebrow">Restaurant workspace</span>
-          <h2>{isRegister ? 'Create your restaurant' : 'Welcome back'}</h2>
+          <h2>{heading}</h2>
           <p className="muted" style={{ margin: '0 0 22px', fontSize: 13 }}>
-            {isRegister ? 'Start with a menu, a table and your first order.' : 'Sign in to manage your menu and orders.'}
+            {subtitle}
           </p>
 
           <form className="form-grid" noValidate onSubmit={handleSubmit}>
-            {isRegister && (
+            {/* Invisible honeypot field for bot trapping */}
+            <input
+              type="text"
+              name="website"
+              tabIndex={-1}
+              autoComplete="off"
+              value={website}
+              onChange={(e) => setWebsite(e.target.value)}
+              style={{ position: 'absolute', left: '-9999px', width: 1, height: 1, opacity: 0 }}
+              aria-hidden="true"
+            />
+
+            {isRegister && !awaitingVerify && (
               <>
                 <div className="field">
                   <label htmlFor="restaurantName">Restaurant name</label>
@@ -183,8 +339,6 @@ export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
                     required
                     minLength={2}
                     maxLength={120}
-                    aria-invalid={Boolean(fieldErrors.restaurantName)}
-                    aria-describedby={fieldErrors.restaurantName ? 'restaurantName-error' : undefined}
                     value={restaurantName}
                     onChange={(event) => {
                       setRestaurantName(event.target.value);
@@ -192,11 +346,7 @@ export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
                     }}
                     placeholder="The Green Fork"
                   />
-                  {fieldErrors.restaurantName && (
-                    <div id="restaurantName-error" className="field-error" role="alert">
-                      {fieldErrors.restaurantName}
-                    </div>
-                  )}
+                  {fieldErrors.restaurantName && <div className="field-error" role="alert">{fieldErrors.restaurantName}</div>}
                 </div>
                 <div className="field">
                   <label htmlFor="ownerName">Your name</label>
@@ -206,8 +356,6 @@ export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
                     required
                     minLength={2}
                     maxLength={100}
-                    aria-invalid={Boolean(fieldErrors.ownerName)}
-                    aria-describedby={fieldErrors.ownerName ? 'ownerName-error' : undefined}
                     value={ownerName}
                     onChange={(event) => {
                       setOwnerName(event.target.value);
@@ -215,118 +363,191 @@ export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
                     }}
                     placeholder="Aarav Sharma"
                   />
-                  {fieldErrors.ownerName && (
-                    <div id="ownerName-error" className="field-error" role="alert">
-                      {fieldErrors.ownerName}
-                    </div>
-                  )}
+                  {fieldErrors.ownerName && <div className="field-error" role="alert">{fieldErrors.ownerName}</div>}
+                </div>
+                <div className="field">
+                  <label htmlFor="email">Email address</label>
+                  <input
+                    className={`input${fieldErrors.email ? ' is-invalid' : ''}`}
+                    id="email"
+                    type="email"
+                    autoComplete="email"
+                    required
+                    value={email}
+                    onChange={(event) => {
+                      setEmail(event.target.value);
+                      if (fieldErrors.email) setFieldErrors((prev) => ({ ...prev, email: undefined }));
+                    }}
+                    placeholder="you@restaurant.com"
+                  />
+                  {fieldErrors.email && <div className="field-error" role="alert">{fieldErrors.email}</div>}
                 </div>
               </>
             )}
 
-            <div className="field">
-              <label htmlFor="email">Email address</label>
-              <input
-                className={`input${fieldErrors.email ? ' is-invalid' : ''}`}
-                id="email"
-                type="email"
-                autoComplete="email"
-                required
-                aria-invalid={Boolean(fieldErrors.email)}
-                aria-describedby={fieldErrors.email ? 'email-error' : undefined}
-                value={email}
-                onChange={(event) => {
-                  setEmail(event.target.value);
-                  if (fieldErrors.email) setFieldErrors((prev) => ({ ...prev, email: undefined }));
-                }}
-                placeholder="you@restaurant.com"
-              />
-              {fieldErrors.email && (
-                <div id="email-error" className="field-error" role="alert">
-                  {fieldErrors.email}
-                </div>
-              )}
-            </div>
-
-            <div className="field">
-              <label htmlFor="password">Password</label>
-              <div style={{ position: 'relative' }}>
+            {(!isRegister && !awaitingVerify) && (
+              <div className="field">
+                <label htmlFor="identifier">Email or mobile number</label>
                 <input
-                  className={`input${fieldErrors.password ? ' is-invalid' : ''}`}
-                  id="password"
-                  type={showPassword ? 'text' : 'password'}
-                  autoComplete={isRegister ? 'new-password' : 'current-password'}
+                  className={`input${fieldErrors.identifier ? ' is-invalid' : ''}`}
+                  id="identifier"
+                  type="text"
+                  autoComplete="username"
                   required
-                  minLength={isRegister ? 10 : 1}
-                  aria-invalid={Boolean(fieldErrors.password)}
-                  aria-describedby={fieldErrors.password ? 'password-error' : undefined}
-                  value={password}
+                  value={identifier}
                   onChange={(event) => {
-                    setPassword(event.target.value);
-                    if (fieldErrors.password) setFieldErrors((prev) => ({ ...prev, password: undefined }));
+                    setIdentifier(event.target.value);
+                    if (fieldErrors.identifier) setFieldErrors((prev) => ({ ...prev, identifier: undefined }));
                   }}
-                  placeholder={isRegister ? 'At least 10 characters' : 'Your password'}
-                  style={{ paddingRight: 42 }}
+                  placeholder="you@restaurant.com or 9876543210"
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  aria-label={showPassword ? 'Hide password' : 'Show password'}
-                  style={{
-                    position: 'absolute',
-                    right: 8,
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    background: 'transparent',
-                    border: 'none',
-                    padding: '6px',
-                    cursor: 'pointer',
-                    color: 'var(--muted)',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    borderRadius: 6
-                  }}
-                >
-                  {showPassword ? (
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
-                      <line x1="1" y1="1" x2="23" y2="23" />
-                    </svg>
-                  ) : (
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                      <circle cx="12" cy="12" r="3" />
-                    </svg>
-                  )}
-                </button>
+                {fieldErrors.identifier && <div className="field-error" role="alert">{fieldErrors.identifier}</div>}
               </div>
-              {fieldErrors.password && (
-                <div id="password-error" className="field-error" role="alert">
-                  {fieldErrors.password}
+            )}
+
+            {awaitingVerify && (
+              <div className="field">
+                <label htmlFor="otp-code">6-digit verification code</label>
+                <input
+                  className={`input${fieldErrors.code ? ' is-invalid' : ''}`}
+                  id="otp-code"
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={6}
+                  required
+                  value={code}
+                  onChange={(event) => {
+                    setCode(event.target.value.replace(/\D/g, '').slice(0, 6));
+                    if (fieldErrors.code) setFieldErrors((prev) => ({ ...prev, code: undefined }));
+                  }}
+                  placeholder="123456"
+                  style={{ letterSpacing: 6, fontWeight: 700, textAlign: 'center', fontSize: 18 }}
+                  autoFocus
+                />
+                {mockOtpHint && (
+                  <span className="muted" style={{ fontSize: 11, marginTop: 4, display: 'block' }}>
+                    Dev mode OTP: <strong>{mockOtpHint}</strong>
+                  </span>
+                )}
+                {fieldErrors.code && <div className="field-error" role="alert">{fieldErrors.code}</div>}
+              </div>
+            )}
+
+            {((!awaitingVerify && !isForgot) || (isForgot && awaitingVerify)) && (
+              <div className="field">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <label htmlFor="password">{isForgot ? 'New password' : 'Password'}</label>
+                  {!isRegister && !isForgot && (
+                    <Link to="/forgot-password" style={{ fontSize: 12, color: 'var(--green)', fontWeight: 600 }}>
+                      Forgot password?
+                    </Link>
+                  )}
                 </div>
-              )}
-            </div>
+                <div style={{ position: 'relative' }}>
+                  <input
+                    className={`input${fieldErrors.password ? ' is-invalid' : ''}`}
+                    id="password"
+                    type={showPassword ? 'text' : 'password'}
+                    autoComplete={isRegister || isForgot ? 'new-password' : 'current-password'}
+                    required
+                    minLength={isRegister || isForgot ? 10 : 1}
+                    value={password}
+                    onChange={(event) => {
+                      setPassword(event.target.value);
+                      if (fieldErrors.password) setFieldErrors((prev) => ({ ...prev, password: undefined }));
+                    }}
+                    placeholder={isRegister || isForgot ? '10+ chars with a letter & number' : 'Your password'}
+                    style={{ paddingRight: 42 }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                    style={{
+                      position: 'absolute',
+                      right: 8,
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      background: 'transparent',
+                      border: 'none',
+                      padding: '6px',
+                      cursor: 'pointer',
+                      color: 'var(--muted)',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      borderRadius: 6
+                    }}
+                  >
+                    {showPassword ? (
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                        <line x1="1" y1="1" x2="23" y2="23" />
+                      </svg>
+                    ) : (
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                        <circle cx="12" cy="12" r="3" />
+                      </svg>
+                    )}
+                  </button>
+                </div>
+                {fieldErrors.password && <div className="field-error" role="alert">{fieldErrors.password}</div>}
+              </div>
+            )}
 
             {error && <div className="form-error" role="alert">{error}</div>}
             {successMessage && <div className="notice success" role="status">{successMessage}</div>}
 
-            <button className="btn full" type="submit" disabled={mutation.isPending || Boolean(successMessage)}>
-              {mutation.isPending && <span className="btn-spinner" aria-hidden="true" />}
-              {mutation.isPending
+            <button className="btn full" type="submit" disabled={isPending || Boolean(successMessage)}>
+              {isPending && <span className="btn-spinner" aria-hidden="true" />}
+              {isPending
                 ? 'Please wait…'
                 : successMessage
                   ? 'Redirecting…'
                   : isRegister
-                    ? 'Create restaurant'
-                    : 'Sign in'}
+                    ? awaitingVerify
+                      ? 'Verify & create restaurant'
+                      : 'Send verification code'
+                    : isForgot
+                      ? awaitingVerify
+                        ? 'Reset password'
+                        : 'Send reset code'
+                      : 'Sign in'}
             </button>
+
+            {awaitingVerify && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 }}>
+                <button
+                  type="button"
+                  className="btn ghost small"
+                  onClick={() => {
+                    setAwaitingVerify(false);
+                    setCode('');
+                    setError('');
+                  }}
+                >
+                  ← Edit details
+                </button>
+                <button
+                  type="button"
+                  className="btn ghost small"
+                  disabled={resendCooldown > 0 || isPending}
+                  onClick={() => {
+                    if (isRegister) registerRequestMutation.mutate();
+                    else if (isForgot) forgotRequestMutation.mutate();
+                  }}
+                >
+                  {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 'Resend code'}
+                </button>
+              </div>
+            )}
           </form>
 
           <p className="muted" style={{ margin: '20px 0 0', textAlign: 'center', fontSize: 13 }}>
-            {isRegister ? 'Already set up?' : 'New to Mesa?'}{' '}
-            <Link to={isRegister ? '/login' : '/register'} style={{ color: 'var(--green)', fontWeight: 700 }}>
-              {isRegister ? 'Sign in' : 'Create a restaurant'}
+            {isRegister ? 'Already set up?' : isForgot ? 'Remembered your password?' : 'New to Mesa?'}{' '}
+            <Link to={isRegister || isForgot ? '/login' : '/register'} style={{ color: 'var(--green)', fontWeight: 700 }}>
+              {isRegister || isForgot ? 'Sign in' : 'Create a restaurant'}
             </Link>
           </p>
 

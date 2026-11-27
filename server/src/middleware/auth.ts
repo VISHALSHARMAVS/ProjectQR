@@ -7,11 +7,17 @@ import { AppError } from '../utils/errors.js';
 
 export async function requireStaff(req: Request, _res: Response, next: NextFunction): Promise<void> {
   if (!req.session.userId) return next(new AppError(401, 'AUTH_REQUIRED', 'Please sign in to continue.'));
-  const user = await User.findById(req.session.userId).select('_id restaurantId name email role permissions active');
+  const user = await User.findById(req.session.userId).select('_id restaurantId name email phone role permissions active tokenVersion');
   const restaurantActive = user ? await Restaurant.exists({ _id: user.restaurantId, active: true }) : null;
   if (!user || !user.active || !restaurantActive) {
     delete req.session.userId;
+    delete req.session.tokenVersion;
     return next(new AppError(401, 'AUTH_REQUIRED', 'Your session is no longer active. Please sign in again.'));
+  }
+  if ((user.tokenVersion ?? 0) !== (req.session.tokenVersion ?? 0)) {
+    delete req.session.userId;
+    delete req.session.tokenVersion;
+    return next(new AppError(401, 'AUTH_REQUIRED', 'Your session expired after a password change. Please sign in again.'));
   }
   const role = user.role as UserRole;
   const permissions = (user.permissions && Object.keys(user.permissions).length > 0)
@@ -22,7 +28,8 @@ export async function requireStaff(req: Request, _res: Response, next: NextFunct
     id: user._id,
     restaurantId: user.restaurantId,
     name: user.name,
-    email: user.email,
+    ...(user.email ? { email: user.email } : {}),
+    ...(user.phone ? { phone: user.phone } : {}),
     role,
     permissions
   };

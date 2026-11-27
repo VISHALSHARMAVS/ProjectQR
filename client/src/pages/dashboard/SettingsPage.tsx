@@ -644,8 +644,107 @@ export default function SettingsPage() {
       {error && <div className="form-error" role="alert">{error}</div>}{message && <div className="notice success" role="status">{message}</div>}
       {canEdit ? <button className="btn" disabled={save.isPending}>{save.isPending && <span className="btn-spinner" aria-hidden="true" />}{save.isPending ? 'Saving…' : 'Save settings'}</button> : <div className="notice">Only the restaurant owner can change these settings.</div>}
     </form></section>
+    <ChangePasswordSection />
     {canEdit && <StaffAccess />}
   </>;
+}
+
+function ChangePasswordSection() {
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+
+  const mutation = useMutation({
+    mutationFn: () =>
+      api.post<{ success: boolean; message: string }>('/auth/change-password', {
+        currentPassword,
+        newPassword
+      }),
+    onSuccess: (resp) => {
+      setError('');
+      setSuccess(resp.message || 'Password updated successfully.');
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+    },
+    onError: (cause: Error) => {
+      setSuccess('');
+      setError(cause instanceof ApiError ? cause.message : 'Could not update password.');
+    }
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setSuccess('');
+    if (newPassword.length < 10 || !/[a-zA-Z]/.test(newPassword) || !/\d/.test(newPassword)) {
+      setError('New password must be at least 10 characters and include a letter and a number.');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setError('New password and confirmation do not match.');
+      return;
+    }
+    mutation.mutate();
+  };
+
+  return (
+    <section className="surface" style={{ maxWidth: 860, marginTop: 18, padding: 24, borderRadius: 16 }}>
+      <span className="eyebrow">Account security</span>
+      <h2 style={{ margin: '4px 0 6px' }}>Change password</h2>
+      <p className="muted" style={{ margin: '0 0 16px', fontSize: 13 }}>
+        Updating your password automatically signs out any other active sessions.
+      </p>
+      <form className="form-grid" onSubmit={handleSubmit} style={{ maxWidth: 420 }}>
+        <div className="field">
+          <label htmlFor="cp-current">Current password</label>
+          <input
+            id="cp-current"
+            type="password"
+            className="input"
+            required
+            value={currentPassword}
+            onChange={(e) => setCurrentPassword(e.target.value)}
+            autoComplete="current-password"
+          />
+        </div>
+        <div className="field">
+          <label htmlFor="cp-new">New password</label>
+          <input
+            id="cp-new"
+            type="password"
+            className="input"
+            required
+            minLength={10}
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+            placeholder="10+ chars with a letter & number"
+            autoComplete="new-password"
+          />
+        </div>
+        <div className="field">
+          <label htmlFor="cp-confirm">Confirm new password</label>
+          <input
+            id="cp-confirm"
+            type="password"
+            className="input"
+            required
+            minLength={10}
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            autoComplete="new-password"
+          />
+        </div>
+        {error && <div className="form-error" role="alert">{error}</div>}
+        {success && <div className="notice success" role="status">{success}</div>}
+        <button className="btn secondary" disabled={mutation.isPending}>
+          {mutation.isPending ? 'Updating…' : 'Update password'}
+        </button>
+      </form>
+    </section>
+  );
 }
 
 interface StaffList { users: (StaffUser & { _id?: string; active: boolean; createdAt: string })[] }
@@ -735,6 +834,7 @@ function StaffAccess() {
   // Form states for creating staff
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState<UserRole>('waiter');
   const [customPowers, setCustomPowers] = useState<UserPermissions>(getDefaultPermissions('waiter'));
@@ -755,6 +855,7 @@ function StaffAccess() {
     mutationFn: () => api.post('/restaurant/staff', {
       name: name.trim(),
       email: email.trim().toLowerCase(),
+      phone: phone.trim(),
       password,
       role,
       permissions: customPowers
@@ -763,6 +864,7 @@ function StaffAccess() {
       setOpenAddModal(false);
       setName('');
       setEmail('');
+      setPhone('');
       setPassword('');
       setError('');
       setShowAdvancedPowers(false);
@@ -847,7 +949,9 @@ function StaffAccess() {
                   <tr key={userId}>
                     <td>
                       <strong>{user.name}</strong>
-                      <div className="muted" style={{ fontSize: 12, marginTop: 2 }}>{user.email}</div>
+                      <div className="muted" style={{ fontSize: 12, marginTop: 2 }}>
+                        {[user.email, user.phone].filter(Boolean).join(' · ') || '—'}
+                      </div>
                     </td>
                     <td>
                       <span
@@ -944,15 +1048,26 @@ function StaffAccess() {
             </div>
 
             <div className="field">
-              <label htmlFor="staff-email">Work email address</label>
+              <label htmlFor="staff-email">Email address <span className="muted">(or provide mobile below)</span></label>
               <input
                 className="input"
                 id="staff-email"
                 type="email"
-                required
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
                 placeholder="rohan@restaurant.com"
+              />
+            </div>
+
+            <div className="field">
+              <label htmlFor="staff-phone">Mobile number <span className="muted">(optional if email provided)</span></label>
+              <input
+                className="input"
+                id="staff-phone"
+                type="tel"
+                value={phone}
+                onChange={(event) => setPhone(event.target.value)}
+                placeholder="9876543210"
               />
             </div>
 

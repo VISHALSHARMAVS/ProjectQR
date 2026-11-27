@@ -38,6 +38,7 @@ export default function App() {
     <Route path="/demo" element={<DemoPage />} />
     <Route path="/login" element={<AuthPage mode="login" />} />
     <Route path="/register" element={<AuthPage mode="register" />} />
+    <Route path="/forgot-password" element={<AuthPage mode="forgot" />} />
     <Route path="/order/:token" element={<ScanPage />} />
     <Route path="/order/:token/verify" element={<VerifyPage />} />
     <Route path="/order/:token/menu" element={<CustomerMenuPage />} />

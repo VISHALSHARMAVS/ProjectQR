@@ -72,8 +72,13 @@ export function getDefaultPermissions(role: UserRole): UserPermissions {
 const userSchema = new Schema({
   restaurantId: { type: Schema.Types.ObjectId, ref: 'Restaurant', required: true, index: true },
   name: { type: String, required: true, trim: true, maxlength: 100 },
-  email: { type: String, required: true, trim: true, lowercase: true, unique: true, index: true },
+  email: { type: String, trim: true, lowercase: true, unique: true, sparse: true, index: true },
+  phone: { type: String, trim: true, unique: true, sparse: true, index: true },
+  emailVerified: { type: Boolean, default: false },
   passwordHash: { type: String, required: true, select: false },
+  tokenVersion: { type: Number, default: 0 },
+  failedLoginAttempts: { type: Number, default: 0, select: false },
+  lockUntil: { type: Date, default: null, select: false },
   role: {
     type: String,
     enum: ['owner', 'manager', 'cashier', 'waiter', 'kitchen', 'staff'],
@@ -96,8 +101,13 @@ export interface UserDoc {
   _id: Types.ObjectId;
   restaurantId: Types.ObjectId;
   name: string;
-  email: string;
+  email?: string;
+  phone?: string;
+  emailVerified?: boolean;
   passwordHash?: string;
+  tokenVersion?: number;
+  failedLoginAttempts?: number;
+  lockUntil?: Date | null;
   role: UserRole;
   permissions: UserPermissions;
   active: boolean;
